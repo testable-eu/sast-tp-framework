@@ -1,0 +1,11 @@
+cpg_gen:
+  php:
+    installation_dir: "./discovery/joern/querydb-php"
+    command: "./php2cpg $SRC_DIR --interactive false -o $BINARY_OUT"
+  js:
+    installation_dir: "./discovery/joern/js2cpg"
+    command: "js2cpg $SRC_DIR --output $BINARY_OUT"
+  java:
+    installation_dir: "./discovery/joern/joern/joern-cli/frontends/javasrc2cpg"
+    command: "./javasrc2cpg $SRC_DIR --output $BINARY_OUT"
+

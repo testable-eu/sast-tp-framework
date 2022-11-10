@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+
+  codeql:
+    image: tpf_codeql
+    build:
+      context: './SAST/codeql/codeql_v2_9_2'
+      dockerfile: "./Dockerfile"
+    volumes:
+      - codeql_v2_9_2:/codeql
+      - codeql_interface_v2_9_2:/tp-framework/SAST/codeql/codeql_v2_9_2
+
+  tp-framework-dev:
+    image: tp-framework-dev
+    build:
+      context: .
+      args:
+        REQUIREMENTS_FILE: "requirements-dev.txt"
+        TESTS_DIR: "tests"
+      dockerfile: "./Dockerfile"
+    env_file:
+      - ./.env
+    volumes:
+      - codeql_v2_9_2:/codeql
+      - codeql_interface_v2_9_2:/tp-framework/SAST/codeql/codeql_v2_9_2
+      - ./testability_patterns:/tp-framework/testability_patterns
+      - ./out:/tp-framework/out
+      - ./in:/tp-framework/in
+      - ./SAST:/SAST
+      - ./tp_framework:/tp-framework/tp_framework
+    entrypoint: bash
+
+volumes:
+  codeql_v2_9_2:
+  codeql_interface_v2_9_2:

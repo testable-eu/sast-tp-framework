@@ -1,0 +1,34 @@
+# General purpose
+.idea/
+.vscode/
+__pycache__/
+.pytest_cache
+venv
+tp_framework.egg-info/
+coverage_html/
+.coverage
+htmlcov
+*.zip
+*.pyc
+
+# keys
+*.crt
+*.pub
+
+# tp-framework: in/out folders
+out/
+discovery-in/
+in/
+
+# tp-framework: specific environment variables
+.env
+
+# tp-framework: tmp folders
+temp
+tmp
+
+# tp-framework: tests related [TODO: are these used?]
+tests/ember.js-master/
+tests/zend-inputfilter
+
+

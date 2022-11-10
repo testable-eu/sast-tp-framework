@@ -1,0 +1,175 @@
+import json
+import shutil
+import uuid
+from datetime import datetime
+from json import JSONDecodeError
+from pathlib import Path
+from typing import Dict, Tuple
+
+from core import utils, analysis
+from core.exceptions import PatternValueError
+from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
+from core.measurement import Measurement
+from core.pattern import Pattern, get_pattern_by_pattern_id
+
+
+def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_src_dir: Path | None,
+                                   pattern_lib_dest: Path) -> Path:
+    try:
+        pattern: Pattern = Pattern(
+            pattern_dict["name"],
+            pattern_dict["description"],
+            pattern_dict["family"],
+            pattern_dict["tags"],
+            [pattern_src_dir / instance_relative_path for instance_relative_path in pattern_dict["instances"] if
+             pattern_src_dir],
+            language,
+            pattern_dir=pattern_lib_dest
+        )
+    except KeyError as e:
+        raise PatternValueError(message=f"Key {e} was not found in pattern metadata")
+
+    pattern_instances_json_refs = pattern.instances
+    pattern.instances = []
+    pattern.add_pattern_to_tp_library(language, pattern_src_dir, pattern_lib_dest)
+
+    if pattern_src_dir:
+        for instance_json in pattern_instances_json_refs:
+            add_tp_instance_to_lib_from_json(
+                language, pattern.pattern_id, (pattern_src_dir / instance_json), pattern_src_dir, pattern_lib_dest
+            )
+    return pattern_lib_dest / language / utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
+
+
+def add_tp_instance_to_lib(language: str, pattern: Pattern, instance_dict: Dict, inst_old_name: str,
+                           pattern_src_dir: Path, pattern_lib_dst: Path) -> Path:
+    instance: Instance = Instance(
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "code", "path")),  # code_path: Path,
+        utils.get_from_dict(instance_dict, "code", "injection_skeleton_broken"),  # code_injection_skeleton_broken: bool,
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "compile", "dependencies")),  # compile_dependencies: Path, # added 092022
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "compile", "binary")),  # compile_binary: Path,
+        utils.get_from_dict(instance_dict, "compile", "instruction"),  # compile_instruction: str,  # added 092022
+        utils.get_from_dict(instance_dict, "remediation", "transformation"),  # remediation_transformation: str, # added 092022
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "remediation", "modeling_rule")),  # remediation_modeling_rule: Path, # added 092022
+        utils.get_from_dict(instance_dict, "remediation", "notes"),  # remediation_notes: str, # added 092022
+        utils.get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
+        utils.get_from_dict(instance_dict, "properties", "negative_test_case"),
+        utils.get_from_dict(instance_dict, "properties", "source_and_sink"),
+        utils.get_from_dict(instance_dict, "properties", "input_sanitizer"),
+        utils.get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "discovery", "rule")),
+        utils.get_from_dict(instance_dict, "discovery", "method"),
+        utils.get_from_dict(instance_dict, "discovery", "rule_accuracy"),
+        utils.get_from_dict(instance_dict, "discovery", "notes"),
+        utils.get_from_dict(instance_dict, "expectation", "expectation"),
+        utils.get_from_dict(instance_dict, "expectation", "type"),
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "expectation", "sink_file")),
+        utils.get_from_dict(instance_dict, "expectation", "sink_line"),
+        utils.get_path_or_none(utils.get_from_dict(instance_dict, "expectation", "source_file")),
+        utils.get_from_dict(instance_dict, "expectation", "source_line"),
+        pattern.name,
+        pattern.description,
+        pattern.family,
+        pattern.tags,
+        pattern.instances,
+        language,
+        pattern.pattern_id,
+        pattern_dir=pattern_lib_dst
+    )
+
+    inst_name = utils.get_instance_dir_name_from_pattern(pattern_src_dir.name, pattern.pattern_id, instance.instance_id)
+    pattern_name = utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
+
+    instance_src_dir: Path = pattern_src_dir / inst_old_name
+    instance_dst_dir: Path = pattern_lib_dst / language / pattern_name / inst_name
+
+    instance.add_instance_to_pattern_id(language, pattern_src_dir, pattern_lib_dst)
+    pattern.add_new_instance_reference(language, pattern_lib_dst, f"./{inst_name}/{inst_name}.json")
+
+    for path in list(instance_src_dir.iterdir()):
+        if not path.suffix.endswith("json"):
+            dst_path = instance_dst_dir / path.name
+            if path.is_dir():
+                shutil.copytree(path, dst_path)
+            else:
+                shutil.copy(path, dst_path)
+
+
+def add_testability_pattern_to_lib_from_json(language: str, pattern_json: Path, pattern_src_dir: Path,
+                                             pattern_lib_dest: Path) -> Path:
+    with open(pattern_json) as json_file:
+        try:
+            pattern: Dict = json.load(json_file)
+        except JSONDecodeError as e:
+            raise e
+    try:
+        return add_testability_pattern_to_lib(language, pattern, pattern_src_dir, pattern_lib_dest)
+    except PatternValueError as e:
+        raise e
+
+
+def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_json: Path,
+                                     pattern_src_dir: Path, pattern_dest_dir: Path):
+    pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, pattern_dest_dir)
+
+    with open(instance_json) as json_file:
+        try:
+            instance: Dict = json.load(json_file)
+        except JSONDecodeError as e:
+            raise e
+    return add_tp_instance_to_lib(
+        language, pattern, instance, instance_json.parent.name, pattern_src_dir, pattern_dest_dir
+    )
+
+
+async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], pattern_id: int, now,
+                                            pattern_lib_dir: Path):
+    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, pattern_lib_dir)
+    target_pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, pattern_lib_dir)
+
+    list_job_ids: list[Tuple[str, list[uuid.UUID]]] = []
+    for path in pattern_instances:
+        with open(path) as instance_json_file:
+            instance_json: Dict = json.load(instance_json_file)
+
+        instance_id = utils.get_instance_id_from_instance_name(path.name)
+        target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
+
+        job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
+            target_instance, path.parent, sast_tools, language, now
+        )
+
+        list_job_ids.append((f"{pattern_id}_{instance_id}", job_ids))
+
+    return list_job_ids
+
+
+async def save_measurement_for_pattern(language: str, pattern_id: int, now: datetime, list_job_ids: list[uuid.UUID], pattern_lib_dir: Path):
+    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, pattern_lib_dir)
+    date_time_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+    job_dict = {}
+    for el in list_job_ids:
+        instance_id_for_job_ids = int(el[0].split("_")[1])
+        job_dict[instance_id_for_job_ids] = el[1]
+
+    for path in pattern_instances:
+        measurement_dir = pattern_lib_dir / "measurements" / language / path.parent.parent.name / path.parent.name
+        measurement_dir.mkdir(parents=True, exist_ok=True)
+
+        instance_id = utils.get_instance_id_from_instance_name(path.name)
+        job_ids = job_dict[instance_id]
+
+        measurements = await analysis.inspect_analysis_results(job_ids, language)
+
+        measurements_dict: list[Dict] = []
+        for meas in measurements:
+            meas_dict: Dict = meas.__dict__
+            pattern_dir_str = path.parent.parent.name
+            instance_dir_str = path.parent.name
+            meas_dict[
+                "instance"] = f"./{meas.instance.language}/{pattern_dir_str}/{instance_dir_str}/{instance_dir_str}.json"
+            measurements_dict.append(meas_dict)
+
+        with open(measurement_dir / f"measurement-{date_time_str}.json", "w") as measurement_file:
+            json.dump(measurements_dict, measurement_file, indent=4)
