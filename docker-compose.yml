@@ -29,5 +29,5 @@ services:
     entrypoint: bash
 
 volumes:
-s  codeql_v2_9_2:
+  codeql_v2_9_2:
   codeql_interface_v2_9_2:
