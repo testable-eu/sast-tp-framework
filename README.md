@@ -59,9 +59,9 @@ Note that some submodules will also be pulled, including:
 Some SAST tools may require a little setup before running. If you add a SAST tool report here those setup steps.  
 
 #### Environment variables
-Create the file `./.env` necessary for docker. This will be the concatenation all the files you have in 
+Create the file `./.env` necessary for docker. This will be the concatenation of all the files you have in 
 `./.env.templates`.   Even if there are no specific environment variables, you need to create an empty `./.env` 
-file. 
+file (e.g., `touch .env`). 
    
 ### 3. Docker compose: build 
 By running the following, the TP framework will be built and ready to be run 
