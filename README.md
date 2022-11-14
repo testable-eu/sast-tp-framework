@@ -53,8 +53,15 @@ Note that some submodules will also be pulled, including:
 - [Joern](https://github.com/joernio/joern)
 - [Testability Pattern Library](https://github.com/testable-eu/sast-tp-framework)
 
-### 2. SAST Tools: setup
+### 2. Setup
+
+#### SAST Tools
 Some SAST tools may require a little setup before running. If you add a SAST tool report here those setup steps.  
+
+#### Environment variables
+Create the file `./.env` necessary for docker. This will be the concatenation all the files you have in 
+`./.env.templates`.   Even if there are no specific environment variables, you need to create an empty `./.env` 
+file. 
    
 ### 3. Docker compose: build 
 By running the following, the TP framework will be built and ready to be run 

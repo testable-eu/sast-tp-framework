@@ -224,28 +224,6 @@ def main():
         help="Timeout for CPG generation"
     )
 
-    increase_testability_parser.add_argument(
-        "-t", "--target",
-        metavar="TARGET_DIR",
-        dest="target_remediation",
-        required=True,
-        help="Path to target folder for increasing testability"
-    )
-    increase_testability_parser.add_argument(
-        "-l", "--language",
-        metavar="LANGUAGE",
-        dest="language",
-        required=True,
-        help="Programming Language used in the target source code"
-    )
-    increase_testability_parser.add_argument(
-        "-m", "--modelling-rules",
-        metavar="MODELLING_RULES_FILE",
-        dest="modelling_rules_file",
-        required=True,
-        help="Path to modelling rule file"
-    )
-
     results_parser = subparser.add_parser("result", help="Print or export last measurement results for patterns")
     results_parser_pattern_selection_mode = results_parser.add_mutually_exclusive_group(required=True)
     results_parser_export_mode = results_parser.add_mutually_exclusive_group(required=True)
