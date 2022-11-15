@@ -21,7 +21,7 @@ More technical info in our [docs](./docs/Home.md).
 
 ## Get started
 
-> as in the how-to-install wiki
+> as in the how-to-install doc
 
 We recommend using docker compose to install our framework, as explained hereafter.  
 
