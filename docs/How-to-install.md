@@ -1,28 +1,3 @@
-# Testability pattern framework for SAST
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/)
-
-This framework relies on testability patterns to reduce false negative rate in SAST analysis over supported programming languages. 
-
-> Testability patterns are here intended as code patterns that make difficult for SAST tools to detect a vulnerability.
-
-So far we have created a catalog of testability patterns for the following (supported) programming languages:
-- PHP (v7.4.9)
-- JavaScript (runnable over Node.js)
-
-Our framework enables operations such as:
-- measurement of SAST tools against a catalog of testability patterns, and 
-- discovery of testability patterns within application source code 
-
-In the future, we aim to enable patterns' transformations from the framework to improve the testability of the application to be scanned via SAST.   
-
-An initial technical report submitted at NDSS 2022 is [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
-
-More technical info in our [docs](./docs/Home.md). 
-
-## Get started
-
-> as in the how-to-install wiki
-
 We recommend using docker compose to install our framework, as explained hereafter.  
 
 ### 0. Requirements
@@ -37,13 +12,13 @@ Our public framework is set to work with the SAST tools listed below.
 
 - CodeQL v2.9.2: open source, no specific requirements. 
 
-You can contribute by [adding an interface to a new SAST tool](./docs/How-to-add-a-SAST-tool.md). If you do so, add the tool to the list here and report its requirements (if any).
+You can contribute by [adding an interface to a new SAST tool](./How-to-add-a-SAST-tool.md). If you do so, add the tool to the list here and report its requirements (if any).
 
 ### 1. Cloning
 
 Clone our repository in your `<REPO>` folder and update submodules to last version with:
 ```buildoutcfg
-git clone -c core.autocrlf=false --recurse-submodules git@github.com:testable-eu/sast-tp-framework.git
+git clone -c core.autocrlf=false --recurse-submodules git@github.wdf.sap.corp:sast-testability-patterns/tp-framework.git
 git submodule update --remote
 ```
 
@@ -79,7 +54,7 @@ docker exec -it <CONTAINER_NAME> bash
 ```
 
 ### 5. How to run - overview
-The complete documentation about how-to-run this framework is available [here](./docs/How-to-run-CLI-Usage.md). 
+The complete documentation about how-to-run this framework is available [here](./How-to-run-CLI-Usage.md). 
 
 Here we only provide a little overview of the framework and ensure that it works fine.
 
