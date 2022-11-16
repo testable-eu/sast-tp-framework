@@ -31,9 +31,7 @@ class CodeQL_v_2_9_2(SAST):
 
         # Preparing the building command
         codeql_createdb_cmd = f"{CODEQL_CONFIG['installation_path']}/codeql database create {codeql_db_location} --source-root {src_root} --language {language}"
-        print("DEBUG - command {}".format(codeql_createdb_cmd))
         if "lib_dir" in kwargs and kwargs["lib_dir"]:
-            print("DEBUG - codeql there are dependencies")
             lib_dir: Path = Path(src_root / kwargs["lib_dir"]).resolve()
             # Read the build template command file and prepare it
             with open(CODEQL_BUILD_TEMPLATE, 'r') as build_template_file:
@@ -41,13 +39,11 @@ class CodeQL_v_2_9_2(SAST):
             build_filedata = build_filedata.replace("$PATTERNSRC", f"{src_root}/src")
             build_filedata = build_filedata.replace("$PATTERNLIB", f"{lib_dir}")
             build_filedata = build_filedata.replace("$TPFOUT", f"{proj_dir_tmp}")
-            print("DEBUG - build_filedata:\n{}".format(build_filedata))
             # Write the build command file
             with open(f"{proj_dir_tmp}/build.sh", 'w', 0o777) as build_file:
                 build_file.write(build_filedata)
             pattern_build_cmd = f"\'{proj_dir_tmp}/build.sh\'"
             codeql_createdb_cmd += " --command={}".format(pattern_build_cmd)
-        print("DEBUG - command {}".format(codeql_createdb_cmd))
 
         # if kwargs["measurement"]:
         #     pattern_build_cmd = f"\'find {src_root} -type f -name \"*.java\" -exec javac -cp ../lib/*.jar\'"

@@ -7,6 +7,10 @@ from core import utils
 from core.exceptions import PatternDoesNotExists, InstanceDoesNotExists
 from core.pattern import Pattern, get_pattern_path_by_pattern_id, get_pattern_by_pattern_id
 
+import logging
+from core import loggermgr
+
+logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 class PatternCategory(str, Enum):
     S0 = "S0"
@@ -66,13 +70,16 @@ class Instance(Pattern):
         else:
             super().__init__(name, description, family, tags, instances, language, pattern_id)
 
-        self.code_path = code_path
         self.code_injection_skeleton_broken = code_injection_skeleton_broken
         self.compile_dependencies = compile_dependencies # added 092022
         self.compile_binary = compile_binary
         self.compile_instruction = compile_instruction  # added 092022
         self.remediation_transformation = remediation_transformation  # added 092022
-        self.remediation_modeling_rule = remediation_modeling_rule,  # added 092022
+        # added 092022
+        if remediation_modeling_rule is None:
+            self.remediation_modeling_rule = ""
+        else:
+            self.remediation_modeling_rule = remediation_modeling_rule
         self.remediation_notes = remediation_notes  # added 092022
         self.properties_category = properties_category
         self.properties_negative_test_case = properties_negative_test_case
@@ -90,6 +97,12 @@ class Instance(Pattern):
         self.expectation_source_file = expectation_source_file
         self.expectation_source_line = expectation_source_line
         self.instance_id = instance_id or self.define_instance_id(pattern_dir)
+        if code_path is None:
+            logger.warning("Instance without code snippet cannot even be measured by SAST tools: pattern {0}, instance {1}".format(name, instance_id))
+            self.code_path = ""
+        else:
+            self.code_path = code_path
+
 
     def define_instance_id(self, pattern_dir: Path) -> int:
         try:

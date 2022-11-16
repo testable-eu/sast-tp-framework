@@ -3,6 +3,11 @@ from typing import Dict
 
 import yaml
 
+logfile = 'tpframework.log'
+rootLoggerName = "tpframework"
+loggingLevelFile = 'DEBUG'
+
+
 ROOT_DIR: Path = Path(__file__).parent
 _SAST_CONFIG_FILE: Path = ROOT_DIR / "SAST/sast-config.yaml"
 _ROOT_SAST_DIR: Path = ROOT_DIR / "SAST"
