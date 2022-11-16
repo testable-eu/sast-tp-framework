@@ -36,7 +36,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
             pattern_dir_path,
             pattern_lib_dir_path
         )
-        created_pattern_id: int = utils.get_pattern_id_from_pattern_name(created_pattern_path.name)
+        created_pattern_id: int = utils.get_id_from_name(created_pattern_path.name)
     except PatternValueError as e:
         print(e)
         raise

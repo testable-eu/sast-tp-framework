@@ -6,6 +6,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Dict, Tuple
 
+import core.instance
 from core import utils, analysis
 from core.exceptions import PatternValueError
 from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
@@ -52,11 +53,11 @@ def add_tp_instance_to_lib(language: str, pattern: Pattern, instance_dict: Dict,
         utils.get_from_dict(instance_dict, "remediation", "transformation"),  # remediation_transformation: str, # added 092022
         utils.get_path_or_none(utils.get_from_dict(instance_dict, "remediation", "modeling_rule")),  # remediation_modeling_rule: Path, # added 092022
         utils.get_from_dict(instance_dict, "remediation", "notes"),  # remediation_notes: str, # added 092022
-        utils.get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
+        core.instance.get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
         utils.get_from_dict(instance_dict, "properties", "negative_test_case"),
         utils.get_from_dict(instance_dict, "properties", "source_and_sink"),
         utils.get_from_dict(instance_dict, "properties", "input_sanitizer"),
-        utils.get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
+        core.instance.get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
         utils.get_path_or_none(utils.get_from_dict(instance_dict, "discovery", "rule")),
         utils.get_from_dict(instance_dict, "discovery", "method"),
         utils.get_from_dict(instance_dict, "discovery", "rule_accuracy"),
@@ -132,7 +133,7 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
         with open(path) as instance_json_file:
             instance_json: Dict = json.load(instance_json_file)
 
-        instance_id = utils.get_instance_id_from_instance_name(path.name)
+        instance_id = utils.get_id_from_name(path.name)
         target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
 
         job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
@@ -157,7 +158,7 @@ async def save_measurement_for_pattern(language: str, pattern_id: int, now: date
         measurement_dir = pattern_lib_dir / "measurements" / language / path.parent.parent.name / path.parent.name
         measurement_dir.mkdir(parents=True, exist_ok=True)
 
-        instance_id = utils.get_instance_id_from_instance_name(path.name)
+        instance_id = utils.get_id_from_name(path.name)
         job_ids = job_dict[instance_id]
 
         measurements = await analysis.inspect_analysis_results(job_ids, language)

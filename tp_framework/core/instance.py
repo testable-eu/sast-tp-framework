@@ -194,11 +194,11 @@ def instance_from_dict(instance_dict: Dict, pattern: Pattern, language: str, ins
         utils.get_from_dict(instance_dict, "remediation", "transformation"),  # remediation_transformation: str, # added 092022
         utils.get_path_or_none(utils.get_from_dict(instance_dict, "remediation", "modeling_rule")),  # remediation_modeling_rule: Path, # added 092022
         utils.get_from_dict(instance_dict, "remediation", "notes"),  # remediation_notes: str, # added 092022
-        utils.get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
+        get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
         utils.get_from_dict(instance_dict, "properties", "negative_test_case"),
         utils.get_from_dict(instance_dict, "properties", "source_and_sink"),
         utils.get_from_dict(instance_dict, "properties", "input_sanitizer"),
-        utils.get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
+        get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
         utils.get_path_or_none(utils.get_from_dict(instance_dict, "discovery", "rule")),
         utils.get_from_dict(instance_dict, "discovery", "method"),
         utils.get_from_dict(instance_dict, "discovery", "rule_accuracy"),
@@ -228,7 +228,21 @@ def load_instance_from_metadata(metadata: str, tp_lib: Path, language: str) -> I
     with open(metadata_path) as file:
         instance: Dict = json.load(file)
 
-    pattern_id = utils.get_pattern_id_from_pattern_name(metadata_path.parent.parent.name)
+    pattern_id = utils.get_id_from_name(metadata_path.parent.parent.name)
     pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, tp_lib)
-    instance_id = utils.get_instance_id_from_instance_name(metadata_path.parent.name)
+    instance_id = utils.get_id_from_name(metadata_path.parent.name)
     return instance_from_dict(instance, pattern, language, instance_id)
+
+
+def get_pattern_category_or_none(el) -> PatternCategory | None:
+    try:
+        return PatternCategory(el)
+    except ValueError:
+        return None
+
+
+def get_feature_vs_internal_api_or_none(el) -> FeatureVsInternalApi | None:
+    try:
+        return FeatureVsInternalApi(el)
+    except ValueError:
+        return None

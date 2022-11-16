@@ -8,7 +8,6 @@ from typing import Tuple
 
 from core import pattern
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist
-from core.instance import PatternCategory, FeatureVsInternalApi
 
 
 def is_windows():
@@ -78,11 +77,7 @@ def get_instance_dir_name_from_pattern(name: str, pattern_id: int, instance_id: 
 #     return res
 
 
-def get_pattern_id_from_pattern_name(name: str) -> int:
-    return get_instance_id_from_instance_name(name)
-
-
-def get_instance_id_from_instance_name(name: str) -> int:
+def get_id_from_name(name: str) -> int:
     return int(name.split("_")[0])
 
 
@@ -117,20 +112,6 @@ def get_path_or_none(p: str) -> Path | None:
     if p is not None:
         return Path(p)
     return p
-
-
-def get_pattern_category_or_none(el) -> PatternCategory | None:
-    try:
-        return PatternCategory(el)
-    except ValueError:
-        return None
-
-
-def get_feature_vs_internal_api_or_none(el) -> FeatureVsInternalApi | None:
-    try:
-        return FeatureVsInternalApi(el)
-    except ValueError:
-        return None
 
 
 def get_enum_value_or_none(enum) -> str | None:
