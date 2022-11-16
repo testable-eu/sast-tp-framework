@@ -28,7 +28,7 @@ mainLogger.info("Logger module initialized")
 
 
 def logger_name(name):
-    return hpiconfig.rootLoggerName + "." + name
+    return config.rootLoggerName + "." + name
 
 
 def add_logger(loggerFile):

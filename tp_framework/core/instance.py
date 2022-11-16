@@ -75,11 +75,7 @@ class Instance(Pattern):
         self.compile_binary = compile_binary
         self.compile_instruction = compile_instruction  # added 092022
         self.remediation_transformation = remediation_transformation  # added 092022
-        # added 092022
-        if remediation_modeling_rule is None:
-            self.remediation_modeling_rule = ""
-        else:
-            self.remediation_modeling_rule = remediation_modeling_rule
+        self.remediation_modeling_rule = remediation_modeling_rule # added 092022
         self.remediation_notes = remediation_notes  # added 092022
         self.properties_category = properties_category
         self.properties_negative_test_case = properties_negative_test_case
