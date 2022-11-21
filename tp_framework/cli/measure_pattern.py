@@ -16,6 +16,7 @@ from core.sast_job_runner import InQueue, sast_task_runner, OutQueue
 async def measure_list_patterns(pattern_id_list: list[int], language: str, tools: list[Dict],
                                 pattern_lib_dir: str = config.DEFAULT_TP_LIBRARY_ROOT_DIR, workers: int = 5):
     pattern_lib_dir_path: Path = Path(pattern_lib_dir).resolve()
+    print("DEBUG")
     if not pattern_lib_dir_path.is_dir():
         print(f"Specified `{pattern_lib_dir}` is not a folder or does not exists", file=sys.stderr)
         return
