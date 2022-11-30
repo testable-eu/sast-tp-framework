@@ -15,6 +15,9 @@ RUN apt-get install php -y
 RUN apt-get install sbt -y
 RUN apt-get install gradle -y
 RUN apt-get install maven -y
+# discovery, joern: js2cpg
+RUN apt-get install nodejs
+RUN apt-get install npm
 
 ARG TPF_HOME="/tp-framework"
 ARG SAST_DIR="${TPF_HOME}/SAST"
@@ -42,6 +45,9 @@ RUN ${DISCOVERY_HOME}/joern/joern/joern-install.sh
 RUN ln -s /opt/joern/joern-cli/joern /usr/local/bin/joern
 RUN chmod +x ${DISCOVERY_HOME}/joern/querydb-php/install.sh
 RUN ${DISCOVERY_HOME}/joern/querydb-php/install.sh
+#install js2cpg
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/js2cpg/; sbt stage'
+
 
 # ADD HERE COMMANDS USEFUL FOR OTHER DOCKER-COMPOSE SERVICES
 #

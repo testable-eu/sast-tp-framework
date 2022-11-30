@@ -54,7 +54,13 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
+            # DEBUG issue-4
+            print(run_joern_scala_query)
+            #
             findings_str: str = subprocess.check_output(run_joern_scala_query, shell=True).decode('utf-8-sig')
+            # DEBUG issue-4
+            print(findings_str)
+            #
         except subprocess.CalledProcessError as e:
             raise JoernQueryError(e)
 
@@ -67,6 +73,11 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
         if findings_dec:
             findings_dec.append(parsed_findings[-1][:-1])
             findings: list[Dict] = json.loads(''.join(findings_dec))
+            # DEBUG issue-4
+            print("cpg_file_name: {}".format(cpg_file_name))
+            print("query_name: {}".format(query_name))
+            print("findings: {}".format(findings))
+            #
 
             return cpg_file_name, query_name, findings
         else:

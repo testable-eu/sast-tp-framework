@@ -4,7 +4,7 @@ cpg_gen:
     command: "./php2cpg $SRC_DIR --interactive false -o $BINARY_OUT"
   js:
     installation_dir: "./discovery/joern/js2cpg"
-    command: "js2cpg $SRC_DIR --output $BINARY_OUT"
+    command: "./js2cpg.sh $SRC_DIR --output $BINARY_OUT"
   java:
     installation_dir: "./discovery/joern/joern/joern-cli/frontends/javasrc2cpg"
     command: "./javasrc2cpg $SRC_DIR --output $BINARY_OUT"
