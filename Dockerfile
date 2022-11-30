@@ -16,8 +16,8 @@ RUN apt-get install sbt -y
 RUN apt-get install gradle -y
 RUN apt-get install maven -y
 # discovery, joern: js2cpg
-RUN apt-get install nodejs
-RUN apt-get install npm
+RUN apt-get install nodejs -y
+RUN apt-get install npm -y
 
 ARG TPF_HOME="/tp-framework"
 ARG SAST_DIR="${TPF_HOME}/SAST"
