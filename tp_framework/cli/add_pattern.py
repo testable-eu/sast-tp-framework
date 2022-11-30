@@ -11,10 +11,10 @@ from core.exceptions import PatternValueError
 
 
 def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict], pattern_json: str = None,
-                pattern_lib_dir: str = config.DEFAULT_TP_LIBRARY_ROOT_DIR):
+                tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve()):
     pattern_dir_path: Path = Path(pattern_dir).resolve()
     if not pattern_dir_path.is_dir():
-        print(f"`{pattern_dir_path}` not found or is not a folder.")
+        print(f"`Pattern source folder {pattern_dir_path}` not found or is not a folder.")
         return
 
     if not pattern_json:
@@ -26,15 +26,14 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
     else:
         pattern_json_path: Path = Path(pattern_json).resolve()
 
-    pattern_lib_dir_path: Path = Path(pattern_lib_dir).resolve()
-    pattern_lib_dir_path.mkdir(exist_ok=True, parents=True)
+    tp_lib_path.mkdir(exist_ok=True, parents=True)
 
     try:
         created_pattern_path: Path = pattern_operations.add_testability_pattern_to_lib_from_json(
             language,
             pattern_json_path,
             pattern_dir_path,
-            pattern_lib_dir_path
+            tp_lib_path
         )
         created_pattern_id: int = utils.get_id_from_name(created_pattern_path.name)
     except PatternValueError as e:

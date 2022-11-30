@@ -83,10 +83,6 @@ async def measure_all_pattern(language: str, tools: list[Dict],
     await measure_list_patterns(id_list, language, tools, pattern_lib_dir, workers)
 
 
-def get_tool_list_from_args(arg_tool_list: list[str]) -> list[Dict]:
-    return list(map(lambda t: {"name": t.split(":")[0], "version": t.split(":")[1]}, arg_tool_list))
-
-
 def print_last_measurement_for_all_patterns(tools: list[Dict], language: str, tp_lib_dir: str):
     tp_lib_dir_path: Path = Path(tp_lib_dir).resolve()
     if not tp_lib_dir_path.is_dir():

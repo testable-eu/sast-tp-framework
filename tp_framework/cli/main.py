@@ -1,11 +1,18 @@
 import asyncio
 from argparse import ArgumentParser, Namespace
 from typing import Dict
+from pathlib import Path
+import sys
+
+import logging
+from core import loggermgr
+
+logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from cli.add_pattern import add_pattern
 from cli.discovery_pattern import run_discovery_for_all_patterns, run_discovery_for_pattern_list, manual_discovery
-from cli.measure_pattern import measure_list_patterns, measure_all_pattern, get_tool_list_from_args, \
+from cli.measure_pattern import measure_list_patterns, measure_all_pattern, \
     print_last_measurement_for_pattern_list, print_last_measurement_for_all_patterns, \
     export_to_file_last_measurement_for_all_patterns, export_to_file_last_measurement_for_pattern_list
 
@@ -20,11 +27,13 @@ tools: list[Dict] = [
 ]
 
 
-def main():
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
     parser: ArgumentParser = ArgumentParser(
         prog="tpframework",
         usage="%(prog)s [OPTIONS] COMMAND",
-        description="CLI for Testability Pattern discovery and transformation",
+        description="CLI for the Testability Pattern framework",
         epilog="Run '%(prog)s COMMAND --help' for more information on a command."
     )
 
@@ -137,7 +146,7 @@ def main():
     discovery_parser_pattern_selection_mode.add_argument(
         "-p", "--patterns",
         metavar="PATTERN_ID",
-        dest="patterns_discovery",
+        dest="patterns",
         nargs="+",
         type=int,
         help="Specify pattern(s) ID(s) to discover on the target"
@@ -151,7 +160,7 @@ def main():
     )
     discovery_parser_pattern_selection_mode.add_argument(
         "-a", "--all-patterns",
-        dest="all_pattern_discovery",
+        dest="all_patterns",
         action="store_true",
         help="Run discovery for all available patterns"
     )
@@ -224,7 +233,7 @@ def main():
         help="Timeout for CPG generation"
     )
 
-    results_parser = subparser.add_parser("result", help="Print or export last measurement results for patterns")
+    results_parser = subparser.add_parser("sastresult", help="Print or export last SAST measurement results for patterns")
     results_parser_pattern_selection_mode = results_parser.add_mutually_exclusive_group(required=True)
     results_parser_export_mode = results_parser.add_mutually_exclusive_group(required=True)
     results_parser_export_mode.add_argument(
@@ -281,25 +290,81 @@ def main():
         dest="tp_lib",
         help="Path to alternative lib, default is placed in `testability_patterns`"
     )
+    # Test discovery rules
+    testdr_parser = subparser.add_parser("testdiscoveryrules", help="Test the discovery rules of the pattern instances on the pattern instances themselves")
+    testdr_parser_pattern_selection_mode = testdr_parser.add_mutually_exclusive_group(required=True)
+    testdr_parser_export_mode = testdr_parser.add_mutually_exclusive_group(required=True)
+    testdr_parser_export_mode.add_argument(
+        "--print",
+        dest="print_mode",
+        action="store_true",
+        help="Print test results"
+    )
+    testdr_parser_export_mode.add_argument(
+        "--export",
+        dest="export_mode",
+        action="store_true",
+        help="Export test results"
+    )
+    testdr_parser.add_argument(
+        "-l", "--language",
+        metavar="LANGUAGE",
+        dest="language",
+        required=True,
+        help="Programming Language used in the target source code"
+    )
+    testdr_parser_pattern_selection_mode.add_argument(
+        "-p", "--patterns",
+        metavar="PATTERN_ID",
+        dest="patterns",
+        nargs="+",
+        type=int,
+        help="Specify pattern(s) ID(s) to discover on the target"
+    )
+    testdr_parser_pattern_selection_mode.add_argument(
+        "--pattern-range",
+        metavar="RANGE_START-RANGE_END",
+        dest="pattern_range",
+        type=str,
+        help="Specify pattern ID range separated by`-` (ex. 10-50)"
+    )
+    testdr_parser_pattern_selection_mode.add_argument(
+        "-a", "--all-patterns",
+        dest="all_patterns",
+        action="store_true",
+        help="Run discovery for all available patterns"
+    )
+    testdr_parser.add_argument(
+        "--tp-lib",
+        metavar="TP_LIB_DIR",
+        dest="tp_lib",
+        help="Path to alternative lib, default is placed in `testability_patterns`"
+    )
+    testdr_parser.add_argument(
+        "-s", "--timeout",
+        metavar="NUMBER",
+        dest="timeout",
+        type=int,
+        help="Timeout for CPG generation"
+    )
 
-    args: Namespace = parser.parse_args()
+###########
+
+    args: Namespace = parser.parse_args(args)
 
     match args.command:
         case "add":
             language: str = args.language.upper()
-            if args.tp_lib:
-                add_pattern(args.pattern_dir, language, args.measure, tools, args.json_file, args.tp_lib)
-            else:
-                add_pattern(args.pattern_dir, language, args.measure, tools, args.json_file)
+            tp_lib_path: str = parse_tp_lib(args.tp_lib)
+            add_pattern(args.pattern_dir, language, args.measure, tools, args.json_file, tp_lib_path)
         case "update":
+            logger.error("Update command not implemented yet...")
             return 0
         case "measure":
             language: str = args.language.upper()
-            if not args.tp_lib:
-                tp_lib: str = str(config.DEFAULT_TP_LIBRARY_ROOT_DIR)
-            else:
-                tp_lib: str = args.tp_lib
+            tp_lib_path: str = parse_tp_lib(args.tp_lib)
 
+            pattern_id_list = parse_patterns(args.all_patterns, args.pattern_range, args.patterns, tp_lib_path, language)
             if args.all_patterns:
                 asyncio.run(measure_all_pattern(language, tools, tp_lib, int(args.workers)))
 
@@ -319,35 +384,24 @@ def main():
             manual_discovery(args.target_discovery, args.discovery_method, args.discovery_rules, language, timeout)
         case "discovery":
             language: str = args.language.upper()
-            if not args.tp_lib:
-                tp_lib: str = str(config.DEFAULT_TP_LIBRARY_ROOT_DIR)
-            else:
-                tp_lib: str = args.tp_lib
+            tp_lib_path: str = parse_tp_lib(args.tp_lib)
+            tool_parsed: list[Dict] = parse_tool_list(args.tools)
+            pattern_id_list = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
+                                             tp_lib_path,
+                                             language)
 
-            if args.tools and len(args.tools) > 0:
-                tool_parsed: list[Dict] = get_tool_list_from_args(args.tools)
-            else:
-                tool_parsed: list[Dict] = []
-
-            if args.all_pattern_discovery:
+            if args.all_patterns:
                 run_discovery_for_all_patterns(args.target_discovery, language, tool_parsed, tp_lib)
 
-            if args.patterns_discovery and len(args.patterns_discovery) > 0:
-                run_discovery_for_pattern_list(args.target_discovery, args.patterns_discovery,
+            if args.patterns and len(args.patterns) > 0:
+                run_discovery_for_pattern_list(args.target_discovery, args.patterns,
                                                language, tool_parsed, tp_lib)
         case "inspect":
             return 0
         case "result":
             language: str = args.language.upper()
-            if not args.tp_lib:
-                tp_lib: str = str(config.DEFAULT_TP_LIBRARY_ROOT_DIR)
-            else:
-                tp_lib: str = args.tp_lib
-
-            if args.tools and len(args.tools) > 0:
-                tool_parsed: list[Dict] = get_tool_list_from_args(args.tools)
-            else:
-                tool_parsed: list[Dict] = tools
+            tp_lib_path: str = parse_tp_lib(args.tp_lib)
+            tool_parsed: list[Dict] = parse_tool_list(args.tools)
 
             if args.print_mode:
                 if args.all_patterns:
@@ -373,6 +427,71 @@ def main():
 
                 if args.patterns and len(args.patterns) > 0:
                     export_to_file_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
+
+        case "testdiscoveryrules":
+            language: str = args.language.upper()
+            tp_lib_path: str = parse_tp_lib(args.tp_lib)
+            if args.print_mode:
+                if args.all_patterns:
+                    print_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
+
+                if args.pattern_range:
+                    pattern_range: str = args.pattern_range.split("-")
+                    pattern_id_list: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
+                    print_last_measurement_for_pattern_list(tool_parsed, language, pattern_id_list, tp_lib)
+
+                if args.patterns and len(args.patterns) > 0:
+                    print_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
+
+            if args.export_mode:
+                if args.all_patterns:
+                    export_to_file_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
+
+                if args.pattern_range:
+                    pattern_range: str = args.pattern_range.split("-")
+                    pattern_id_list: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
+                    export_to_file_last_measurement_for_pattern_list(
+                        tool_parsed, language, pattern_id_list, tp_lib)
+
+                if args.patterns and len(args.patterns) > 0:
+                    export_to_file_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
+
+
+def parse_tp_lib(tp_lib: str):
+    if not tp_lib:
+        tp_lib: str = str(config.DEFAULT_TP_LIBRARY_ROOT_DIR)
+    tp_lib_path: Path = Path(tp_lib).resolve()
+    if not tp_lib_path.is_dir():
+        msg = f"Specified `{tp_lib}` is not a folder or does not exists"
+        logger.error(msg)
+        print(msg, file=sys.stderr)
+        raise FileNotFoundError
+    return tp_lib_path
+
+
+def parse_tool_list(tools: list[str]):
+    if tools and len(tools) > 0:
+        return list(map(lambda t: {"name": t.split(":")[0], "version": t.split(":")[1]}, tools))
+    return []
+
+
+def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path: Path, language: str): # TODO: add missing types
+    assert sum(bool(e) for e in [all_patterns, pattern_range, patterns]) == 1 # these elements are in mutual exclusion
+    if all_patterns:
+        lang_tp_lib_path: Path = tp_lib_path / language
+        if not lang_tp_lib_path.is_dir():
+            msg = f"Specified language folder`{lang_tp_lib_path}` does not exists"
+            logger.error(msg)
+            print(msg, file=sys.stderr)
+            raise FileNotFoundError
+        id_list: list[int] = list(map(lambda d: int(d.name.split("_")[0]), list(lang_tp_lib_path.iterdir())))
+        return id_list
+    if pattern_range:
+        spattern_range: str = pattern_range.split("-")
+        pattern_id_list: list[int] = list(range(int(spattern_range[0]), int(spattern_range[1]) + 1))
+        return pattern_id_list
+    if patterns and len(patterns) > 0:
+        return patterns
 
 
 if __name__ == "__main__":
