@@ -7,12 +7,18 @@ import uuid
 from pathlib import Path
 from typing import Dict, Tuple
 
+import logging
+from core import loggermgr
+
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 import config
 from core import utils, measurement
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
     CPGLanguageNotSupported, JoernQueryError
 from core.measurement import Measurement
 
+mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 
 def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, timeout_sec: int = 0) -> Path:
     try:
@@ -54,13 +60,9 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
-            # DEBUG issue-4
-            print(run_joern_scala_query)
-            #
+            logger.info(f"Discovery - rule execution: {run_joern_scala_query}")
             findings_str: str = subprocess.check_output(run_joern_scala_query, shell=True).decode('utf-8-sig')
-            # DEBUG issue-4
-            print(findings_str)
-            #
+            logger.info(f"Discovery - rule raw output: {findings_str}")
         except subprocess.CalledProcessError as e:
             raise JoernQueryError(e)
 
@@ -73,12 +75,6 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
         if findings_dec:
             findings_dec.append(parsed_findings[-1][:-1])
             findings: list[Dict] = json.loads(''.join(findings_dec))
-            # DEBUG issue-4
-            print("cpg_file_name: {}".format(cpg_file_name))
-            print("query_name: {}".format(query_name))
-            print("findings: {}".format(findings))
-            #
-
             return cpg_file_name, query_name, findings
         else:
             return cpg_file_name, query_name, []
@@ -223,6 +219,9 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                 })
 
             for f in findings_for_rule:
+                if any(k not in f for k in mand_finding_joern_keys):
+                    logger.error(f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`")
+                    raise JoernQueryError
                 findings.append({
                     "filename": f["filename"],
                     "methodFullName": f["methodFullName"],
