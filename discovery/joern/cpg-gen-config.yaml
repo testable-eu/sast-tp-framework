@@ -6,6 +6,6 @@ cpg_gen:
     installation_dir: "./discovery/joern/js2cpg"
     command: "./js2cpg.sh $SRC_DIR --output $BINARY_OUT"
   java:
-    installation_dir: "./discovery/joern/joern/joern-cli/frontends/javasrc2cpg"
+    installation_dir: "/opt/joern/joern-cli/frontends/javasrc2cpg/bin/"
     command: "./javasrc2cpg $SRC_DIR --output $BINARY_OUT"
 
