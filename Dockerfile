@@ -42,9 +42,7 @@ RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern/joern-install.sh
 RUN ${DISCOVERY_HOME}/joern/joern/joern-install.sh
-# just try both
 RUN ln -s /opt/joern/joern-cli/joern /usr/local/bin/joern
-RUN ln -s /root/bin/joern/joern-cli/joern /usr/local/bin/joern
 
 RUN chmod +x ${DISCOVERY_HOME}/joern/querydb-php/install.sh
 RUN ${DISCOVERY_HOME}/joern/querydb-php/install.sh
