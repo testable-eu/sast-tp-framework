@@ -6,11 +6,15 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Dict, Tuple
 
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 import core.instance
+from core import errors
 from core import utils, analysis
 from core.exceptions import PatternValueError
 from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
-from core.measurement import Measurement
 from core.pattern import Pattern, get_pattern_by_pattern_id
 
 
@@ -28,7 +32,7 @@ def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_sr
             pattern_dir=pattern_lib_dest
         )
     except KeyError as e:
-        raise PatternValueError(message=f"Key {e} was not found in pattern metadata")
+        raise PatternValueError(message=errors.patternKeyError(e))
 
     pattern_instances_json_refs = pattern.instances
     pattern.instances = []
@@ -145,8 +149,8 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
     return list_job_ids
 
 
-async def save_measurement_for_pattern(language: str, pattern_id: int, now: datetime, list_job_ids: list[uuid.UUID], pattern_lib_dir: Path):
-    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, pattern_lib_dir)
+async def save_measurement_for_pattern(language: str, pattern_id: int, now: datetime, list_job_ids: list[uuid.UUID], tp_lib_dir: Path):
+    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, tp_lib_dir)
     date_time_str = now.strftime("%Y-%m-%d_%H-%M-%S")
 
     job_dict = {}
@@ -155,7 +159,7 @@ async def save_measurement_for_pattern(language: str, pattern_id: int, now: date
         job_dict[instance_id_for_job_ids] = el[1]
 
     for path in pattern_instances:
-        measurement_dir = pattern_lib_dir / "measurements" / language / path.parent.parent.name / path.parent.name
+        measurement_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / path.parent.parent.name / path.parent.name
         measurement_dir.mkdir(parents=True, exist_ok=True)
 
         instance_id = utils.get_id_from_name(path.name)

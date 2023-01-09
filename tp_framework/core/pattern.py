@@ -66,7 +66,6 @@ def get_pattern_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: Path) 
     tp_json: Path = tp_dir / f"{tp_dir.name}.json"
     with open(tp_json) as json_file:
         pattern_from_json: Dict = json.load(json_file)
-
     return pattern_from_dict(pattern_from_json, language, pattern_id), tp_dir
 
 

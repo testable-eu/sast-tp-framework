@@ -1,3 +1,5 @@
+# How to install
+
 We recommend using docker compose to install our framework, as explained hereafter.  
 
 ### 0. Requirements

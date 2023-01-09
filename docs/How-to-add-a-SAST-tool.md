@@ -1,3 +1,5 @@
+# How to add a SAST tool
+
 The framework uses the arsenal of all the SAST tools provided in the `SAST/` folder. 
 
 To add a SAST tools to your arsenal, please follows the steps listed hereafter and detailed in the chapters below:

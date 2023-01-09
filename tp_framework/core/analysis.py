@@ -4,13 +4,12 @@ from pathlib import Path
 from typing import Dict
 
 import config
+import core.utils
 from core import utils
 from core.instance import Instance
 from core.measurement import Measurement
 from core.sast import SAST
 from core.sast_job_runner import InQueue, OutQueue
-
-ROOT_SAST_DIR = Path(__file__).parent.parent.parent.resolve() / "SAST"
 
 
 async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
@@ -27,7 +26,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
         tool_name: str = tool["name"]
         tool_version: str = tool["version"]
 
-        sast_config: Dict = config.load_sast_specific_config(tool_name, tool_version)
+        sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
         sast_interface_class: str = sast_config["tool_interface"]
         sast_class = utils.get_class_from_str(sast_interface_class)
 
@@ -54,7 +53,7 @@ async def inspect_analysis_results(job_ids: list[uuid.UUID], language):
                 OutQueue().task_done()
                 OutQueue().put_nowait((job_id_res, tool_name, tool_version, instance, date, csv_res))
 
-        sast_config: Dict = config.load_sast_specific_config(tool_name, tool_version)
+        sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
         sast_interface_class: str = sast_config["tool_interface"]
         sast_class = utils.get_class_from_str(sast_interface_class)
 

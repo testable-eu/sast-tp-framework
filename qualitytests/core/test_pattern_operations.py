@@ -115,6 +115,8 @@ def setup_two_instances(p_path: Path):
 
 class TestPatternOperations:
 
+    # TODO: most of these tests need to be updated and do not work
+
     def test_add_testability_pattern_to_lib(self, tmp_path):
         language, tmp_tp_path, p1, p2, p3 = setup_three_pattern(tmp_path)
         pattern: Dict = {
@@ -326,8 +328,8 @@ class TestPatternOperations:
             Measurement(
                 date=date_time_str,
                 result=True,
-                tool="fortify",
-                version="20.2.4",
+                tool="dummyTool",
+                version="1",
                 instance=exp_instance1,
 
             )
@@ -335,9 +337,10 @@ class TestPatternOperations:
 
         mocker.patch("core.pattern_operations.analysis.analyze_pattern_instance", return_value=exp_measurements)
         sast_tools: Dict = {
-            "name": "fortify",
-            "version": "20.2.4"
+            "name": "dummyTool",
+            "version": "1"
         }
+
         await pattern_operations.start_add_measurement_for_pattern(language, [sast_tools], 2, tmp_path)
         assert list(pi1_meas.iterdir())[0].name == "measurement-{}.json".format(date_time_str_file)
 

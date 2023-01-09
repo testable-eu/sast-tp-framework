@@ -3,6 +3,7 @@ from typing import Dict
 from unittest import result
 
 import config
+import core.utils
 from core import utils
 from core.sast import SAST
 
@@ -15,7 +16,7 @@ async def scan(src_dir: Path, tools: list[Dict], language):
     
     results = []
     for tool in tools:
-        sast_config: Dict = config.load_sast_specific_config(tool["name"], tool["version"])
+        sast_config: Dict = core.utils.load_sast_specific_config(tool["name"], tool["version"])
         sast_interface_class: str = sast_config["tool_interface"]
         sast_class = utils.get_class_from_str(sast_interface_class)
 
@@ -35,7 +36,7 @@ async def scan_with_modelling_rule(src_dir: Path, tools: list[Dict], language: s
 
     results = []
     for tool in tools:
-        sast_config: Dict = config.load_sast_specific_config(tool["name"], tool["version"])
+        sast_config: Dict = core.utils.load_sast_specific_config(tool["name"], tool["version"])
         sast_interface_class: str = sast_config["tool_interface"]
         sast_class = utils.get_class_from_str(sast_interface_class)
 

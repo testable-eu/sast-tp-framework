@@ -1,3 +1,5 @@
+# How to add a Testability Pattern
+
 ## Prerequisites
 - [Testability patterns overview](./Testability-Patterns.md)
 - [Testability patterns structure/schema](./Testability-patterns-structure.md)

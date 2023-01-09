@@ -1,0 +1,16 @@
+[
+    {
+        "date": "2022-04-21 12:36:06",
+        "result": true,
+        "tool": "dummyTool",
+        "version": "1",
+        "instance": "./PHP/2_global_variables/1_instance_2_global_variables/1_instance_2_global_variables.json"
+    },
+    {
+        "date": "2022-04-21 12:36:06",
+        "result": true,
+        "tool": "dummyTool2",
+        "version": "2",
+        "instance": "./PHP/2_global_variables/1_instance_2_global_variables/1_instance_2_global_variables.json"
+    }
+]

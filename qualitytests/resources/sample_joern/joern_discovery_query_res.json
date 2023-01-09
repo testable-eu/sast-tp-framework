@@ -1,0 +1,15 @@
+[
+    {"name":"BIND_STATIC",
+     "filename": "whatever_file.php",
+     "signature":"",
+     "code":"BIND_STATIC (ref) CV($b)",
+     "typeFullName":"",
+     "order":1,
+     "methodFullName":"whatever_method",
+     "_label":"CALL",
+     "argumentIndex":-1,
+     "dynamicTypeHintFullName":[],
+     "dispatchType":"STATIC_DISPATCH",
+     "lineNumber":12,
+     "id":614891469123651767}
+]

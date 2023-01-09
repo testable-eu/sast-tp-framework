@@ -1,30 +1,21 @@
 from pathlib import Path
 import sys
 import subprocess
-from typing import Dict
-from unittest.mock import Mock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from qualitytests_utils import pyexe, join_resources_path
 from cli import main
-import config
 
 
 class TestMain:
     testdir = Path(__file__).parent.parent.resolve()
     tpf = testdir.parent / "tp_framework/cli/main.py"
 
+
     def test_cli_help_1(self):
         # process call
         cmd = pyexe + " {0} -h".format(self.tpf)
-        # DEBUG: useful in debugging mode to understand the discovery params
-        test_tp_lib_path = join_resources_path("sample_patlib")
-        test_lang = "PHP"
-        tools = "sastA:saas sastB:2.1.1"
-        cmd = pyexe + " {0} {1}".format(self.tpf, " ".join(['discovery', '--patterns', '1', '2', '3', '--tools', tools, '-l', test_lang, '--tp-lib', test_tp_lib_path]))
-        #
         pr = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (output, errdata) = pr.communicate()
         output = output.decode("utf-8")
@@ -34,78 +25,107 @@ class TestMain:
 
     def test_cli_help_2(self, tmp_path):
         sys.stdout = open(tmp_path / 'output.txt', 'w')
-        try:
+        with pytest.raises(SystemExit):
             main.main(['-h'])
-        except SystemExit:
             sys.stdout.flush()
             with open(tmp_path / 'output.txt', 'r') as ofile:
                 output = ofile.readlines()
             assert any("[OPTIONS] COMMAND" in oline for oline in output)
 
 
-    def test_cli_discovery(self, tmp_path):
+    def test_cli_discovery_1(self, tmp_path, mocker):
         test_tp_lib_path = join_resources_path("sample_patlib")
         test_lang = "PHP"
         tool1 = "sastA:saas"
         tool2 = "sastB:2.1.1"
         tp_range = "2-3"
-        sys.stdout = open(tmp_path / 'output.txt', 'w')
-        try:
-            main.main(['discovery', '--pattern-range', tp_range, '--tools', tool1, tool2, '-l', test_lang, '--tp-lib', test_tp_lib_path])
-            # TODO: to be continued with mocking the discovery functions + assert
-        except SystemExit:
-            sys.stdout.flush()
-            with open(tmp_path / 'output.txt', 'r') as ofile:
-                output = ofile.readlines()
-            assert any("[OPTIONS] COMMAND" in oline for oline in output)
+        # Mock discovery.discovery
+        mocker.patch("cli.interface.discovery", return_value=None)
+        # Test1: input parameter --target is required
+        print("Test1: input parameter `--target` is required")
+        with pytest.raises(SystemExit):
+            main.main(['discovery', '--pattern-range', tp_range, '--tools', tool1, tool2, '-l', test_lang, '--tp-lib', str(test_tp_lib_path)])
+        # Test2: valid parameters
+        print("Test2: valid parameters")
+        main.main(['discovery', '--target', str(tmp_path), '--pattern-range', tp_range, '--tools', tool1, tool2, '-l', test_lang, '--tp-lib', str(test_tp_lib_path)])
+        assert(True)
 
 
-    def test_parse_tp_lib(self, tmp_path, capsys):
-        # not specified tp_lib
-        tp_lib_path = main.parse_tp_lib(None)
-        assert tp_lib_path == Path(str(config.DEFAULT_TP_LIBRARY_ROOT_DIR)).resolve()
-        # not existing tp_lib
-        try:
-            main.parse_tp_lib("/Wh4tEver/Y0uWaNt/ThatDoesNotExist/In/YourDisk")
-            assert False
-        except FileNotFoundError:
-            pass
-        # existing temp tp_lib
-        tp_lib_path = main.parse_tp_lib(tmp_path)
-        assert tp_lib_path == Path(str(tmp_path)).resolve()
-
-
-    def test_parse_tool_list(self):
-        # empty list
-        assert [] == main.parse_tool_list([])
-        # two tools
-        tool1 = {"name": "sastA", "version" : "saas"}
-        tool2 = {"name": "sastB", "version" : "2.1.1"}
-        tools = [tool1["name"]+":"+tool1["version"],
-                 tool2["name"]+":"+tool2["version"]]
-        ptools = main.parse_tool_list(tools)
-        assert tool1 in ptools
-        assert tool2 in ptools
-        # one tool
-        ptools = main.parse_tool_list([tool1["name"]+":"+tool1["version"]])
-        assert tool1 in ptools
-
-    def test_parse_patterns(self):
-        test_tp_lib_path = Path(join_resources_path("sample_patlib"))
+    def test_cli_manual_discovery_1(self, tmp_path, mocker):
         test_lang = "PHP"
-        # one and only one mutual exclusion params: zero provided
-        try:
-            main.parse_patterns(False, "", [], test_tp_lib_path, test_lang)
-        except AssertionError:
-            pass
-        # one and only one mutual exclusion params: pattern range
-        tp_range = "2-3"
-        tp_ids = main.parse_patterns(False, tp_range, [], test_tp_lib_path, test_lang)
-        assert tp_ids == [2, 3]
-        # one and only one mutual exclusion params: pattern ids
-        itp_ids = [1,2,5,10]
-        tp_ids = main.parse_patterns(False, "", itp_ids, test_tp_lib_path, test_lang)
-        assert tp_ids == itp_ids
-        # one and only one mutual exclusion params: all
-        tp_ids = main.parse_patterns(True, "", [], test_tp_lib_path, test_lang)
-        assert tp_ids == [1,2,3]
+        r1 = str(tmp_path / "rule_1.sc")
+        r2 = str(tmp_path / "rule_2.sc")
+        r3 = str(tmp_path / "whatever/rule_3.sc")
+        # Mock manual discovery
+        mocker.patch("cli.interface.manual_discovery", return_value=None)
+        # Test1: input parameter --target is required
+        print("Test1: input parameter `--target` is required")
+        with pytest.raises(SystemExit):
+            main.main(['manual-discovery',
+                       '--rules', r1, r2, r3,
+                       '--method', 'joern', '-l', test_lang, '--output-dir', str(tmp_path)])
+        # Test2: valid parameters
+        main.main(['manual-discovery', '--target', str(tmp_path),
+                   '--rules', r1, r2, r3,
+                   '--method', 'joern', '-l', test_lang, '--output-dir', str(tmp_path)])
+        assert(True)
+
+
+    def _init_cli_measure(self, mocker):
+        self.test_lang = "PHP"
+        self.tool1 = "sastA:saas"
+        self.tool2 = "sastB:2.1.1"
+        self.tp_range = "2-3"
+        self.tp1 = "1"
+        self.tp2 = "4"
+        # Mock manual discovery
+        mocker.patch("cli.interface.measure_list_patterns", return_value=None)
+
+
+    def test_cli_measure_1(self, tmp_path, mocker):
+        self._init_cli_measure(mocker)
+        # Tests: input patterns' parameters in mutual exclusion
+        with pytest.raises(SystemExit):
+            main.main(['measure',
+                       '--pattern-range', self.tp_range, '-p', self.tp1, self.tp2,
+                       '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_measure_2(self, tmp_path, mocker):
+        self._init_cli_measure(mocker)
+        # Tests: input patterns' parameters in mutual exclusion
+        with pytest.raises(SystemExit):
+            main.main(['measure',
+                       '--pattern-range', self.tp_range, '-a',
+                       '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_measure_3(self, tmp_path, mocker):
+        self._init_cli_measure(mocker)
+        # Tests: input patterns' parameters in mutual exclusion
+        with pytest.raises(SystemExit):
+            main.main(['measure',
+                       '-p', self.tp1, self.tp2, '-a',
+                       '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_measure_4(self, tmp_path, mocker):
+        self._init_cli_measure(mocker)
+        # Tests: wrong tools input
+        with pytest.raises(SystemExit):
+            main.main(['measure',
+                       '-p', self.tp1, self.tp2,
+                       '--tools', self.tool1, 'whatever', '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_measure_5(self, tmp_path, mocker):
+        self._init_cli_measure(mocker)
+        # Test: valid params
+        main.main(['measure',
+                   '-p', self.tp1, self.tp2,
+                   '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                   '--tp-lib', str(tmp_path)])

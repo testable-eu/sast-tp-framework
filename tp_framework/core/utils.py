@@ -1,13 +1,22 @@
+import csv
 import os
 from datetime import datetime
 from platform import system
 
 from importlib import import_module
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict
+import yaml
 
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
+import config
 from core import pattern
-from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist
+from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool
+from core import errors
 
 
 def is_windows():
@@ -57,26 +66,6 @@ def get_instance_dir_name_from_pattern(name: str, pattern_id: int, instance_id: 
     return "{}_instance_{}_{}".format(instance_id, pattern_id, name.lower().replace(" ", "_"))
 
 
-# def get_all_nested_tuples_from_dict(d: Dict) -> Set:
-#     stack = list(d.items())
-#     visited = set()
-#     res = set()
-#     while stack:
-#         k, v = stack.pop()
-#         if isinstance(v, dict):
-#             if k not in visited:
-#                 stack.extend(v.items())
-#         else:
-#             if isinstance(v, list):
-#                 for el in v:
-#                     res.add((k, el))
-#             else:
-#                 res.add((k, v))
-#         visited.add(k)
-#
-#     return res
-
-
 def get_id_from_name(name: str) -> int:
     return int(name.split("_")[0])
 
@@ -90,6 +79,10 @@ def get_class_from_str(class_str: str) -> object:
         raise ImportError(class_str)
 
 
+def get_measurement_dir_for_language(tp_lib_dir: Path, language: str):
+    return Path(tp_lib_dir / config.MEASUREMENT_REL_DIR / language)
+
+
 def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:
     measurements: list[Path] = list(meas_inst_dir.iterdir())
     sorted_meas: list[Tuple[datetime, Path]] = list(sorted(
@@ -100,14 +93,17 @@ def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:
     return sorted_meas[-1][1]
 
 
-def zipdir(path, ziph):
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            ziph.write(os.path.join(root, file),
-                       os.path.relpath(os.path.join(root, file),
-                                       os.path.join(path, '..')))
+# def zipdir(path, ziph):
+#     for root, dirs, files in os.walk(path):
+#         for file in files:
+#             ziph.write(os.path.join(root, file),
+#                        os.path.relpath(os.path.join(root, file),
+#                                        os.path.join(path, '..')))
 
 
+################################################################################
+# TODO (LC): are these instance related?
+#
 def get_path_or_none(p: str) -> Path | None:
     if p is not None:
         return Path(p)
@@ -126,5 +122,109 @@ def get_relative_path_str_or_none(path) -> str | None:
         return f"./{path}"
     return None
 
+
 def get_from_dict(d, k1, k2):
     return d.get(k1, {}).get(k2, None)
+
+
+################################################################################
+# Discovery
+#
+
+def get_discovery_rule_ext(discovery_method: str):
+    try:
+        return config.DISCOVERY_RULE_MAPPING[discovery_method]
+    except Exception:
+        e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
+        logger.exception(e)
+        raise e
+
+
+def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str):
+    discovery_rules_to_run: set[Path] = set([])
+    for discovery_rule in discovery_rule_list:
+        try:
+            discovery_rule_path = Path(discovery_rule).resolve()
+        except Exception:
+            logger.warning(errors.wrongDiscoveryRule(discovery_rule) + " It is not a valid path. The script will try to continue ignoring this discovery rule.")
+        if discovery_rule_path.is_dir():
+            for p in discovery_rule_path.glob('**/*' + discovery_rule_ext):
+                discovery_rules_to_run.add(p)
+        elif str(discovery_rule_path).endswith(discovery_rule_ext) and discovery_rule_path.is_file():
+            discovery_rules_to_run.add(discovery_rule_path)
+        else:
+            logger.warning(errors.wrongDiscoveryRule(discovery_rule)+ " The script will try to continue ignoring this discovery rule.")
+    return list(discovery_rules_to_run)
+
+
+def build_timestamp_language_name(name: Path, language: str, now: datetime) -> str:
+    nowstr = now.strftime("%Y-%m-%d-%H-%M-%S")
+    return f"{nowstr}_{language}_{name}"
+
+
+################################################################################
+# Others
+#
+
+def check_tp_lib(tp_lib_path: Path):
+    if not tp_lib_path.is_dir():
+        e = TPLibDoesNotExist()
+        logger.error(e.message)
+        raise e
+
+
+def check_lang_tp_lib_path(lang_tp_lib_path: Path):
+    if not lang_tp_lib_path.is_dir():
+        e = LanguageTPLibDoesNotExist()
+        logger.error(e.message)
+        raise e
+
+
+def check_target_dir(target_dir: Path):
+    if not target_dir.is_dir():
+        e = TargetDirDoesNotExist()
+        logger.error(e.message)
+        raise e
+
+
+def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
+    for t in itools:
+        t["supported_languages"] = load_sast_specific_config(t["name"], t["version"])["supported_languages"]
+    tools = list(filter(lambda x: language in x["supported_languages"], itools))
+    if exception_raised and not tools:
+        e = InvalidSastTools()
+        logger.error(e.message)
+        raise e
+    return tools
+
+
+def load_yaml(fpath):
+    with open(fpath) as f:
+        fdict: Dict = yaml.load(f, Loader=yaml.Loader)
+    return fdict
+
+
+def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
+    try:
+        tool_config_path: Path = config.ROOT_SAST_DIR / load_yaml(config.SAST_CONFIG_FILE)["tools"][tool_name]["version"][tool_version]["config"]
+    except KeyError:
+        e = InvalidSastTool(f"{tool_name}:{tool_version}")
+        raise e
+    return load_yaml(tool_config_path)
+
+
+def write_csv_file(ofile: Path, header: list[str], data: list[dict]):
+    with open(ofile, "w") as report:
+        writer = csv.DictWriter(report, fieldnames=header)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+
+def add_logger(output_dir_path: Path, filename: str=None):
+    if not filename:
+        logfilename = config.logfile
+    else:
+        logfilename = filename
+    if (output_dir_path and output_dir_path != config.RESULT_DIR) or (filename != config.logfile):
+        loggermgr.add_logger(output_dir_path / logfilename)

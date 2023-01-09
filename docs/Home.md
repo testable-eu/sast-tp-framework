@@ -10,3 +10,6 @@ __How to__
 - [add a Testability Pattern](./How-to-add-a-Testability-Pattern.md)
 - [add a SAST tool](./How-to-add-a-SAST-tool.md)
 - [write discovery rules in Joern](./How-to-write-discovery-rules-in-Joern.md)
+
+__Others__
+- [community](./Community.md)

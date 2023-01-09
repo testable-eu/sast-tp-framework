@@ -10,8 +10,9 @@ mainLogger = logging.getLogger(config.rootLoggerName)
 # Log file formatter and handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
                               datefmt='%Y-%m-%d %H:%M:%S')
-logfile_handler = logging.FileHandler(config.logfile)
 mainLogger.setLevel(getattr(logging, config.loggingLevelFile))
+main_logfile_path = config.RESULT_DIR / config.logfile
+logfile_handler = logging.FileHandler(main_logfile_path)
 logfile_handler.setFormatter(formatter)
 
 # # Console formatter and handler

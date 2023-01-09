@@ -27,6 +27,7 @@ class Measurement:
     def define_verdict(self, date: datetime, instance: Instance, finding: Dict, tool: str, version: str) -> Measurement:
         date_time_str = date.strftime("%Y-%m-%d %H:%M:%S")
         self.date = date_time_str
+        # TODO: it should be checking for the expectation!
         if not finding:
             self.result = False
         elif instance.expectation_sink_line is not None:
@@ -80,7 +81,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
         instance_dir: Path = pattern_dir / instance_dir_name
         if not instance_dir.is_dir():
             raise InstanceDoesNotExists(instance_id)
-        measurement_dir_for_pattern_instance: Path = tp_lib_dir / "measurements" / language / pattern_dir_name / instance_dir_name
+        measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib_dir, language) / pattern_dir_name / instance_dir_name
         if not measurement_dir_for_pattern_instance.is_dir():
             raise MeasurementNotFound(pattern_id)
         meas_file_list = list(
@@ -102,3 +103,5 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
 
     except:
         raise
+
+

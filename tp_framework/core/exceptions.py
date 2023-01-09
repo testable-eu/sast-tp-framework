@@ -1,56 +1,79 @@
-class PatternDoesNotExists(Exception):
+from core import errors
 
+
+class PatternDoesNotExists(Exception):
     def __init__(self, pattern_id):
         self.pattern_id = pattern_id
-        self.message = f"Specified Pattern `{pattern_id}` does not exists"
+        self.message = errors.patternDoesNotExists(pattern_id)
         super().__init__(self.message)
 
 
 class InstanceDoesNotExists(Exception):
-
     def __init__(self, instance_id: int = None, ref_metadata: str = None):
         self.instance_id = instance_id
         self.ref_metadata = ref_metadata
-        self.message = "Pattern Instance does not exists"
-        if instance_id:
-            self.message = f"Specified Pattern Instance `{instance_id}` does not exists"
-        if ref_metadata:
-            self.message = f"Specified Pattern Instance at `{ref_metadata}` does not exists"
+        self.message = errors.instanceDoesNotExists(instance_id, ref_metadata)
         super().__init__(self.message)
 
 
 class MeasurementNotFound(Exception):
-
     def __init__(self, pattern_id):
         self.pattern_id = pattern_id
-        self.message = f"Specified measurement `{pattern_id}` does not exists or belong to a non existing pattern"
+        self.message = errors.measurementNotFound(pattern_id)
         super().__init__(self.message)
 
 
-class LanguageTPLibDoesNotExist(Exception):
-
-    def __init__(self, message="TP Library for specified does not exists"):
+class TPLibDoesNotExist(Exception):
+    def __init__(self, message=errors.tpLibDoesNotExist()):
         self.message = message
         super().__init__(self.message)
 
 
-class SastScanFailed(Exception):
+class LanguageTPLibDoesNotExist(Exception):
+    def __init__(self, message=errors.languageTPLibDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
 
+
+class TargetDirDoesNotExist(Exception):
+    def __init__(self, message=errors.targetDirDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class InvalidSastTool(Exception):
+    def __init__(self, tool, message=None):
+        if message:
+            self.message = message
+        else:
+            self.message = errors.invalidSastTool(tool)
+        super().__init__(self.message)
+
+
+class InvalidSastTools(Exception):
     def __init__(self, message=None, tool=None):
         if message:
             self.message = message
         else:
-            self.message = f"SAST Scan Failed for: {tool}"
+            self.message = errors.invalidSastTools()
+        super().__init__(self.message)
+
+
+class SastScanFailed(Exception):
+    def __init__(self, message=None, tool=None):
+        if message:
+            self.message = message
+        else:
+            self.message = errors.sastScanFailed(tool)
         super().__init__(self.message)
 
 
 class DiscoveryMethodNotSupported(Exception):
-
     def __init__(self, message=None, discovery_method=None):
         if message:
             self.message = message
         else:
-            self.message = f"Discovery method `{discovery_method}` is not supported"
+            self.message = errors.discoveryMethodNotSupported(discovery_method)
         super().__init__(self.message)
 
 
@@ -59,22 +82,19 @@ class PatternValueError(Exception):
         if message:
             self.message = message
         else:
-            self.message = f"Error during Pattern initialization"
+            self.message = errors.patternValueError()
         super().__init__(self.message)
 
 
 class CPGGenerationError(Exception):
-    def __init__(self, message="Error while generating CPG for source"):
+    def __init__(self, message=errors.cpgGenerationError()):
         self.message = message
         super().__init__(self.message)
 
 
 class CPGLanguageNotSupported(Exception):
     def __init__(self, language=None):
-        if language:
-            self.message = f"{language}is not yet supported for CPG generation"
-        else:
-            self.message = f"Language is not yet supported for CPG generation"
+        self.message = errors.cpgLanguageNotSupported(language)
         super().__init__(self.message)
 
 
@@ -83,5 +103,5 @@ class JoernQueryError(Exception):
         if stderr:
             self.message = stderr
         else:
-            self.message = "Error running Joern query"
+            self.message = errors.joernQueryError()
         super().__init__(self.message)
