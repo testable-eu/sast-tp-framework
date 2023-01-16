@@ -220,8 +220,9 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
 
             for f in findings_for_rule:
                 if any(k not in f for k in mand_finding_joern_keys):
-                    logger.error(f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`")
-                    raise JoernQueryError
+                    error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`"
+                    logger.error(error)
+                    raise JoernQueryError(error)
                 findings.append({
                     "filename": f["filename"],
                     "methodFullName": f["methodFullName"],
