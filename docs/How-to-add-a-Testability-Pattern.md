@@ -5,7 +5,7 @@
 - [Testability patterns structure/schema](./Testability-patterns-structure.md)
 
 ## Steps
-A pattern can be added to a SAST catalog either manually or via the tp-framework. The second option is recommended. 
+A pattern can be added to a SAST catalog either manually or via the tp-framework (see [here](./How-to-run-add-pattern.md)). The second option is recommended. 
 
 In both the cases the pattern needs first to be created (as explained in the Testability pattern overview, see [here](./Testability-patterns-structure.md)). The output of this creation will be a self-contained _pattern folder structure_ like the following (cf. [Testability patterns structure/schema](./Testability-patterns-structure.md)):
 ```
