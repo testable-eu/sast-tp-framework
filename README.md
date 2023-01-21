@@ -1,5 +1,5 @@
 # TP-Framework: Testability Pattern Framework for SAST
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/)[![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/)[![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/) [![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 
 TP-Framework relies on [testability patterns](https://github.com/testable-eu/sast-testability-patterns) to reduce false positive/negative rate in SAST analysis over supported programming languages. Testability patterns are code patterns that make difficult for SAST tools to detect a vulnerability.
 
@@ -55,16 +55,12 @@ tpframework -h
 
 ## Documentation
 
-Detailed documentation is available in the [docs](./docs/README.md) folder. 
-
-Also, an initial technical report submitted at NDSS 2022 is available [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
+Detailed documentation is available in the [docs](./docs/README.md) folder. Also, a related publication presented at NDSS 2022 is available [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
 
 
 ## Contributions
 
-You can contribute to this repository through bug-reports, bug-fixes, new code or new documentation. For any report, please [raise an issue](https://github.com/testable-eu/sast-tp-framework/issues/new) in the repository before submitting a PR.
-
-We welcome suggestions and feedback from the community.
+You can contribute to this repository through bug-reports, bug-fixes, new code or new documentation. For any report, please [raise an issue](https://github.com/testable-eu/sast-tp-framework/issues/new) in the repository before submitting a PR. We welcome suggestions and feedback from the community.
 
 
 ## Publications
