@@ -1,6 +1,7 @@
 # General purpose
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 __pycache__/
 .pytest_cache
 venv
