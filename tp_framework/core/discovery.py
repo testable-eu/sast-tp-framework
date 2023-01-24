@@ -23,6 +23,7 @@ mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 
 def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_dir: Path,
                  timeout_sec: int = 0) -> Path:
+    logger.info(f"Generation of CPG started for {rel_src_dir_path}")
     try:
         language_cpg_conf: Dict = utils.load_yaml(config.JOERN_CPG_GEN_CONFIG_FILE)["cpg_gen"][language.lower()]
     except KeyError as e:
@@ -65,6 +66,7 @@ def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_
         logger.exception(rs)
         raise rs
     os.chdir(config.ROOT_DIR)
+    logger.info(f"Generation of CPG completed.")
     return binary_out
 
 
@@ -179,7 +181,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               language: str,
               build_name: str,
               disc_output_dir: Path,
-              timeout_sec: int = 0):
+              timeout_sec: int = 0) -> Dict:
     logger.info("Discovery for patterns started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     tools = utils.filter_sast_tools(itools, language)
@@ -257,12 +259,14 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
     ofile = disc_output_dir / f"discovery_{build_name}.csv"
     fields = ["filename", "lineNumber", "methodFullName", "patternId", "instanceId", "patternName", "queryFile"]
     utils.write_csv_file(ofile, fields, findings)
-    logger.info("Discovery for patterns completed.")
     d_results = {
         "discovery_result_file": str(ofile),
+        "cpg_file:": str(cpg),
         "used_measured_patterns_ids": l_measured_tp_id,
-        "ignored_not_measured_patterns_ids": l_not_measured_tp_id
+        "ignored_not_measured_patterns_ids": l_not_measured_tp_id,
+        "findings": findings
     }
+    logger.info("Discovery for patterns completed.")
     return d_results
 
 
@@ -272,6 +276,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     logger.info("Execution of specific discovery rules started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     findings: list[dict] = []
+    failed = []
     for discovery_rule in discovery_rules:
         try:
             cpg_file_name, query_name, findings_for_rule = run_discovery_rule(cpg, discovery_rule, discovery_method)
@@ -307,13 +312,20 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                 "queryFile": str(discovery_rule),
                 "result": e.message
             })
+            failed.append(discovery_rule)
             continue
 
     ofile = disc_output_dir / f"manual_discovery_{build_name}.csv"
     fields = ["filename", "lineNumber", "methodFullName", "queryName", "queryFile", "result"]
     utils.write_csv_file(ofile, fields, findings)
+    d_results = {
+        "manual_discovery_result_file": str(ofile),
+        "cpg_file:": str(cpg),
+        "failed_discovery_rules": failed,
+        "findings": findings
+    }
     logger.info("Execution of specific discovery rules completed.")
-
+    return d_results
 
 def get_discovery_build_name_and_dir(src_dir: Path, language: str, output_dir: Path, manual=False):
     now = datetime.now()

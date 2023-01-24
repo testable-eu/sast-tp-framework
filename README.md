@@ -1,104 +1,87 @@
-# Testability pattern framework for SAST
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/)
+# TP-Framework: Testability Pattern Framework for SAST
+[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/) [![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 
-This framework relies on testability patterns to reduce false negative rate in SAST analysis over supported programming languages. 
+TP-Framework relies on [testability patterns](https://github.com/testable-eu/sast-testability-patterns) to reduce false positive/negative rate in SAST analysis over supported programming languages. Testability patterns are code patterns that make difficult for SAST tools to detect a vulnerability.
 
-> Testability patterns are here intended as code patterns that make difficult for SAST tools to detect a vulnerability.
-
-So far we have created a catalog of testability patterns for the following (supported) programming languages:
-- PHP (v7.4.9)
-- JavaScript (runnable over Node.js)
-
-Our framework enables operations such as:
+TP-Framework enables operations such as:
 - measurement of SAST tools against a catalog of testability patterns, and 
 - discovery of testability patterns within application source code 
 
 In the future, we aim to enable patterns' transformations from the framework to improve the testability of the application to be scanned via SAST.   
 
-An initial technical report submitted at NDSS 2022 is [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
-
-More technical info in our [docs](./docs/Home.md). 
-
-## Get started
-
-> as in the how-to-install doc
-
-We recommend using docker compose to install our framework, as explained hereafter.  
-
-### 0. Requirements
-
-#### General requirements
-- [Docker](https://docs.docker.com/get-docker/).
-- [Joern CPG for PHP](https://github.com/joernio/querydb-php): you need to have access to this private repository (authentication through SSH). If you have not, get in touch with us. 
-
-#### SAST Tools requirements 
-
-Our public framework is set to work with the SAST tools listed below.   
-
-- CodeQL v2.9.2: open source, no specific requirements. 
-
-You can contribute by [adding an interface to a new SAST tool](./docs/How-to-add-a-SAST-tool.md). If you do so, add the tool to the list here and report its requirements (if any).
-
-### 1. Cloning
-
-Clone our repository in your `<REPO>` folder and update submodules to last version with:
-```buildoutcfg
-git clone -c core.autocrlf=false --recurse-submodules git@github.com:testable-eu/sast-tp-framework.git
-git submodule update --remote
-```
-
-Note that some submodules will also be pulled, including:
-- [Joern CPG for PHP](https://github.com/joernio/querydb-php)
-- [Joern CPG for JS](https://github.com/ShiftLeftSecurity/js2cpg)
-- [Joern](https://github.com/joernio/joern)
-- [Testability Pattern Library](https://github.com/testable-eu/sast-tp-framework)
-
-### 2. Setup
-
-#### SAST Tools
-Some SAST tools may require a little setup before running. If you add a SAST tool report here those setup steps.  
-
-#### Environment variables
-Create the file `./.env` necessary for docker. This will be the concatenation of all the files you have in 
-`./.env.templates`. An example of variables that should be set is available in [`example.env`](./example.env).
-
-**Note:** even if there are no specific environment variables, you need to create an empty `./.env` file (e.g., `touch .env`). 
+**OWASP Project:** This project has a OWASP website available at: https://owasp.org/www-project-testability-patterns-for-web-applications/.
 
 
+## Quick Start
 
-   
-### 3. Docker compose: build 
-By running the following, the TP framework will be built and ready to be run 
+__Concepts__
+- [Testability pattern overview](./docs/Testability-Patterns.md) 
+- [Testability pattern structure](./docs/Testability-patterns-structure.md)
+- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/README.md)
+
+__How to__
+- [install](./docs/How-to-install.md)
+- [run (CLI)](./docs/How-to-run-CLI-Usage.md)
+- [add a Testability Pattern](./docs/How-to-add-a-Testability-Pattern.md)
+- [add a SAST tool](./docs/How-to-add-a-SAST-tool.md)
+- [write discovery rules in Joern](./docs/How-to-write-discovery-rules-in-Joern.md)
+
+## Testability Patterns
+
+So far, we have created a catalog of testability patterns for the following programming languages:
+
+- Java
+- PHP
+- JavaScript
+
+The complete list of patterns is available at [Testability Pattern Catalogs for SAST](https://github.com/testable-eu/sast-testability-patterns) repository.
+
+
+## Running
+
+After following the [installation instructions](), you can run the TP-Framework with docker:
+
 ```bash
-docker-compose up --build
+$ docker-compose up --build
+$ docker-compose run -d --name <CONTAINER_NAME> tp-framework
+$ docker exec -it <CONTAINER_NAME> bash
 ```
 
-> [NOTE] the build command may take a while, even 20 minutes
+Then, run the following command inside the docker container to see the CLI options.
 
-### 4. Docker compose: run
-By running the following, the TP-framework will be running and a shell terminal will be started:  
-```bash
-docker-compose run -d --name <CONTAINER_NAME> tp-framework
-docker exec -it <CONTAINER_NAME> bash
-```
-
-### 5. How to run - overview
-The complete documentation about how-to-run this framework is available [here](./docs/How-to-run-CLI-Usage.md). 
-
-Here we only provide a little overview of the framework and ensure that it works fine.
-
-If you followed the instruction above, the tp-framework is running via docker compose 
-- linux based environment
-- a few volumes are exposed to the host machine to enable the user to (i) access from the host machine SAST reports and other artifacts generated via the framework, (ii) add an application source code to be analysed via the framework, etc.
-
-The framework CLI can be called with the command `tpframework`
-
-You can run the following to see the help and ensure the framework is properly working and print the usage.  
 ```bash
 tpframework -h
 ```
 
-## FAQ 
+## Documentation
 
-### About:  4. Docker compose: run
-- avoid to run from git bash terminal, as the shell is not started
+Detailed documentation is available in the [docs](./docs/README.md) folder. Also, a related publication presented at NDSS 2022 is available [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
+
+
+## Contributions
+
+You can contribute to this repository through bug-reports, bug-fixes, new code or new documentation. For any report, please [raise an issue](https://github.com/testable-eu/sast-tp-framework/issues/new) in the repository before submitting a PR. We welcome suggestions and feedback from the community.
+
+
+## Publications
+
+To see the complete list publications, please visit [https://testable.eu/publications/](https://testable.eu/publications/).
+
+
+## News
+
+Follow us on Twitter on [@Testable_EU](https://twitter.com/Testable_EU) or check out TESTABLE website available at [https://testable.eu/](https://testable.eu/).
+
+
+## License
+
+This project is licensed under `GNU AFFERO GENERAL PUBLIC LICENSE V3.0`. See [LICENSE](LICENSE) for more information.
+
+## Acknowledgements
+
+This project received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No. 101019206.
+
+<p align="center">
+  <img src="https://testable.eu/img/eu_flag.png"><br>
+  Funded by the European Union
+</p>

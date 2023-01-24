@@ -74,10 +74,13 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     utils.add_logger(disc_output_dir)
     #
     utils.check_tp_lib(tp_lib_path)
-    discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name, disc_output_dir)
+    d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name, disc_output_dir)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
+    ignored = len(d_res["ignored_not_measured_patterns_ids"])
+    if ignored > 0:
+        print(f"- discovery failed for {ignored} patterns: {d_res['ignored_not_measured_patterns_ids']}")
 
 
 def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: list[str], language: str,
@@ -89,11 +92,14 @@ def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: l
     #
     discovery_rules_to_run = utils.get_discovery_rules(discovery_rule_list, utils.get_discovery_rule_ext(discovery_method))
     src_dir_path: Path = Path(src_dir).resolve()
-    discovery.manual_discovery(src_dir_path, discovery_method, discovery_rules_to_run, language,
+    d_res = discovery.manual_discovery(src_dir_path, discovery_method, discovery_rules_to_run, language,
                                                       build_name, disc_output_dir, timeout_sec=timeout_sec)
     print("Execution of specific discovery rules completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
+    failures = len(d_res["failed_discovery_rules"])
+    if failures > 0:
+        print(f"- these {failures} discovery rules failed: {d_res['failed_discovery_rules']}")
 
 
 # SAST Measurement

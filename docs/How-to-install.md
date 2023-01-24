@@ -37,7 +37,7 @@ Some SAST tools may require a little setup before running. If you add a SAST too
 
 #### Environment variables
 Create the file `./.env` necessary for docker. This will be the concatenation of all the files you have in 
-`./.env.templates`.   Even if there are no specific environment variables, you need to create an empty `./.env` 
+`./.env.templates`.  Even if there are no specific environment variables, you need to create an empty `./.env` 
 file (e.g., `touch .env`). 
    
 ### 3. Docker compose: build 

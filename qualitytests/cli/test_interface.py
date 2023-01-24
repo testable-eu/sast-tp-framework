@@ -127,14 +127,6 @@ class TestInterface:
         assert logfile and logfile.is_file()
 
 
-
-
-    # @pytest.fixture
-    # def event_loop(self):
-    #     loop = asyncio.get_event_loop()
-    #     yield loop
-    #     loop.close()
-
     @pytest.mark.asyncio
     async def test_sast_measurement(self, tmp_path, capsys, mocker):
         init = {}

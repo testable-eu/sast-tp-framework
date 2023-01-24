@@ -1,0 +1,20 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "testability_patterns/JAVA/*/*.json",
+        "testability_patterns/JS/*/*.json",
+        "testability_patterns/PHP/*/*.json"
+      ],
+      "url": "./testability_patterns/pattern_template/schema/pattern.schema.json"
+    },
+    {
+      "fileMatch": [
+        "JAVA/*/*/*_instance_*.json",
+        "JS/*/*/*_instance_*.json",
+        "PHP/*/*/*_instance_*.json"
+      ],
+      "url": "./testability_patterns/pattern_template/schema/instance.schema.json"
+    }
+  ]
+}
