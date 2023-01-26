@@ -40,7 +40,7 @@ class TestMain:
         tool2 = "sastB:2.1.1"
         tp_range = "2-3"
         # Mock discovery.discovery
-        mocker.patch("cli.interface.discovery", return_value=None)
+        mocker.patch("cli.interface.run_discovery_for_pattern_list", return_value=None)
         # Test1: input parameter --target is required
         print("Test1: input parameter `--target` is required")
         with pytest.raises(SystemExit):
@@ -71,14 +71,17 @@ class TestMain:
         assert(True)
 
 
-    def _init_cli_measure(self, mocker):
+    def _init_cli_various(self):
         self.test_lang = "PHP"
         self.tool1 = "sastA:saas"
         self.tool2 = "sastB:2.1.1"
         self.tp_range = "2-3"
         self.tp1 = "1"
         self.tp2 = "4"
-        # Mock manual discovery
+
+
+    def _init_cli_measure(self, mocker):
+        self._init_cli_various()
         mocker.patch("cli.interface.measure_list_patterns", return_value=None)
 
 
@@ -129,3 +132,67 @@ class TestMain:
                    '-p', self.tp1, self.tp2,
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
                    '--tp-lib', str(tmp_path)])
+
+
+    def _init_cli_report(self, mocker):
+        self._init_cli_various()
+        mocker.patch("cli.interface.report_sast_measurement_for_pattern_list", return_value=None)
+
+
+    def test_cli_report_1(self, tmp_path, mocker):
+        self._init_cli_report(mocker)
+        # Test: invalid params, missing (--print | --export EXPORTFILE)
+        with pytest.raises(SystemExit):
+            main.main(['sastreport',
+                       '-p', self.tp1, self.tp2,
+                       '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_report_2(self, tmp_path, mocker):
+        self._init_cli_report(mocker)
+        # Test: valid params, --print
+        main.main(['sastreport',
+                   '--print',
+                   '-p', self.tp1, self.tp2,
+                   '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                   '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_report_3(self, tmp_path, mocker):
+        self._init_cli_report(mocker)
+        # Test: invalid params, --export without filename
+        with pytest.raises(SystemExit):
+            main.main(['sastreport',
+                       '--export',
+                       '-p', self.tp1, self.tp2,
+                       '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                       '--tp-lib', str(tmp_path)])
+
+
+    def test_cli_report_4(self, tmp_path, mocker):
+        self._init_cli_report(mocker)
+        # Test: valid params, --export with filename
+        main.main(['sastreport',
+                   '--export', 'whatever.csv',
+                   '-a',
+                   '--tools', self.tool1, self.tool2, '-l', self.test_lang,
+                   '--tp-lib', str(tmp_path),
+                   '--output-dir', str(tmp_path)
+                   # '--output-dir', str(tmp_path),
+                   # '--only-last-measurement'
+                   ])
+
+
+    def test_cli_report_5(self, tmp_path, mocker):
+        self._init_cli_report(mocker)
+        # Test: valid params, no tools i.e., get all measurements
+        main.main(['sastreport',
+                   '--export', 'whatever.csv',
+                   '-a',
+                   '-l', self.test_lang,
+                   '--tp-lib', str(tmp_path),
+                   '--output-dir', str(tmp_path)
+                   # '--output-dir', str(tmp_path),
+                   # '--only-last-measurement'
+                   ])

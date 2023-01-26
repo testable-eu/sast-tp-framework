@@ -14,11 +14,17 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils, measurement
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
-    CPGLanguageNotSupported, JoernQueryError
+    CPGLanguageNotSupported, JoernQueryError, JoernQueryParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
 
 mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
+
+discovery_result_strings = {
+    "no_discovery": "NO_DISCOVERY",
+    "discovery": "DISCOVERY",
+    "error": "ERROR_DISCOVERY"
+}
 
 
 def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_dir: Path,
@@ -97,13 +103,18 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
             ee = JoernQueryError(e)
             logger.exception(ee)
             raise ee
-
-        splitted_elements = joern_output[1:-1].split(",")
-        cpg_file_name: str = splitted_elements[0]
-        query_name: str = splitted_elements[1]
-        findings_str: str = joern_output.split("," + query_name + ",")[1][:-2]
-        findings: list[Dict] = json.loads(findings_str)
-        return cpg_file_name, query_name, findings
+        # Parsing Joern results
+        try:
+            splitted_elements = joern_output[1:-1].split(",")
+            cpg_file_name: str = splitted_elements[0]
+            query_name: str = splitted_elements[1]
+            findings_str: str = joern_output.split("," + query_name + ",")[1][:-2]
+            findings: list[Dict] = json.loads(findings_str)
+            return cpg_file_name, query_name, findings
+        except Exception as e:
+            ee = JoernQueryParsingResultError(e.message)
+            logger.exception(ee)
+            raise ee
     else:
         e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
         logger.exception(e)
@@ -151,28 +162,28 @@ def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Di
                 cpg, discovery_rule,
                 pattern_meas.instance.discovery_method
             )
-
-            findings_for_pattern_refined: list[Dict] = []
-            for f in findings_for_pattern:
-                f_ref = {
-                    "filename": f["filename"],
-                    "methodFullName": f["methodFullName"],
-                    "lineNumber": f["lineNumber"],
-                    "patternId": pattern_meas.instance.pattern_id,
-                    "instanceId": [d.instance.instance_id for d in discovery_rules_to_run[discovery_rule]],
-                    "patternName": pattern_meas.instance.name,
-                    "queryFile": str(discovery_rule)
-
-                }
-
-                findings_for_pattern_refined.append(f_ref)
-
-            findings = findings + findings_for_pattern_refined
-
         except DiscoveryMethodNotSupported as e:
             print(
                 f"{pattern_meas.instance.instance_id}_instance_{pattern_meas.instance.pattern_id}_{pattern_meas.instance.name}: {e}",
                 file=sys.stderr)
+        ## JoernQueryError(e)
+        ## JoernQueryParsingResultError(e)
+        findings_for_pattern_refined: list[Dict] = []
+        for f in findings_for_pattern:
+            f_ref = {
+                "filename": f["filename"],
+                "methodFullName": f["methodFullName"],
+                "lineNumber": f["lineNumber"],
+                "patternId": pattern_meas.instance.pattern_id,
+                "instanceId": [d.instance.instance_id for d in discovery_rules_to_run[discovery_rule]],
+                "patternName": pattern_meas.instance.name,
+                "queryFile": str(discovery_rule)
+
+            }
+
+            findings_for_pattern_refined.append(f_ref)
+
+        findings = findings + findings_for_pattern_refined
 
     return findings
 
@@ -181,36 +192,43 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               language: str,
               build_name: str,
               disc_output_dir: Path,
-              timeout_sec: int = 0) -> Dict:
+              timeout_sec: int = 0,
+              ignore=False) -> Dict:
     logger.info("Discovery for patterns started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
-    tools = utils.filter_sast_tools(itools, language)
 
-    # # TODO: LC hereafter an initial idea of fixing/refactoring...to be continued...
-    # ns_tools = [t for t in itools if t not in tools]
-    # if ns_tools:
-    #     logger.warning(
-    #         f"Some of the tools do not support the {language} language: {ns_tools}. These tools will just be ignored for the discovery.")
-    # if tools:
-    #     for tp_id in l_tp_id:
-    #         d_tp_meas = utils.get_measurements_for_pattern(tp_id, tp_lib_path, language_filter=language, tools_filter=tools, only_latest=True)
-    #         if not d_tp_meas:
-    #             logger.warning(f"No measurements associated to {language} pattern id {tp_id}. Run `tpframework measure -l {language} -p {tp_id} -w 2`")
+    tools = utils.filter_sast_tools(itools, language)
+    if not tools:
+        e = InvalidSastTools()
+        logger.exception(e)
+        raise e
+    ns_tools = [t for t in itools if t not in tools]
+    if ns_tools:
+        logger.warning(
+            f"Some of the tools do not support the {language} language: {ns_tools}. These tools will just be ignored for the discovery.")
+
+    # TODO:
+    ## - LC hereafter an initial idea of fixing/refactoring...to be continued...
+    ## - the argument `ignore` can only be considered after refactoring. At the moment the code is too intertwined to do so...
+    ## - while refactoring make sure we can report in the results about each one of the discovery rule, even when no discoveries are reported
+    # for tp_id in l_tp_id:
+    #     d_tp_meas = utils.get_measurements_for_pattern(tp_id, tp_lib_path, language_filter=language, tools_filter=tools, only_latest=True)
+    #     if not d_tp_meas:
+    #         logger.warning(f"No measurements associated to {language} pattern id {tp_id}. Run `tpframework measure -l {language} -p {tp_id} -w 2`")
+    #         continue
+    #     d_tpi_id = utils.list_pattern_instances_by_pattern_id(tp_id)
+    #     for tpi_id in d_tpi_id:
+    #         if not tpi_id in d_tp_meas:
+    #             logger.warning(
+    #                 f"No measurements associated to {language} pattern id {tp_id} instance id {tpi_id}.")
     #             continue
-    #         d_tpi_id = utils.list_pattern_instances_by_pattern_id(tp_id)
-    #         for tpi_id in d_tpi_id:
-    #             if not tpi_id in d_tp_meas:
+    #         for t in tools:
+    #             if t not in d_tp_meas[tpi_id]:
     #                 logger.warning(
-    #                     f"No measurements associated to {language} pattern id {tp_id} instance id {tpi_id}.")
+    #                     f"No measurements for tool {t} associated to {language} pattern id {tp_id} instance id {tpi_id}.")
     #                 continue
-    #             for t in tools:
-    #                 if t not in d_tp_meas[tpi_id]:
-    #                     logger.warning(
-    #                         f"No measurements for tool {t} associated to {language} pattern id {tp_id} instance id {tpi_id}.")
-    #                     continue
-    #                 any( d_tp_meas[tpi_id][t][0] == for t in tools)
-    #
-    ###########
+    #             any( d_tp_meas[tpi_id][t][0] == for t in tools)
+    # ###########
 
     meas_lang_dir: Path = utils.get_measurement_dir_for_language(tp_lib_path, language)
     dirs = list(meas_lang_dir.iterdir())
@@ -261,6 +279,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
     utils.write_csv_file(ofile, fields, findings)
     d_results = {
         "discovery_result_file": str(ofile),
+        "tools": tools,
         "cpg_file:": str(cpg),
         "used_measured_patterns_ids": l_measured_tp_id,
         "ignored_not_measured_patterns_ids": l_not_measured_tp_id,
@@ -287,7 +306,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                     "lineNumber": None,
                     "queryName": query_name,
                     "queryFile": str(discovery_rule),
-                    "result": "NO_RESULT"
+                    "result": discovery_result_strings["no_discovery"]
                 })
 
             for f in findings_for_rule:
@@ -301,7 +320,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                     "lineNumber": f["lineNumber"],
                     "queryName": query_name,
                     "queryFile": str(discovery_rule),
-                    "result": None
+                    "result": discovery_result_strings["discovery"]
                 })
         except JoernQueryError as e:
             findings.append({
@@ -310,7 +329,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                 "lineNumber": None,
                 "queryName": None,
                 "queryFile": str(discovery_rule),
-                "result": e.message
+                "result": discovery_result_strings["error"] + ". " + e.message
             })
             failed.append(discovery_rule)
             continue
@@ -326,6 +345,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     }
     logger.info("Execution of specific discovery rules completed.")
     return d_results
+
 
 def get_discovery_build_name_and_dir(src_dir: Path, language: str, output_dir: Path, manual=False):
     now = datetime.now()

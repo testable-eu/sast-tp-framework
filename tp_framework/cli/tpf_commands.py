@@ -7,6 +7,8 @@ import config
 from cli import interface
 from core import utils
 
+from core.exceptions import InvalidSastTools
+from core.errors import invalidSastTools
 
 class Command(ABC):
 
@@ -48,13 +50,14 @@ class AddPattern(Command):
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
-            help="Absolute path to alternative pattern library, default resolves to `./testability_patterns`"
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
         add_pattern_parser.add_argument(
             "-m", "--measure",
             action="store_true",
+            default=False,
             dest="measure",
-            help="Measure pattern against SASTs tools"
+            help="Measure pattern against SASTs tools. (False by default)"
         )
         add_pattern_parser.add_argument(
             "--tools",
@@ -145,7 +148,7 @@ class MeasurePatterns(Command):
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
-            help="Absolute path to alternative pattern library, default resolves to `./testability_patterns`"
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
         measure_pattern_parser.add_argument(
             "-w", "--workers",
@@ -210,6 +213,13 @@ class DiscoveryPatterns(Command):
             help="List of SAST Tools (default in `config.py`) filtering on pattern discovery. Only the pattern instances not supported by at least one tool will be run for discovery."
         )
         discovery_parser.add_argument(
+            "-i", "--ignore-measurements",
+            action="store_true",
+            default=False,
+            dest="ignore",
+            help="Ignore measurement results from SAST tools and just try to discover all the specified patterns. (False by default)."
+        )
+        discovery_parser.add_argument(
             "-l", "--language",
             metavar="LANGUAGE",
             dest="language",
@@ -220,13 +230,13 @@ class DiscoveryPatterns(Command):
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
-            help="Absolute path to alternative pattern library, default resolves to `./testability_patterns`"
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
         discovery_parser.add_argument(
             "--output-dir",
             metavar="OUTPUT_DIR",
             dest="output_dir",
-            help="Absolute path to the folder where results will be stored, default resolves to `./out`"
+            help=f"Absolute path to the folder where outcomes will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
         )
 
     # overriding abstract method
@@ -240,8 +250,12 @@ class DiscoveryPatterns(Command):
         l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
                                       tp_lib_path,
                                       language)
-        interface.run_discovery_for_pattern_list(target_dir, l_pattern_id,
-                                       language, tool_parsed, tp_lib_path, output_dir=output_dir)
+        try:
+            interface.run_discovery_for_pattern_list(target_dir, l_pattern_id, language, tool_parsed, tp_lib_path,
+                                                     output_dir=output_dir, ignore=args.ignore)
+        except InvalidSastTools:
+            print(invalidSastTools())
+            exit(1)
 
 
 class ManualDiscovery(Command):
@@ -291,7 +305,7 @@ class ManualDiscovery(Command):
             "--output-dir",
             metavar="OUTPUT_DIR",
             dest="output_dir",
-            help="Absolute path to the folder where results will be stored, default resolves to `./out`"
+            help=f"Absolute path to the folder where outcomes will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
         )
 
 
@@ -308,27 +322,27 @@ class ManualDiscovery(Command):
         interface.manual_discovery(target_dir, args.discovery_method, args.discovery_rules, language, timeout, output_dir=output_dir)
 
 
-class Results(Command):
+class Report(Command):
 
     # overriding abstract method
     def add_command_subparser(self, subparser):
-        results_parser = subparser.add_parser("sastresult",
-                                              help="Print or export last SAST measurement results for patterns")
-        results_parser_pattern_selection_mode = results_parser.add_mutually_exclusive_group(required=True)
-        results_parser_export_mode = results_parser.add_mutually_exclusive_group(required=True)
-        results_parser_export_mode.add_argument(
+        report_parser = subparser.add_parser("sastreport",
+                                              help="Report about SAST measurement results for patterns")
+        report_parser_pattern_selection_mode = report_parser.add_mutually_exclusive_group(required=True)
+        report_parser_export_mode = report_parser.add_mutually_exclusive_group(required=True)
+        report_parser_export_mode.add_argument(
             "--print",
             dest="print_mode",
             action="store_true",
-            help="Print last measurement by tool and pattern"
+            help="Print measurements on stdout."
         )
-        results_parser_export_mode.add_argument(
+        report_parser_export_mode.add_argument(
             "--export",
-            dest="export_mode",
-            action="store_true",
-            help="Print last measurement by tool and pattern"
+            metavar="EXPORTFILE",
+            dest="export",
+            help="Export measurements to the specified csv file."
         )
-        results_parser.add_argument(
+        report_parser.add_argument(
             "-t", "--tools",
             metavar="TOOLS",
             dest="tools",
@@ -336,71 +350,76 @@ class Results(Command):
             type=str,
             help="List of SAST tools (default in `config.py`) for which the measurements will be reported in the results."
         )
-        results_parser.add_argument(
+        report_parser.add_argument(
             "-l", "--language",
             metavar="LANGUAGE",
             dest="language",
             required=True,
             help="Programming Language used in the target source code"
         )
-        results_parser_pattern_selection_mode.add_argument(
+        report_parser_pattern_selection_mode.add_argument(
             "-p", "--patterns",
             metavar="PATTERN_ID",
             dest="patterns",
             nargs="+",
             type=int,
-            help="Specify pattern(s) ID(s) to discover on the target"
+            help="Specify pattern(s) ID(s) to report about"
         )
-        results_parser_pattern_selection_mode.add_argument(
+        report_parser_pattern_selection_mode.add_argument(
             "--pattern-range",
             metavar="RANGE_START-RANGE_END",
             dest="pattern_range",
             type=str,
             help="Specify pattern ID range separated by`-` (ex. 10-50)"
         )
-        results_parser_pattern_selection_mode.add_argument(
+        report_parser_pattern_selection_mode.add_argument(
             "-a", "--all-patterns",
             dest="all_patterns",
             action="store_true",
-            help="Run discovery for all available patterns"
+            help="Report about all available patterns"
         )
-        results_parser.add_argument(
+        report_parser.add_argument(
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
-            help="Absolute path to alternative pattern library, default resolves to `./testability_patterns`"
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
+        report_parser.add_argument(
+            "--output-dir",
+            metavar="OUTPUT_DIR",
+            dest="output_dir",
+            help=f"Absolute path to the folder where outcomes (e.g., log file, export file if any) will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
+        )
+        # report_parser.add_argument(
+        #     "--only-last-measurement",
+        #     action="store_true",
+        #     default=True,
+        #     dest="only_last_measurement",
+        #     help="Report only about the last measurements result of each pattern instance. (True by default)"
+        # )
+
 
     # overriding abstract method
     def execute_command(self, args):
         language: str = args.language.upper()
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         tool_parsed: list[Dict] = parse_tool_list(args.tools)
+        l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
+                                      tp_lib_path,
+                                      language)
+        output_dir: str = parse_output_dir(args.output_dir)
+        only_last_measurement: bool = True # TODO: adjust when --only-last-measurement=False will be implemented
+        if args.export:
+            interface.report_sast_measurement_for_pattern_list(
+                tool_parsed, language, l_pattern_id, tp_lib_path,
+                export_file=args.export, output_dir=output_dir, only_last_measurement=only_last_measurement)
+            # interface.export_to_file_last_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib_path)
+        else:
+            interface.report_sast_measurement_for_pattern_list(
+                tool_parsed, language, l_pattern_id, tp_lib_path,
+                output_dir=output_dir, only_last_measurement=only_last_measurement)
 
-        if args.print_mode:
-            if args.all_patterns:
-                interface.print_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
 
-            if args.pattern_range:
-                pattern_range: str = args.pattern_range.split("-")
-                l_pattern_id: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
-                interface.print_last_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib)
-
-            if args.patterns and len(args.patterns) > 0:
-                interface.print_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
-
-        if args.export_mode:
-            if args.all_patterns:
-                interface.export_to_file_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
-
-            if args.pattern_range:
-                pattern_range: str = args.pattern_range.split("-")
-                l_pattern_id: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
-                interface.export_to_file_last_measurement_for_pattern_list(
-                    tool_parsed, language, l_pattern_id, tp_lib)
-
-            if args.patterns and len(args.patterns) > 0:
-                interface.export_to_file_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
 
 
 class TestDiscoveryRules(Command):
@@ -455,7 +474,7 @@ class TestDiscoveryRules(Command):
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
-            help="Absolute path to alternative pattern library, default resolves to `./testability_patterns`"
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
         testdr_parser.add_argument(
             "-s", "--timeout",
@@ -476,10 +495,10 @@ class TestDiscoveryRules(Command):
             if args.pattern_range:
                 pattern_range: str = args.pattern_range.split("-")
                 l_pattern_id: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
-                interface.print_last_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib)
+                interface.report_sast_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib)
 
             if args.patterns and len(args.patterns) > 0:
-                interface.print_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
+                interface.report_sast_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
 
         if args.export_mode:
             if args.all_patterns:
@@ -542,11 +561,11 @@ def parse_tool_list(tools: list[str]):
 
 
 def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path: Path, language: str):
-    # try:
-    #     assert sum(bool(e) for e in [all_patterns, pattern_range, patterns]) == 1 # these elements are in mutual exclusion
-    # except Exception as e:
-    #     print("The following parameters are in mutual exclusion: `--all-patterns`, `--pattern-range`, and `--patterns`")
-    #     exit(1)
+    try:
+        assert sum(bool(e) for e in [all_patterns, pattern_range, patterns]) == 1 # these elements are in mutual exclusion
+    except Exception as e:
+        print("The following parameters are in mutual exclusion: `--all-patterns`, `--pattern-range`, and `--patterns`")
+        exit(1)
     if all_patterns:
         lang_tp_lib_path: Path = tp_lib_path / language
         utils.check_lang_tp_lib_path(lang_tp_lib_path)

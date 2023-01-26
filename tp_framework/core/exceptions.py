@@ -99,9 +99,18 @@ class CPGLanguageNotSupported(Exception):
 
 
 class JoernQueryError(Exception):
-    def __init__(self, stderr):
+    def __init__(self, stderr=None):
         if stderr:
             self.message = stderr
         else:
             self.message = errors.joernQueryError()
+        super().__init__(self.message)
+
+
+class JoernQueryParsingResultError(Exception):
+    def __init__(self, stderr=None):
+        if stderr:
+            self.message = stderr
+        else:
+            self.message = errors.joernQueryParsingResultError()
         super().__init__(self.message)

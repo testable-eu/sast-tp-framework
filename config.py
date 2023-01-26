@@ -3,11 +3,16 @@ from typing import Dict
 
 import yaml
 
+# IMPORTANT: Change some of these parameters may affect the docker-compose and related Dockerfiles.
+#            Be sure you retrofit your changes there as well.
+
 ## General
-ROOT_DIR: Path = Path(__file__).parent
-RESULT_DIR: Path = ROOT_DIR / "out"
-DEFAULT_TP_LIBRARY_ROOT_DIR: Path = ROOT_DIR / "testability_patterns"
+RESULT_REL_DIR = "out"
+TP_LIB_REL_DIR = "testability_patterns"
 MEASUREMENT_REL_DIR = "measurements"
+ROOT_DIR: Path = Path(__file__).parent
+RESULT_DIR: Path = ROOT_DIR / RESULT_REL_DIR
+DEFAULT_TP_LIBRARY_ROOT_DIR: Path = ROOT_DIR / TP_LIB_REL_DIR
 WORKERS = 5
 
 ## Logging

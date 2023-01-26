@@ -67,14 +67,16 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
 # Discovery
 def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], language: str, itools: list[Dict],
                                    tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
-                                   output_dir: Path = Path(config.RESULT_DIR).resolve()):
+                                   output_dir: Path = Path(config.RESULT_DIR).resolve(),
+                                   ignore: bool = False):
     print("Discovery for patterns started...")
     # Set output directory and logger
     build_name, disc_output_dir = discovery.get_discovery_build_name_and_dir(src_dir, language, output_dir)
     utils.add_logger(disc_output_dir)
     #
     utils.check_tp_lib(tp_lib_path)
-    d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name, disc_output_dir)
+    d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
+                                disc_output_dir, ignore=ignore)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
@@ -119,52 +121,58 @@ async def measure_list_patterns(l_pattern_id: list[int], language: str,
     print(f"- log file available here: {config.RESULT_DIR / logfilename}")
 
 
-def print_last_measurement_for_all_patterns(tools: list[Dict], language: str, tp_lib_dir: str):
-    tp_lib_dir_path: Path = Path(tp_lib_dir).resolve()
-    if not tp_lib_dir_path.is_dir():
-        print(f"Specified `{tp_lib_dir}` is not a folder or does not exists", file=sys.stderr)
-        return
-
-    lang_lib_dir_path: Path = tp_lib_dir_path / language
-    if not lang_lib_dir_path.is_dir():
-        print(f"Specified language folder`{lang_lib_dir_path}` does not exists", file=sys.stderr)
-        return
-
-    id_list: list[int] = list(map(lambda d: int(d.name.split("_")[0]), list(lang_lib_dir_path.iterdir())))
-    print_last_measurement_for_pattern_list(tools, language, id_list, tp_lib_dir)
-
-
-def print_last_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int], tp_lib_dir: str):
-    tp_lib_dir_path: Path = Path(tp_lib_dir).resolve()
-    if not tp_lib_dir_path.is_dir():
-        print(f"Specified `{tp_lib_dir}` is not a folder or does not exists", file=sys.stderr)
-        return
-
+def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int],
+                                             tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
+                                             export_file: Path = None,
+                                             output_dir: Path = Path(config.RESULT_DIR).resolve(),
+                                             only_last_measurement: bool = True):
+    # TODO: add implementation for only_last_measurement=False
+    print("Reporting for SAST measurement results started...")
+    fields = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
+    if export_file:
+        output_dir.mkdir(exist_ok=True, parents=True)
+        with open(output_dir / export_file, "w") as report:
+            writer = csv.DictWriter(report, fieldnames=fields)
+            writer.writeheader()
+    else:
+        print(",".join(fields))
     for pattern_id in pattern_ids:
         instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
-            language, pattern_id, tp_lib_dir_path
+            language, pattern_id, tp_lib_path
         )
-        instance_ids: list[int] = list(map(lambda p: int(p.name.split("_")[0]), instance_dir_list_for_pattern))
+        instance_ids: list[int] = list(map(lambda p: utils.get_id_from_name(p.name), instance_dir_list_for_pattern))
+
         for instance_id in instance_ids:
-            print(f"Measurement for: Pattern {pattern_id} Instance {instance_id}")
             for tool in tools:
-                print(measurement.load_last_measurement_for_tool(tool, language, tp_lib_dir_path, pattern_id,
-                                                                 instance_id))
-
-
-def export_to_file_last_measurement_for_all_patterns(tools: list[Dict], language: str, tp_lib_dir: str):
-    tp_lib_dir_path: Path = Path(tp_lib_dir).resolve()
-    if not tp_lib_dir_path.is_dir():
-        print(f"Specified `{tp_lib_dir}` is not a folder or does not exists", file=sys.stderr)
-        return
-
-    lang_lib_dir_path: Path = tp_lib_dir_path / language
-    if not lang_lib_dir_path.is_dir():
-        print(f"Specified language folder`{lang_lib_dir_path}` does not exists", file=sys.stderr)
-        return
-
-    id_list: list[int] = list(map(lambda d: int(d.name.split("_")[0]), list(lang_lib_dir_path.iterdir())))
-    export_to_file_last_measurement_for_pattern_list(tools, language, id_list, tp_lib_dir)
+                meas: measurement.Measurement = measurement.load_last_measurement_for_tool(
+                    tool, language, tp_lib_path, pattern_id, instance_id
+                )
+                row = {
+                    "pattern_id": meas.instance.pattern_id,
+                    "instance_id": meas.instance.instance_id,
+                    "pattern_name": meas.instance.name,
+                    "language": language,
+                    "tool": f"{meas.tool}:{meas.version}",
+                    "results": "YES" if meas.result else "NO",
+                    "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
+                }
+            if export_file:
+                writer.writerow(row)
+            else:
+                print(",".join([
+                    row["pattern_id"],
+                    row["instance_id"],
+                    row["pattern_name"],
+                    row["language"],
+                    row["tool"],
+                    row["results"],
+                    row["negative_test_case"]])
+                )
+    print("Reporting for SAST measurement results completed.")
+    print(f"- outcomes available here: {output_dir}")
+    print(f"--- measured patterns ids: {d_res['measured_patterns_ids']}")
+    print(f"--- not measured patterns ids: {d_res['not_measured_patterns_ids']}")
+    print(f"- log file available here: {config.RESULT_DIR / logfilename}")
 
 
 def export_to_file_last_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int],

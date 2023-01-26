@@ -14,11 +14,11 @@ def patternJSONDecodeError():
     return f"Pattern json file could not be decoded."
 
 
-def instanceDoesNotExists(instance_id, ref_metadata):
+def instanceDoesNotExists(instance_id=None, ref_metadata=None):
     message = "Pattern Instance does not exists."
     if instance_id:
         message = f"Specified Pattern Instance `{instance_id}` does not exists."
-    if ref_metadata:
+    elif ref_metadata:
         message = f"Specified Pattern Instance at `{ref_metadata}` does not exists."
     return message
 
@@ -77,6 +77,10 @@ def cpgLanguageNotSupported(language):
 
 def joernQueryError():
     return "Error running Joern query."
+
+
+def joernQueryParsingResultError():
+    return "Error while parsing the result returned by Joern query."
 
 
 def unexpectedException(e):

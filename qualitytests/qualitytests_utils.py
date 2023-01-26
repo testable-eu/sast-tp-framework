@@ -42,7 +42,7 @@ def get_path_after_string_from_output(target: str, captured_out_lines: list[str]
     return path
 
 
-def  get_result_output_dir(captured_out_lines):
+def get_result_output_dir(captured_out_lines):
     ## assume stdout comprises "results available here: DISCOVERY_OUTPUT_DIR"
     targ1 = "results available here: "
     return get_path_after_string_from_output(targ1, captured_out_lines)
@@ -54,7 +54,7 @@ def get_logfile_path(captured_out_lines):
     return get_path_after_string_from_output(targ2, captured_out_lines)
 
 
-def init_measure_test(init, mocker):
+def init_test(init, mocker):
     init["language"] = "PHP"
     init["tools"] = [
         {"name": "dummyTool", "version": "1"},
@@ -67,9 +67,22 @@ def init_measure_test(init, mocker):
         shutil.copytree(join_resources_path("sample_patlib"), init["tp_lib_path"])
     except:
         pass
+    init["patterns"] = [1,2,3]
+
+
+def init_measure_test(init, mocker):
+    init_test(init, mocker)
     mocked_tool_interface: Dict = {
         "supported_languages": ["PHP"],
         "tool_interface": "qualitytests.core.sast_test.SastTest"
     }
-    init["patterns"] = [1,2,3]
+    mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+
+
+def init_sastreport_test(init, mocker):
+    init_test(init, mocker)
+    mocked_tool_interface: Dict = {
+        "supported_languages": ["PHP"],
+        "tool_interface": "qualitytests.core.sast_test.SastTest"
+    }
     mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)

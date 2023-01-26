@@ -5,6 +5,10 @@ import json
 from pathlib import Path
 from typing import Dict
 
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 from core import utils
 from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
 from core.instance import Instance, load_instance_from_metadata
@@ -74,34 +78,41 @@ def load_from_metadata(file: Path, language: str) -> list[Measurement]:
 
 def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, pattern_id: int,
                                    instance_id: int) -> Measurement:
-    try:
-        pattern_dir: Path = utils.get_pattern_dir_from_id(pattern_id, language, tp_lib_dir)
-        pattern_dir_name: str = pattern_dir.name
-        instance_dir_name: str = f"{instance_id}_instance_{pattern_dir_name}"
-        instance_dir: Path = pattern_dir / instance_dir_name
-        if not instance_dir.is_dir():
-            raise InstanceDoesNotExists(instance_id)
-        measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib_dir, language) / pattern_dir_name / instance_dir_name
-        if not measurement_dir_for_pattern_instance.is_dir():
-            raise MeasurementNotFound(pattern_id)
-        meas_file_list = list(
-            filter(lambda p: p.name.startswith("measurement"), measurement_dir_for_pattern_instance.iterdir()))
+    # TODO: the code hereafter strongly depends on the folder notation in place for
+    #       patterns and pattern instances. Make sure to factorize in function what needs to
+    #       and to generalize the approach as much as we can to rely the least possible on
+    #       the strict notation
+    pattern_dir: Path = utils.get_pattern_dir_from_id(pattern_id, language, tp_lib_dir)
+    pattern_dir_name: str = pattern_dir.name
+    instance_dir_name: str = f"{instance_id}_instance_{pattern_dir_name}"
+    instance_dir: Path = pattern_dir / instance_dir_name
+    if not instance_dir.is_dir():
+        ee = InstanceDoesNotExists(instance_id=instance_id)
+        logger.exception(ee)
+        raise ee
+    measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib_dir, language) / pattern_dir_name / instance_dir_name
+    if not measurement_dir_for_pattern_instance.is_dir():
+        ee = MeasurementNotFound(pattern_id)
+        logger.exception(ee)
+        raise ee
+    meas_file_list = list(
+        filter(lambda p: p.name.startswith("measurement"), measurement_dir_for_pattern_instance.iterdir()))
 
-        measurements: list[Measurement] = []
-        for meas_file in meas_file_list:
-            measurements.extend(load_from_metadata(meas_file, language))
+    measurements: list[Measurement] = []
+    for meas_file in meas_file_list:
+        measurements.extend(load_from_metadata(meas_file, language))
 
-        measurements_for_tool: list[Measurement] = list(
-            filter(lambda m:
-                   m.tool == tool["name"] and
-                   m.version.split(".")[0] == tool["version"].split(".")[0] and
-                   m.version.split(".")[1] == tool["version"].split(".")[1] and
-                   m.version.split(".")[2] == tool["version"].split(".")[2],
-                   measurements)
-        )
-        return sorted(measurements_for_tool, reverse=True)[0]
-
-    except:
-        raise
+    # TODO: this looks like requiring improvements...
+    #       - hardcoded on the "." separator??
+    #       - it seems to assume always a 3 numbers in a version???
+    measurements_for_tool: list[Measurement] = list(
+        filter(lambda m:
+               m.tool == tool["name"] and
+               m.version.split(".")[0] == tool["version"].split(".")[0] and
+               m.version.split(".")[1] == tool["version"].split(".")[1] and
+               m.version.split(".")[2] == tool["version"].split(".")[2],
+               measurements)
+    )
+    return sorted(measurements_for_tool, reverse=True)[0]
 
 

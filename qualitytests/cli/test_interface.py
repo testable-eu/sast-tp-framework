@@ -141,3 +141,21 @@ class TestInterface:
         logfile = get_logfile_path(captured_out_lines)
         assert logfile and logfile.is_file()
 
+
+    def test_sast_report_1(self, tmp_path, capsys, mocker):
+        init = {}
+        init_measure_test(init, mocker)
+        # Test 1: it does not consider the following params
+        # - export_file: Path = None,
+        # - output_dir: Path = Path(config.RESULT_DIR).resolve(),
+        # - only_last_measurement: bool = True):
+        interface.report_sast_measurement_for_pattern_list(
+            init["tools"], init["language"], init["patterns"], init["tp_lib_path"]
+        )
+        out = capsys.readouterr().out
+        captured_out_lines = out.split("\n")
+        sys.stdout.write(out)
+        output_dir = get_result_output_dir(captured_out_lines)
+        assert (output_dir and output_dir.iterdir())
+        logfile = get_logfile_path(captured_out_lines)
+        assert logfile and logfile.is_file()
