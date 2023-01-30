@@ -93,12 +93,13 @@ def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:
     return sorted_meas[-1][1]
 
 
-# def zipdir(path, ziph):
-#     for root, dirs, files in os.walk(path):
-#         for file in files:
-#             ziph.write(os.path.join(root, file),
-#                        os.path.relpath(os.path.join(root, file),
-#                                        os.path.join(path, '..')))
+# Useful for some SAST tools that accepts a zip file of the source code to scan
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
+                                       os.path.join(path, '..')))
 
 
 ################################################################################
@@ -157,9 +158,16 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
     return list(discovery_rules_to_run)
 
 
-def build_timestamp_language_name(name: Path, language: str, now: datetime) -> str:
-    nowstr = now.strftime("%Y-%m-%d-%H-%M-%S")
-    return f"{nowstr}_{language}_{name}"
+def build_timestamp_language_name(name: Path | None, language: str, now: datetime, extra: str = None) -> str:
+    res = language
+    if name:
+        res = f"{res}_{name}"
+    if extra:
+        res = f"{extra}_{res}"
+    if now:
+        nowstr = now.strftime("%Y-%m-%d-%H-%M-%S")
+        res = f"{nowstr}_{res}"
+    return res
 
 
 ################################################################################
@@ -228,3 +236,14 @@ def add_logger(output_dir_path: Path, filename: str=None):
         logfilename = filename
     if (output_dir_path and output_dir_path != config.RESULT_DIR) or (filename != config.logfile):
         loggermgr.add_logger(output_dir_path / logfilename)
+
+
+def get_operation_build_name_and_dir(op: str, src_dir: Path | None, language: str, output_dir: Path):
+    now = datetime.now()
+    if not src_dir:
+        build_name: str = build_timestamp_language_name(None, language, now)
+    else:
+        build_name: str = build_timestamp_language_name(src_dir.name, language, now)
+    op_output_dir = output_dir / f"{op}_{build_name}"
+    op_output_dir.mkdir(parents=True, exist_ok=True)
+    return build_name, op_output_dir

@@ -347,13 +347,3 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     return d_results
 
 
-def get_discovery_build_name_and_dir(src_dir: Path, language: str, output_dir: Path, manual=False):
-    now = datetime.now()
-    build_name: str = utils.build_timestamp_language_name(src_dir.name, language, now)
-    if manual:
-        op = "manual_discovery"
-    else:
-        op = "discovery"
-    disc_output_dir = output_dir / f"{op}_{build_name}"
-    disc_output_dir.mkdir(parents=True, exist_ok=True)
-    return build_name, disc_output_dir

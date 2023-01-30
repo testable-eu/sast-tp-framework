@@ -8,6 +8,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 import config
+from core import utils
 from core import discovery, instance
 from core.exceptions import MeasurementNotFound, CPGGenerationError
 from qualitytests_utils import join_resources_path, get_result_output_dir
@@ -34,7 +35,7 @@ class TestDiscovery:
         mocker.patch("core.discovery.generate_cpg", return_value=None)
         mocker.patch("core.discovery.discovery_for_tool", return_value=[])
         mocker.patch.object(config, "RESULT_DIR", tmp_path)
-        build_name, disc_output_dir = discovery.get_discovery_build_name_and_dir(samples_src_dir, language, output_dir)
+        build_name, disc_output_dir = utils.get_operation_build_name_and_dir("discovery", samples_src_dir, language, output_dir)
         d_res = discovery.discovery(samples_src_dir, [1, 2], sample_tp_lib, tools, language, build_name, disc_output_dir)
         assert d_res["used_measured_patterns_ids"] == [1,2]
         assert d_res["ignored_not_measured_patterns_ids"] == []

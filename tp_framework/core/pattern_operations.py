@@ -128,7 +128,7 @@ def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_js
 
 
 async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], pattern_id: int, now,
-                                            pattern_lib_dir: Path):
+                                            pattern_lib_dir: Path, output_dir: Path):
     pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, pattern_lib_dir)
     target_pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, pattern_lib_dir)
 
@@ -141,7 +141,7 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
         target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
 
         job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
-            target_instance, path.parent, sast_tools, language, now
+            target_instance, path.parent, sast_tools, language, now, output_dir
         )
 
         list_job_ids.append((f"{pattern_id}_{instance_id}", job_ids))

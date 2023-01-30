@@ -6,7 +6,7 @@ from core.sast import SAST
 
 
 class SastTest(SAST):
-    async def launcher(self, src_dir: Path, language: str, **kwargs) -> Path:
+    async def launcher(self, src_dir: Path, language: str, output_dir: Path, **kwargs) -> Path:
         await asyncio.sleep(0.5)
         return src_dir / f"{src_dir.name}.csv"
 

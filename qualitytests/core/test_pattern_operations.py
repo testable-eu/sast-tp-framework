@@ -341,7 +341,7 @@ class TestPatternOperations:
             "version": "1"
         }
 
-        await pattern_operations.start_add_measurement_for_pattern(language, [sast_tools], 2, tmp_path)
+        await pattern_operations.start_add_measurement_for_pattern(language, [sast_tools], 2, tmp_path, tmp_path)
         assert list(pi1_meas.iterdir())[0].name == "measurement-{}.json".format(date_time_str_file)
 
         with open(list(pi1_meas.iterdir())[0]) as meas_json:

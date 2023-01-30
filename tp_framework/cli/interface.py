@@ -71,7 +71,8 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
                                    ignore: bool = False):
     print("Discovery for patterns started...")
     # Set output directory and logger
-    build_name, disc_output_dir = discovery.get_discovery_build_name_and_dir(src_dir, language, output_dir)
+    build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
+        "discovery", src_dir, language, output_dir)
     utils.add_logger(disc_output_dir)
     #
     utils.check_tp_lib(tp_lib_path)
@@ -89,7 +90,8 @@ def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: l
                      timeout_sec: int = 0, output_dir: Path = Path(config.RESULT_DIR).resolve()):
     print("Execution of specific discovery rules started...")
     # Set output directory and logger
-    build_name, disc_output_dir = discovery.get_discovery_build_name_and_dir(src_dir, language, output_dir, manual=True)
+    build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
+        "manual_discovery", src_dir, language, output_dir)
     utils.add_logger(disc_output_dir)
     #
     discovery_rules_to_run = utils.get_discovery_rules(discovery_rule_list, utils.get_discovery_rule_ext(discovery_method))
@@ -108,17 +110,21 @@ def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: l
 async def measure_list_patterns(l_pattern_id: list[int], language: str,
                                 tools: list[Dict] = config.SAST_TOOLS_ENABLED,
                                 tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
+                                output_dir: Path = Path(config.RESULT_DIR).resolve(),
                                 workers: int = config.WORKERS):
     print("Measuring patterns with SAST started...")
-    now = datetime.now()
-    logfilename: str = utils.build_timestamp_language_name(f"measurement_{config.logfile}", language, now)
-    utils.add_logger(config.RESULT_DIR, logfilename)
-    d_res = await measure.measure_list_patterns(l_pattern_id, language, tools, tp_lib_path, workers)
+    build_name, meas_output_dir = utils.get_operation_build_name_and_dir(
+        "measurement", None, language, output_dir)
+    utils.add_logger(meas_output_dir)
+    d_res = await measure.measure_list_patterns(
+        l_pattern_id, language, tools, tp_lib_path, meas_output_dir, workers)
     print("Measuring patterns with SAST completed.")
-    print(f"- results available here: {d_res['measurement_dir']}")
+    print(f"- measurement results available here: {d_res['measurement_dir']}")
     print(f"--- measured patterns ids: {d_res['measured_patterns_ids']}")
     print(f"--- not measured patterns ids: {d_res['not_measured_patterns_ids']}")
-    print(f"- log file available here: {config.RESULT_DIR / logfilename}")
+    print(f"- SAST tool results available here: {meas_output_dir}")
+    print(f"- log file available here: {meas_output_dir / config.logfile}")
+
 
 
 def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int],

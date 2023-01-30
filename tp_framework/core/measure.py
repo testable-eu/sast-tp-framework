@@ -14,6 +14,7 @@ from core.sast_job_runner import sast_task_runner, InQueue, OutQueue
 async def measure_list_patterns(l_pattern_id: list[int], language: str,
                                 tools: list[Dict],
                                 tp_lib_path: Path,
+                                output_dir: Path,
                                 workers: int) -> Dict:
 
     utils.check_tp_lib(tp_lib_path)
@@ -27,13 +28,13 @@ async def measure_list_patterns(l_pattern_id: list[int], language: str,
     for pattern_id in l_pattern_id:
         try:
             job_list_ids = await pattern_operations.start_add_measurement_for_pattern(
-                language, ftools, pattern_id, now, tp_lib_path
+                language, ftools, pattern_id, now, tp_lib_path, output_dir
             )
             job_list_ids_all_targeted_patterns.append(job_list_ids)
             l_existing_pattern_id.append(pattern_id)
         except PatternDoesNotExists as e:
             l_notfound_pattern_id.append(pattern_id)
-            print(f"WARNING - Pattern id {pattern_id} is not found and thus it will not be measured.")
+            logger.warning(f"Pattern id {pattern_id} is not found and thus it will not be measured.")
             continue
 
     tasks: list[asyncio.Task] = []

@@ -132,7 +132,7 @@ class TestInterface:
         init = {}
         init_measure_test(init, mocker)
         await interface.measure_list_patterns(init["patterns"], init["language"], tools=init["tools"],
-                                        tp_lib_path=init["tp_lib_path"])
+                                        tp_lib_path=init["tp_lib_path"], output_dir=tmp_path, workers=2)
         out = capsys.readouterr().out
         captured_out_lines = out.split("\n")
         sys.stdout.write(out)

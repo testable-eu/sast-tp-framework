@@ -13,7 +13,8 @@ from core.sast_job_runner import InQueue, OutQueue
 
 
 async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
-                                   tools: list[Dict], language: str, date: datetime) -> list[uuid.UUID]:
+                                   tools: list[Dict], language: str,
+                                   date: datetime, output_dir: Path) -> list[uuid.UUID]:
     job_ids: list[uuid.UUID] = []
 
     # pattern instance dependencies (if any)
@@ -35,7 +36,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
         job_id = uuid.uuid4()
         job_ids.append(job_id)
         InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
-                              sast.launcher(instance_dir, language, lib_dir=lib_dir, measurement=True)))
+                              sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
 
     return job_ids
 

@@ -7,19 +7,26 @@ from typing import Dict
 import yaml
 
 from core.sast import SAST
+import config
 
-SAST_ROOT_DIR: Path = Path(__file__).parent.parent.parent.resolve()
-CODEQL_CONFIG_FILE: Path = Path(__file__).parent.resolve() / "config.yaml"
-CODEQL_BUILD_TEMPLATE: Path = Path(__file__).parent.resolve() / "resources/_template_build.sh"
+SAST_ROOT_DIR: Path = config.ROOT_SAST_DIR
+CODEQL_SCRIPT_DIR: Path = Path(__file__).parent.resolve()
+CODEQL_CONFIG_FILE: Path = CODEQL_SCRIPT_DIR / "config.yaml"
+CODEQL_BUILD_TEMPLATE: Path = CODEQL_SCRIPT_DIR / "resources/_template_build.sh"
 
 with open(CODEQL_CONFIG_FILE) as sast_config_file:
     CODEQL_CONFIG: Dict = yaml.load(sast_config_file, Loader=yaml.Loader)
 
 
 class CodeQL_v_2_9_2(SAST):
-    async def launcher(self, src_dir: Path, language: str, **kwargs) -> Path:
-        project_name: str = f"TPF_{language}_{src_dir.name}_{uuid.uuid4()}"
-        proj_dir_tmp: Path = Path(__file__).parent.resolve() / "tmp_res" / project_name
+
+
+    async def launcher(self, src_dir: Path, language: str,
+                       output_dir: Path, **kwargs) -> Path:
+        # project_name: str = f"TPF_{language}_{src_dir.name}_{uuid.uuid4()}"
+        tool = "codeql_2_9_2"
+        project_name: str = SAST.build_project_name(src_dir.name, tool, language, timestamp=True)
+        proj_dir_tmp: Path = output_dir / project_name
         proj_dir_tmp.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_dir, proj_dir_tmp / "src")
         src_root: Path = (proj_dir_tmp / "src").resolve()
@@ -58,6 +65,7 @@ class CodeQL_v_2_9_2(SAST):
 
         return proj_dir_tmp / f"{project_name}.sarif"
 
+
     def inspector(self, sast_res_file: Path, language: str) -> list[Dict]:
         with open(sast_res_file) as sarif_file:
             codeql_sarif_report: Dict = json.load(sarif_file)
@@ -80,8 +88,6 @@ class CodeQL_v_2_9_2(SAST):
                 findings.append(finding)
         return findings
 
+
     async def get_tool_version(self) -> str:
         return CODEQL_CONFIG["version"]
-
-    def logger(self) -> None:
-        pass

@@ -158,6 +158,12 @@ class MeasurePatterns(Command):
             type=int,
             help=f"Number of workers running measurements in parallel ({config.WORKERS} by default)"
         )
+        measure_pattern_parser.add_argument(
+            "--output-dir",
+            metavar="OUTPUT_DIR",
+            dest="output_dir",
+            help="Absolute path to the folder where results will be stored, default resolves to `./out`"
+        )
 
 
     # overriding abstract method
@@ -165,8 +171,11 @@ class MeasurePatterns(Command):
         language: str = args.language.upper()
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns, tp_lib_path, language)
+        output_dir: str = parse_output_dir(args.output_dir)
         tool_parsed: list[Dict] = parse_tool_list(args.tools)
-        asyncio.run(interface.measure_list_patterns(l_pattern_id, language, tools=tool_parsed, tp_lib_path=tp_lib_path, workers = int(args.workers)))
+        asyncio.run(interface.measure_list_patterns(
+            l_pattern_id, language, tools=tool_parsed, tp_lib_path=tp_lib_path,
+            output_dir=output_dir, workers = int(args.workers)))
 
 
 class DiscoveryPatterns(Command):
