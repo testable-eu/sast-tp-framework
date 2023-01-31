@@ -14,6 +14,10 @@ from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CP
     CPGLanguageNotSupported, JoernQueryError, JoernQueryParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
+from core.instance import Instance, instance_from_dict
+from core.pattern import get_pattern_by_pattern_id
+
+
 
 mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 
@@ -288,7 +292,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
 
 def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list[Path], language: str,
                      build_name: str, disc_output_dir: Path,
-                     timeout_sec: int = 0):
+                     timeout_sec: int = 0) -> Dict:
     logger.info("Execution of specific discovery rules started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     findings: list[dict] = []
@@ -343,4 +347,86 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     logger.info("Execution of specific discovery rules completed.")
     return d_results
 
+
+def get_check_discovery_rule_result_header():
+    return [
+        "pattern_id",
+        "instance_id",
+        "instance_path",
+        "pattern_name",
+        "language",
+        "discovery_rule",
+        "successful"
+    ]
+
+
+def get_check_discovery_rule_result(pattern_id, language,
+                                    instance_id=None, instance_path=None, pattern_name=None,
+                                    discovery_rule=None, successful="error") -> Dict:
+    return {
+        "pattern_id": pattern_id,
+        "instance_id": instance_id,
+        "instance_path": instance_path,
+        "pattern_name": pattern_name,
+        "language": language,
+        "discovery_rule": discovery_rule,
+        "successful": successful
+    }
+
+
+def check_discovery_rules(language: str, pattern_ids: list[int],
+                          timeout_sec: int,
+                          tp_lib_path: Path,
+                          output_dir: Path
+                          ) -> list[Dict]:
+    results = []
+    for pattern_id in pattern_ids:
+        try:
+            target_pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, tp_lib_path)
+            instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
+                language, pattern_id, tp_lib_path
+            )
+        except Exception as e:
+            logger.warning(f"Either pattern id {pattern_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {e.message}")
+            res = get_check_discovery_rule_result(pattern_id, language)
+            results.append(res)
+            continue
+        for path in instance_dir_list_for_pattern:
+            try:
+                target_src = path.parent
+                # TODO: use a function to load an instance, in general it looks to me we are going a bit back and forth from json and file system
+                with open(path) as instance_json_file:
+                    instance_json: Dict = json.load(instance_json_file)
+
+                instance_id = utils.get_id_from_name(path.name)
+                target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
+
+                if target_instance.discovery_rule:
+                    dr_path = target_src / target_instance.discovery_rule
+                    if not dr_path.is_file():
+                        logger.warning(f"Instance {instance_id} of pattern {pattern_id}: the discovery rule {dr_path} does not exist")
+                        res = get_check_discovery_rule_result(pattern_id, language, instance_id=instance_id,
+                                                              instance_path=path, discovery_rule=dr_path)
+                        results.append(res)
+                        continue
+
+                    build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
+                        "check_discovery_rules", target_src, language, output_dir)
+                    d_results = manual_discovery(target_src, target_instance.discovery_method, [dr_path], language, build_name, disc_output_dir, timeout_sec=timeout_sec)
+                    # Inspect the d_results
+                    if d_results["findings"] and any( f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
+                        res = get_check_discovery_rule_result(pattern_id, language, instance_id=instance_id,
+                                                              instance_path=path, pattern_name=target_pattern.name,
+                                                              discovery_rule=dr_path, successful="yes")
+                    else:
+                        res = get_check_discovery_rule_result(pattern_id, language, instance_id=instance_id,
+                                                              instance_path=path, pattern_name=target_pattern.name,
+                                                              discovery_rule=dr_path, successful="no")
+                    results.append(res)
+            except Exception as e:
+                logger.warning(f"Something went wrong for the instance at {path} of the pattern id {pattern_id}. Exception raised: {e.message}")
+                res = get_check_discovery_rule_result(pattern_id, language, pattern_name=target_pattern.name, instance_path=path)
+                results.append(res)
+                continue
+    return results
 

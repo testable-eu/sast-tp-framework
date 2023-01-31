@@ -19,7 +19,7 @@ def main(args=None):
     discovery_pattern_cmd = tpf_commands.DiscoveryPatterns()
     manual_discovery_cmd = tpf_commands.ManualDiscovery()
     results_cmd = tpf_commands.Report()
-    test_discovery_rules_cmd = tpf_commands.TestDiscoveryRules()
+    test_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
     # Sub-parsers
     subparser = parser.add_subparsers(title="Commands", dest="command", metavar="")
     add_pattern_cmd.add_command_subparser(subparser)

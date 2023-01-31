@@ -235,7 +235,7 @@ def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
 
 
 def write_csv_file(ofile: Path, header: list[str], data: list[dict]):
-    with open(ofile, "w") as report:
+    with open(ofile, "w", newline='') as report:
         writer = csv.DictWriter(report, fieldnames=header)
         writer.writeheader()
         for row in data:
@@ -260,3 +260,12 @@ def get_operation_build_name_and_dir(op: str, src_dir: Path | None, language: st
     op_output_dir = output_dir / f"{op}_{build_name}"
     op_output_dir.mkdir(parents=True, exist_ok=True)
     return build_name, op_output_dir
+
+
+def report_results(results, output_dir, header, export_file=None):
+    if export_file:
+        write_csv_file(output_dir / export_file, header, results)
+    else:
+        print(",".join(header))
+        for row in results:
+            print(",".join([str(row[h]) for h in header]))

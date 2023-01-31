@@ -12,7 +12,7 @@ from core.errors import measurementNotFound
 
 from qualitytests_utils import join_resources_path, create_mock_cpg, \
     get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \
-    init_sastreport_test
+    init_sastreport_test, init_test
 
 
 @pytest.mark.asyncio
@@ -152,6 +152,44 @@ class TestInterface:
         # - only_last_measurement: bool = True):
         interface.report_sast_measurement_for_pattern_list(
             init["tools"], init["language"], init["patterns"], init["tp_lib_path"]
+        )
+        out = capsys.readouterr().out
+        captured_out_lines = out.split("\n")
+        sys.stdout.write(out)
+        output_dir = get_result_output_dir(captured_out_lines)
+        assert (output_dir and output_dir.iterdir())
+        logfile = get_logfile_path(captured_out_lines)
+        assert logfile and logfile.is_file()
+
+
+    def test_sast_report_2(self, tmp_path, capsys, mocker):
+        init = {}
+        init_sastreport_test(init, mocker)
+        export_file = "test_export.csv"
+        # Test 2: it does not consider the following params
+        # - only_last_measurement: bool = True):
+        interface.report_sast_measurement_for_pattern_list(
+            init["tools"], init["language"], init["patterns"], init["tp_lib_path"],
+            export_file=export_file, output_dir=tmp_path
+        )
+        out = capsys.readouterr().out
+        captured_out_lines = out.split("\n")
+        sys.stdout.write(out)
+        output_dir = get_result_output_dir(captured_out_lines)
+        assert (output_dir and output_dir.iterdir())
+        logfile = get_logfile_path(captured_out_lines)
+        assert logfile and logfile.is_file()
+        assert (output_dir / export_file).is_file()
+
+
+    def test_check_discovery_rules_1(self, tmp_path, capsys, mocker):
+        init = {}
+        self._init_discovery_test(tmp_path, mocker)
+        init_test(init, mocker)
+        export_file = "test_export.csv"
+        interface.check_discovery_rules(
+            init["language"], init["patterns"], 0,
+            tp_lib_path=init["tp_lib_path"], export_file=export_file, output_dir=tmp_path
         )
         out = capsys.readouterr().out
         captured_out_lines = out.split("\n")

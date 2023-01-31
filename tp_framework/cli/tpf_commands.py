@@ -418,109 +418,93 @@ class Report(Command):
                                       language)
         output_dir: str = parse_output_dir(args.output_dir)
         only_last_measurement: bool = True # TODO - sastreport: adjust when --only-last-measurement=False will be implemented
-        if args.export:
-            interface.report_sast_measurement_for_pattern_list(
-                tool_parsed, language, l_pattern_id, tp_lib_path,
-                export_file=args.export, output_dir=output_dir, only_last_measurement=only_last_measurement)
-            # interface.export_to_file_last_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib_path)
-        else:
-            interface.report_sast_measurement_for_pattern_list(
-                tool_parsed, language, l_pattern_id, tp_lib_path,
-                output_dir=output_dir, only_last_measurement=only_last_measurement)
+        interface.report_sast_measurement_for_pattern_list(
+            tool_parsed, language, l_pattern_id, tp_lib_path,
+            export_file=args.export, output_dir=output_dir, only_last_measurement=only_last_measurement)
 
 
-
-
-class TestDiscoveryRules(Command):
+class CheckDiscoveryRules(Command):
 
     # overriding abstract method
     def add_command_subparser(self, subparser):
-        testdr_parser = subparser.add_parser("testdiscoveryrules",
-                                             help="Test the discovery rules of the pattern instances on the pattern instances themselves")
-        testdr_parser_pattern_selection_mode = testdr_parser.add_mutually_exclusive_group(required=True)
-        testdr_parser_export_mode = testdr_parser.add_mutually_exclusive_group(required=True)
-        testdr_parser_export_mode.add_argument(
+        checkdr_parser = subparser.add_parser("checkdiscoveryrules",
+                                             help="Check/test the discovery rules of the pattern instances on the pattern instances themselves")
+        checkdr_parser_pattern_selection_mode = checkdr_parser.add_mutually_exclusive_group(required=True)
+        checkdr_parser_export_mode = checkdr_parser.add_mutually_exclusive_group(required=True)
+        checkdr_parser_export_mode.add_argument(
             "--print",
             dest="print_mode",
             action="store_true",
-            help="Print test results"
+            help="Print measurements on stdout."
         )
-        testdr_parser_export_mode.add_argument(
+        checkdr_parser_export_mode.add_argument(
             "--export",
-            dest="export_mode",
-            action="store_true",
-            help="Export test results"
+            metavar="EXPORTFILE",
+            dest="export",
+            help="Export measurements to the specified csv file."
         )
-        testdr_parser.add_argument(
+        checkdr_parser.add_argument(
             "-l", "--language",
             metavar="LANGUAGE",
             dest="language",
             required=True,
-            help="Programming Language used in the target source code"
+            help="Programming language targeted"
         )
-        testdr_parser_pattern_selection_mode.add_argument(
+        checkdr_parser_pattern_selection_mode.add_argument(
             "-p", "--patterns",
             metavar="PATTERN_ID",
             dest="patterns",
             nargs="+",
             type=int,
-            help="Specify pattern(s) ID(s) to discover on the target"
+            help="Specify pattern(s) ID(s) to test for discovery"
         )
-        testdr_parser_pattern_selection_mode.add_argument(
+        checkdr_parser_pattern_selection_mode.add_argument(
             "--pattern-range",
             metavar="RANGE_START-RANGE_END",
             dest="pattern_range",
             type=str,
             help="Specify pattern ID range separated by`-` (ex. 10-50)"
         )
-        testdr_parser_pattern_selection_mode.add_argument(
+        checkdr_parser_pattern_selection_mode.add_argument(
             "-a", "--all-patterns",
             dest="all_patterns",
             action="store_true",
-            help="Run discovery for all available patterns"
+            help="Test discovery for all available patterns"
         )
-        testdr_parser.add_argument(
+        checkdr_parser.add_argument(
             "--tp-lib",
             metavar="TP_LIB_DIR",
             dest="tp_lib",
             help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
         )
-        testdr_parser.add_argument(
+        checkdr_parser.add_argument(
             "-s", "--timeout",
             metavar="NUMBER",
             dest="timeout",
             type=int,
             help="Timeout for CPG generation"
         )
+        checkdr_parser.add_argument(
+            "--output-dir",
+            metavar="OUTPUT_DIR",
+            dest="output_dir",
+            help=f"Absolute path to the folder where outcomes (e.g., log file, export file if any) will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
+        )
 
     # overriding abstract method
     def execute_command(self, args):
         language: str = args.language.upper()
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
-        if args.print_mode:
-            if args.all_patterns:
-                interface.print_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
-
-            if args.pattern_range:
-                pattern_range: str = args.pattern_range.split("-")
-                l_pattern_id: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
-                interface.report_sast_measurement_for_pattern_list(tool_parsed, language, l_pattern_id, tp_lib)
-
-            if args.patterns and len(args.patterns) > 0:
-                interface.report_sast_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
-
-        if args.export_mode:
-            if args.all_patterns:
-                interface.export_to_file_last_measurement_for_all_patterns(tool_parsed, language, tp_lib)
-
-            if args.pattern_range:
-                pattern_range: str = args.pattern_range.split("-")
-                l_pattern_id: list[int] = list(range(int(pattern_range[0]), int(pattern_range[1]) + 1))
-                interface.export_to_file_last_measurement_for_pattern_list(
-                    tool_parsed, language, l_pattern_id, tp_lib)
-
-            if args.patterns and len(args.patterns) > 0:
-                interface.export_to_file_last_measurement_for_pattern_list(tool_parsed, language, args.patterns, tp_lib)
+        l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
+                                      tp_lib_path,
+                                      language)
+        output_dir: str = parse_output_dir(args.output_dir)
+        timeout = 0
+        if args.timeout:
+            timeout = args.timeout
+        interface.check_discovery_rules(language, l_pattern_id, timeout,
+                                        tp_lib_path=tp_lib_path,
+                                        export_file=args.export, output_dir=output_dir)
 
 
 # class Template(Command):

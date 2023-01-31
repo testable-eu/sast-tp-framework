@@ -1,6 +1,6 @@
 import asyncio
 import csv
-from json import JSONDecodeError
+import json
 from pathlib import Path
 from typing import Dict
 
@@ -10,7 +10,6 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, pattern_operations, measurement, discovery, measure, errors
-
 from core.exceptions import PatternValueError
 
 
@@ -49,7 +48,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
     except PatternValueError as e:
         print(e)
         raise
-    except JSONDecodeError as e:
+    except json.JSONDecodeError as e:
         print(errors.patternJSONDecodeError())
         raise
     except Exception as e:
@@ -130,15 +129,9 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                                              only_last_measurement: bool = True):
     # TODO: add implementation for only_last_measurement=False
     print("Reporting for SAST measurement results started...")
+    output_dir.mkdir(exist_ok=True, parents=True)
     utils.add_logger(output_dir)
-    fields = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
-    if export_file:
-        output_dir.mkdir(exist_ok=True, parents=True)
-        with open(output_dir / export_file, "w") as report:
-            writer = csv.DictWriter(report, fieldnames=fields)
-            writer.writeheader()
-    else:
-        print(",".join(fields))
+    results = []
     for pattern_id in pattern_ids:
         instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
             language, pattern_id, tp_lib_path
@@ -159,19 +152,35 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                     "results": "YES" if meas.result else "NO",
                     "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
                 }
-            if export_file:
-                writer.writerow(row)
-            else:
-                print(",".join([
-                    str(row["pattern_id"]),
-                    str(row["instance_id"]),
-                    str(row["pattern_name"]),
-                    str(row["language"]),
-                    str(row["tool"]),
-                    str(row["results"]),
-                    str(row["negative_test_case"])])
-                )
+                results.append(row)
+    header = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
+    utils.report_results(results, output_dir, header, export_file=export_file)
     print("")
     print("Reporting for SAST measurement results completed.")
     print(f"- results available here: {output_dir}")
+    if export_file:
+        print(f"- csv file available here: {output_dir / export_file}")
+    print(f"- log file available here: {output_dir / config.logfile}")
+
+
+def check_discovery_rules(language: str, pattern_ids: list[int],
+                          timeout_sec: int,
+                          tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
+                          export_file: Path = None,
+                          output_dir: Path = Path(config.RESULT_DIR).resolve()):
+    print("Check/Test discovery rules for patterns started...")
+    utils.check_tp_lib(tp_lib_path)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    utils.add_logger(output_dir)
+    results = discovery.check_discovery_rules(language, pattern_ids,
+                          timeout_sec,
+                          tp_lib_path,
+                          output_dir)
+    header = discovery.get_check_discovery_rule_result_header()
+    utils.report_results(results, output_dir, header, export_file=export_file)
+    print("")
+    print("Check/Test discovery rules for patterns completed.")
+    print(f"- results available here: {output_dir}")
+    if export_file:
+        print(f"- csv file available here: {output_dir / export_file}")
     print(f"- log file available here: {output_dir / config.logfile}")
