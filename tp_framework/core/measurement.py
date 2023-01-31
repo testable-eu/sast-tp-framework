@@ -31,7 +31,7 @@ class Measurement:
     def define_verdict(self, date: datetime, instance: Instance, finding: Dict, tool: str, version: str) -> Measurement:
         date_time_str = date.strftime("%Y-%m-%d %H:%M:%S")
         self.date = date_time_str
-        # TODO: it should be checking for the expectation!
+        # TODO - measurement: it should be checking for the expectation!
         if not finding:
             self.result = False
         elif instance.expectation_sink_line is not None:
@@ -78,7 +78,7 @@ def load_from_metadata(file: Path, language: str) -> list[Measurement]:
 
 def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, pattern_id: int,
                                    instance_id: int) -> Measurement:
-    # TODO: the code hereafter strongly depends on the folder notation in place for
+    # TODO - load last measurement: the code hereafter strongly depends on the folder notation in place for
     #       patterns and pattern instances. Make sure to factorize in function what needs to
     #       and to generalize the approach as much as we can to rely the least possible on
     #       the strict notation
@@ -102,9 +102,6 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
     for meas_file in meas_file_list:
         measurements.extend(load_from_metadata(meas_file, language))
 
-    # TODO: this looks like requiring improvements...
-    #       - hardcoded on the "." separator??
-    #       - it seems to assume always a 3 numbers in a version???
     measurements_for_tool: list[Measurement] = list(
         filter(lambda m:
                m.tool == tool["name"] and

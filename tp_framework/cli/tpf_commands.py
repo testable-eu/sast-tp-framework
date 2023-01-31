@@ -417,7 +417,7 @@ class Report(Command):
                                       tp_lib_path,
                                       language)
         output_dir: str = parse_output_dir(args.output_dir)
-        only_last_measurement: bool = True # TODO: adjust when --only-last-measurement=False will be implemented
+        only_last_measurement: bool = True # TODO - sastreport: adjust when --only-last-measurement=False will be implemented
         if args.export:
             interface.report_sast_measurement_for_pattern_list(
                 tool_parsed, language, l_pattern_id, tp_lib_path,

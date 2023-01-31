@@ -1,8 +1,5 @@
 import asyncio
 import csv
-from datetime import datetime
-import sys
-import uuid
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Dict
@@ -18,25 +15,25 @@ from core.exceptions import PatternValueError
 
 
 # CRUD patterns
-# TODO: develop UPDATE, DELETE, READ (maybe this one we do not need)...
+# TODO - add_pattern: develop UPDATE, DELETE, READ (maybe this one we do not need)...
 ## CREATE/ADD
 def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict], pattern_json: str = None,
                 tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve()):
-    # TODO: add some printing message for the user
+    # TODO - add_pattern: add some printing message for the user
     pattern_dir_path: Path = Path(pattern_dir).resolve()
     if not pattern_dir_path.is_dir():
         print(errors.patternFolderNotFound(pattern_dir_path))
         return
 
     if not pattern_json:
-        # TODO: we could automatically find the json file
+        # TODO - add_pattern: we could automatically find the json file
         default_pattern_json = f"{pattern_dir_path.name}.json"
         pattern_json_path: Path = pattern_dir_path / default_pattern_json
         if not pattern_json_path.exists():
             print(errors.patternDefaultJSONNotFound(default_pattern_json))
             return
     else:
-        # TODO: handle for both branches the case in which the json file does not exist?
+        # TODO - add_pattern: handle for both branches the case in which the json file does not exist?
         pattern_json_path: Path = Path(pattern_json).resolve()
 
     tp_lib_path.mkdir(exist_ok=True, parents=True)

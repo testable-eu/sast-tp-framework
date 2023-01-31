@@ -26,7 +26,7 @@ class FeatureVsInternalApi(str, Enum):
 
 
 class Instance(Pattern):
-    # TODO: update to current structure 09/2022
+    # TODO - pattern instance: update to current structure 09/2022
     '''
     '''
 
@@ -158,7 +158,7 @@ class Instance(Pattern):
             json.dump(instance_dict, json_file, indent=4)
 
 
-# TODO: Test this
+# TODO (old): Test this
 def get_instance_by_instance_id(language: str, instance_id: int, pattern_id, pattern_dir: Path) -> Instance:
     instance_dir: Path = get_instance_path_from_instance_id(language, pattern_id, instance_id, pattern_dir)
     instance_json: Path = instance_dir / f"{instance_dir.name}.json"

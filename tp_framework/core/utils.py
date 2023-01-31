@@ -103,7 +103,7 @@ def zipdir(path, ziph):
 
 
 ################################################################################
-# TODO (LC): are these instance related?
+# TODO (LC): are these related to pattern instance ?
 #
 def get_path_or_none(p: str) -> Path | None:
     if p is not None:

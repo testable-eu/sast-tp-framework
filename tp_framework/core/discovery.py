@@ -118,7 +118,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
         raise e
 
 
-# TODO: refactoring needed. Even more important, we do not want to run the same discovery rule (actually, the same
+# TODO - discovery: refactoring needed. Even more important, we do not want to run the same discovery rule (actually, the same
 #  Joern rule of the discovery rule) more than once. E.g., there may be a pattern instance not supported by many tools,
 #  so discovery by tool is not the right way...
 def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Dict, language: str,
@@ -204,7 +204,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
         logger.warning(
             f"Some of the tools do not support the {language} language: {ns_tools}. These tools will just be ignored for the discovery.")
 
-    # TODO:
+    # TODO - discovery:
     ## - LC hereafter an initial idea of fixing/refactoring...to be continued...
     ## - the argument `ignore` can only be considered after refactoring. At the moment the code is too intertwined to do so...
     ## - while refactoring make sure we can report in the results about each one of the discovery rule, even when no discoveries are reported

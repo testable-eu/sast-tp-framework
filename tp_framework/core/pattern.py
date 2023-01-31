@@ -60,7 +60,7 @@ class Pattern:
             json.dump(pattern_dict, json_file, indent=4)
 
 
-# TODO: Test this
+# TODO (old): Test this
 def get_pattern_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: Path) -> Tuple[Pattern, Path]:
     tp_dir: Path = get_pattern_path_by_pattern_id(language, pattern_id, tp_lib_dir)
     tp_json: Path = tp_dir / f"{tp_dir.name}.json"
