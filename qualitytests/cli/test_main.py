@@ -196,3 +196,19 @@ class TestMain:
                    # '--output-dir', str(tmp_path),
                    # '--only-last-measurement'
                    ])
+
+
+    def _init_cli_check_discovery_rules_1(self, mocker):
+        self._init_cli_various()
+        mocker.patch("cli.interface.check_discovery_rules", return_value=None)
+
+
+    def test_cli_check_discovery_rules_1(self, tmp_path, mocker):
+        self._init_cli_check_discovery_rules_1(mocker)
+        # Test: valid params
+        main.main(['checkdiscoveryrules',
+                   '--export', 'whatever.csv',
+                   '-a',
+                   '-l', self.test_lang,
+                   '--output-dir', str(tmp_path)
+                   ])

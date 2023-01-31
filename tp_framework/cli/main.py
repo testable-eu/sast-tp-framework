@@ -19,7 +19,7 @@ def main(args=None):
     discovery_pattern_cmd = tpf_commands.DiscoveryPatterns()
     manual_discovery_cmd = tpf_commands.ManualDiscovery()
     results_cmd = tpf_commands.Report()
-    test_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
+    check_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
     # Sub-parsers
     subparser = parser.add_subparsers(title="Commands", dest="command", metavar="")
     add_pattern_cmd.add_command_subparser(subparser)
@@ -28,7 +28,7 @@ def main(args=None):
     discovery_pattern_cmd.add_command_subparser(subparser)
     manual_discovery_cmd.add_command_subparser(subparser)
     results_cmd.add_command_subparser(subparser)
-    test_discovery_rules_cmd.add_command_subparser(subparser) # TODO: in-progress, not tested
+    check_discovery_rules_cmd.add_command_subparser(subparser) # TODO: in-progress, not tested
 
     # Parsing
     args: Namespace = parser.parse_args(args)
@@ -48,8 +48,11 @@ def main(args=None):
             return 0
         case "result":
             results_cmd.execute_command(args)
-        case "testdiscoveryrules":
-            test_discovery_rules_cmd.execute_command(args)
+        case "checkdiscoveryrules":
+            check_discovery_rules_cmd.execute_command(args)
+        case other:
+            print("Command not valid...")
+            exit(1)
 
 
 if __name__ == "__main__":
