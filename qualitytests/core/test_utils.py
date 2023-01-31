@@ -139,26 +139,26 @@ class TestUtils:
         # empty
         discovery_rule_list = []
         discovery_rule_ext = ".sc"
-        assert [] == core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        assert [] == utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         # two different folders
         tp1 = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array"
         tp2 = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "2_global_variables"
         discovery_rule_list = [tp1, tp2]
-        dr_to_run = core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        dr_to_run = utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         assert len(dr_to_run) == 3
         # same folder twice
         tp1 = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array"
         tp2 = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array"
         discovery_rule_list = [tp1, tp2]
-        dr_to_run = core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        dr_to_run = utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         assert len(dr_to_run) == 2
         # one upper folder
         discovery_rule_list = [qualitytests_utils.join_resources_path("sample_patlib") / "PHP"]
-        dr_to_run = core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        dr_to_run = utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         assert len(dr_to_run) == 4
         # one discovery rule
         discovery_rule_list = [qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array" / "1_instance_3_global_array" / "1_instance_3_global_array.sc"]
-        dr_to_run = core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        dr_to_run = utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         assert len(dr_to_run) == 1
         # multiple discovery rules, some provided twice, some not existing
         discovery_rule_list = [
@@ -173,10 +173,19 @@ class TestUtils:
             qualitytests_utils.join_resources_path(
                 "sample_patlib") / "PHP" / "2_global_variables" / "1_instance_2_global_variables" / "wh@tever4ever.sc"
         ]
-        dr_to_run = core.utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
+        dr_to_run = utils.get_discovery_rules(discovery_rule_list, discovery_rule_ext)
         assert len(dr_to_run) == 3
 
 
+    def test_sast_tool_version_match(self):
+        assert utils.sast_tool_version_match("1.5.3", "1.5.3")
+        assert not utils.sast_tool_version_match("1.5.3", "1.5.2")
+        assert utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=3)
+        assert not utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=4)
+        assert not utils.sast_tool_version_match("1.5.3.4", "1.5.3", nv_max=4)
+        assert utils.sast_tool_version_match("1.5.3.4.5.6.", "1.5.3", nv_max=3)
+        
+        
     # def test_get_all_nested_tuples_from_dict(self):
     #     sample_dict: Dict = {
     #         "firstLevel": {
@@ -184,3 +193,4 @@ class TestUtils:
     #         }
     #     }
     #     assert False
+

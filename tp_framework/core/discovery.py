@@ -1,14 +1,11 @@
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Dict, Tuple
-from datetime import datetime
 
 import logging
 from core import loggermgr
-
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
@@ -163,9 +160,9 @@ def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Di
                 pattern_meas.instance.discovery_method
             )
         except DiscoveryMethodNotSupported as e:
-            print(
-                f"{pattern_meas.instance.instance_id}_instance_{pattern_meas.instance.pattern_id}_{pattern_meas.instance.name}: {e}",
-                file=sys.stderr)
+            logger.error(
+                f"Discovery rule failure for {pattern_meas.instance.instance_id}_instance_{pattern_meas.instance.pattern_id}_{pattern_meas.instance.name}: {e}")
+            continue
         ## JoernQueryError(e)
         ## JoernQueryParsingResultError(e)
         findings_for_pattern_refined: list[Dict] = []

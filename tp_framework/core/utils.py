@@ -206,6 +206,19 @@ def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     return tools
 
 
+def sast_tool_version_match(v1, v2, nv_max=3):
+    sv1 = v1.split(".")
+    sv2 = v2.split(".")
+    nv = max(len(sv1), len(sv2))
+    for i in range(0, min(nv, nv_max)):
+        try:
+            if sv1[i] != sv2[i]:
+                return False
+        except IndexError:
+            return False
+    return True
+
+
 def load_yaml(fpath):
     with open(fpath) as f:
         fdict: Dict = yaml.load(f, Loader=yaml.Loader)

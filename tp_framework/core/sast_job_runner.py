@@ -1,5 +1,9 @@
 import asyncio
 
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 
 class Singleton(type):
     _instances = {}
@@ -26,8 +30,8 @@ async def sast_task_runner(name: str, in_queue: asyncio.Queue, out_queue: asynci
                 csv_res = await task
                 out_queue.put_nowait((job_id, tool_name, tool_version, instance, date, csv_res))
             except Exception as e:
-                print(f"{name} exception {e!r}")
-                raise
+                logger.exception(f"{name} exception {e!r}")
+                raise e
             finally:
                 in_queue.task_done()
     except asyncio.CancelledError:

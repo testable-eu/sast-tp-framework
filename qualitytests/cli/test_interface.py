@@ -11,7 +11,8 @@ from cli import interface
 from core.errors import measurementNotFound
 
 from qualitytests_utils import join_resources_path, create_mock_cpg, \
-    get_result_output_dir, get_logfile_path, in_logfile, init_measure_test
+    get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \
+    init_sastreport_test
 
 
 @pytest.mark.asyncio
@@ -144,7 +145,7 @@ class TestInterface:
 
     def test_sast_report_1(self, tmp_path, capsys, mocker):
         init = {}
-        init_measure_test(init, mocker)
+        init_sastreport_test(init, mocker)
         # Test 1: it does not consider the following params
         # - export_file: Path = None,
         # - output_dir: Path = Path(config.RESULT_DIR).resolve(),

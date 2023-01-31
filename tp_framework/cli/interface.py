@@ -126,7 +126,6 @@ async def measure_list_patterns(l_pattern_id: list[int], language: str,
     print(f"- log file available here: {meas_output_dir / config.logfile}")
 
 
-
 def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int],
                                              tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
                                              export_file: Path = None,
@@ -134,6 +133,7 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                                              only_last_measurement: bool = True):
     # TODO: add implementation for only_last_measurement=False
     print("Reporting for SAST measurement results started...")
+    utils.add_logger(output_dir)
     fields = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
     if export_file:
         output_dir.mkdir(exist_ok=True, parents=True)
@@ -166,52 +166,15 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                 writer.writerow(row)
             else:
                 print(",".join([
-                    row["pattern_id"],
-                    row["instance_id"],
-                    row["pattern_name"],
-                    row["language"],
-                    row["tool"],
-                    row["results"],
-                    row["negative_test_case"]])
+                    str(row["pattern_id"]),
+                    str(row["instance_id"]),
+                    str(row["pattern_name"]),
+                    str(row["language"]),
+                    str(row["tool"]),
+                    str(row["results"]),
+                    str(row["negative_test_case"])])
                 )
+    print("")
     print("Reporting for SAST measurement results completed.")
-    print(f"- outcomes available here: {output_dir}")
-    print(f"--- measured patterns ids: {d_res['measured_patterns_ids']}")
-    print(f"--- not measured patterns ids: {d_res['not_measured_patterns_ids']}")
-    print(f"- log file available here: {config.RESULT_DIR / logfilename}")
-
-
-def export_to_file_last_measurement_for_pattern_list(tools: list[Dict], language: str, pattern_ids: list[int],
-                                                     tp_lib_dir: str):
-    tp_lib_dir_path: Path = Path(tp_lib_dir).resolve()
-    pattern_ids = sorted(pattern_ids)
-    report_name: str = f"measurement_{language}_{pattern_ids[0]}_{pattern_ids[-1]}_{str(uuid.uuid4())[:4]}.csv"
-    report_path_dir: Path = config.RESULT_DIR / "reports"
-    report_path_dir.mkdir(parents=True, exist_ok=True)
-    if not tp_lib_dir_path.is_dir():
-        print(f"Specified `{tp_lib_dir}` is not a folder or does not exists", file=sys.stderr)
-        return
-
-    report = open(report_path_dir / report_name, "w")
-    fields = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
-    writer = csv.DictWriter(report, fieldnames=fields)
-    writer.writeheader()
-    for pattern_id in pattern_ids:
-        instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
-            language, pattern_id, tp_lib_dir_path
-        )
-        instance_ids: list[int] = list(map(lambda p: int(p.name.split("_")[0]), instance_dir_list_for_pattern))
-        for instance_id in instance_ids:
-            for tool in tools:
-                meas: measurement.Measurement = measurement.load_last_measurement_for_tool(
-                    tool, language, tp_lib_dir_path, pattern_id, instance_id
-                )
-                writer.writerow({
-                    "pattern_id": meas.instance.pattern_id,
-                    "instance_id": meas.instance.instance_id,
-                    "pattern_name": meas.instance.name,
-                    "language": language,
-                    "tool": f"{meas.tool}:{meas.version}",
-                    "results": "YES" if meas.result else "NO",
-                    "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
-                })
+    print(f"- results available here: {output_dir}")
+    print(f"- log file available here: {output_dir / config.logfile}")

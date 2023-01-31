@@ -38,7 +38,7 @@ class Measurement:
             self.result = (instance.expectation_sink_line == int(finding["line"])) and (
                     instance.expectation_sink_file.name == finding["file"])
             if not self.result:
-                print(f"WARNING: Sink for pattern instance: <{instance.pattern_id}, {instance.name}, {instance.instance_id}> not matching SAST: {tool}:{version} scan findings")
+                logger.warning(f"Sink for pattern instance: <{instance.pattern_id}, {instance.name}, {instance.instance_id}> not matching SAST: {tool}:{version} scan findings")
         else:
             self.result = instance.expectation_sink_file.name == finding["file"]
 
@@ -108,9 +108,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
     measurements_for_tool: list[Measurement] = list(
         filter(lambda m:
                m.tool == tool["name"] and
-               m.version.split(".")[0] == tool["version"].split(".")[0] and
-               m.version.split(".")[1] == tool["version"].split(".")[1] and
-               m.version.split(".")[2] == tool["version"].split(".")[2],
+               utils.sast_tool_version_match(m.version, tool["version"]),
                measurements)
     )
     return sorted(measurements_for_tool, reverse=True)[0]
