@@ -113,7 +113,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
             findings: list[Dict] = json.loads(findings_str)
             return cpg_file_name, query_name, findings
         except Exception as e:
-            ee = JoernQueryParsingResultError(e.message)
+            ee = JoernQueryParsingResultError(utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
     else:
@@ -255,7 +255,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
             l_measured_tp_id.append(p_id)
         except KeyError:
             e = MeasurementNotFound(p_id)
-            logger.warning(f"{e.message} The discovery process tries to continue for the other patterns (if any)...")
+            logger.warning(f"{utils.get_exception_message(e)} The discovery process tries to continue for the other patterns (if any)...")
             l_not_measured_tp_id.append(p_id)
             continue
         meas_inst_path_list = list(p_path.iterdir())
@@ -330,7 +330,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                 "lineNumber": None,
                 "queryName": None,
                 "queryFile": str(discovery_rule),
-                "result": discovery_result_strings["error"] + ". " + e.message
+                "result": discovery_result_strings["error"] + ". " + utils.get_exception_message(e)
             })
             failed.append(discovery_rule)
             continue
@@ -389,7 +389,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                 language, pattern_id, tp_lib_path
             )
         except Exception as e:
-            logger.warning(f"Either pattern id {pattern_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {e.message}")
+            logger.warning(f"Either pattern id {pattern_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
             res = get_check_discovery_rule_result(pattern_id, language)
             results.append(res)
             continue
@@ -430,7 +430,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                 logger.info(
                     f"{i+1}/{len(pattern_ids)} - {j+1}/{len(l_instance_dir)} pattern id {pattern_id}, instance id {instance_id}: done")
             except Exception as e:
-                logger.warning(f"Something went wrong for the instance at {path} of the pattern id {pattern_id}. Exception raised: {e.message}")
+                logger.warning(f"Something went wrong for the instance at {path} of the pattern id {pattern_id}. Exception raised: {utils.get_exception_message(e)}")
                 res = get_check_discovery_rule_result(pattern_id, language, pattern_name=target_pattern.name, instance_path=path)
                 results.append(res)
                 continue

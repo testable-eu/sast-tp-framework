@@ -177,21 +177,21 @@ def build_timestamp_language_name(name: Path | None, language: str, now: datetim
 def check_tp_lib(tp_lib_path: Path):
     if not tp_lib_path.is_dir():
         e = TPLibDoesNotExist()
-        logger.error(e.message)
+        logger.error(get_exception_message(e))
         raise e
 
 
 def check_lang_tp_lib_path(lang_tp_lib_path: Path):
     if not lang_tp_lib_path.is_dir():
         e = LanguageTPLibDoesNotExist()
-        logger.error(e.message)
+        logger.error(get_exception_message(e))
         raise e
 
 
 def check_target_dir(target_dir: Path):
     if not target_dir.is_dir():
         e = TargetDirDoesNotExist()
-        logger.error(e.message)
+        logger.error(get_exception_message(e))
         raise e
 
 
@@ -201,7 +201,7 @@ def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     tools = list(filter(lambda x: language in x["supported_languages"], itools))
     if exception_raised and not tools:
         e = InvalidSastTools()
-        logger.error(e.message)
+        logger.error(get_exception_message(e))
         raise e
     return tools
 
@@ -272,3 +272,10 @@ def report_results(results, output_dir, header, export_file=None):
         print(",".join(header))
         for row in results:
             print(",".join([str(row[h]) for h in header]))
+
+
+def get_exception_message(e):
+    if hasattr(e, 'message'):
+        return e.message
+    else:
+        return e
