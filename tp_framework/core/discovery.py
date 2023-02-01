@@ -379,11 +379,13 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                           tp_lib_path: Path,
                           output_dir: Path
                           ) -> list[Dict]:
+    logger.info(f"Check/Test discovery rules for {len(pattern_ids)} patterns started...")
     results = []
-    for pattern_id in pattern_ids:
+    for i, pattern_id in enumerate(pattern_ids):
+        logger.info(f"{i+1}/{len(pattern_ids)} - pattern id {pattern_id}: started...")
         try:
             target_pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, tp_lib_path)
-            instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
+            l_instance_dir: list[Path] = utils.list_pattern_instances_by_pattern_id(
                 language, pattern_id, tp_lib_path
             )
         except Exception as e:
@@ -391,7 +393,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
             res = get_check_discovery_rule_result(pattern_id, language)
             results.append(res)
             continue
-        for path in instance_dir_list_for_pattern:
+        for j, path in enumerate(l_instance_dir):
             try:
                 target_src = path.parent
                 # TODO: use a function to load an instance, in general it looks to me we are going a bit back and forth from json and file system
@@ -399,6 +401,8 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                     instance_json: Dict = json.load(instance_json_file)
 
                 instance_id = utils.get_id_from_name(path.name)
+                logger.info(
+                    f"{i+1}/{len(pattern_ids)} - {j+1}/{len(l_instance_dir)} pattern id {pattern_id}, instance id {instance_id}: started...")
                 target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
 
                 if target_instance.discovery_rule:
@@ -423,10 +427,13 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                                                               instance_path=path, pattern_name=target_pattern.name,
                                                               discovery_rule=dr_path, successful="no")
                     results.append(res)
+                logger.info(
+                    f"{i+1}/{len(pattern_ids)} - {j+1}/{len(l_instance_dir)} pattern id {pattern_id}, instance id {instance_id}: done")
             except Exception as e:
                 logger.warning(f"Something went wrong for the instance at {path} of the pattern id {pattern_id}. Exception raised: {e.message}")
                 res = get_check_discovery_rule_result(pattern_id, language, pattern_name=target_pattern.name, instance_path=path)
                 results.append(res)
                 continue
+        logger.info(f"{i+1}/{len(pattern_ids)} - pattern id {pattern_id}: done.")
     return results
 

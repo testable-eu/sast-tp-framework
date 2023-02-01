@@ -19,6 +19,7 @@ WORKERS = 5
 logfile = 'tpframework.log'
 rootLoggerName = "tpframework"
 loggingLevelFile = 'DEBUG'
+loggingLevelConsole = 'INFO'
 
 ## SAST
 ROOT_SAST_DIR: Path = ROOT_DIR / "SAST"

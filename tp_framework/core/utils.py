@@ -242,13 +242,16 @@ def write_csv_file(ofile: Path, header: list[str], data: list[dict]):
             writer.writerow(row)
 
 
-def add_logger(output_dir_path: Path, filename: str=None):
+def add_loggers(output_dir_path: Path, filename: str=None, console=True):
     if not filename:
         logfilename = config.logfile
     else:
         logfilename = filename
-    if (output_dir_path and output_dir_path != config.RESULT_DIR) or (filename != config.logfile):
+    if (output_dir_path and output_dir_path != config.RESULT_DIR) or (logfilename != config.logfile):
         loggermgr.add_logger(output_dir_path / logfilename)
+    if console:
+        loggermgr.add_console_logger()
+
 
 
 def get_operation_build_name_and_dir(op: str, src_dir: Path | None, language: str, output_dir: Path):

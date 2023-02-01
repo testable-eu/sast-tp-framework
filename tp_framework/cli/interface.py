@@ -1,5 +1,4 @@
 import asyncio
-import csv
 import json
 from pathlib import Path
 from typing import Dict
@@ -69,7 +68,7 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     # Set output directory and logger
     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
         "discovery", src_dir, language, output_dir)
-    utils.add_logger(disc_output_dir)
+    utils.add_loggers(disc_output_dir)
     #
     utils.check_tp_lib(tp_lib_path)
     d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
@@ -88,7 +87,7 @@ def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: l
     # Set output directory and logger
     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
         "manual_discovery", src_dir, language, output_dir)
-    utils.add_logger(disc_output_dir)
+    utils.add_loggers(disc_output_dir)
     #
     discovery_rules_to_run = utils.get_discovery_rules(discovery_rule_list, utils.get_discovery_rule_ext(discovery_method))
     src_dir_path: Path = Path(src_dir).resolve()
@@ -111,7 +110,7 @@ async def measure_list_patterns(l_pattern_id: list[int], language: str,
     print("Measuring patterns with SAST started...")
     build_name, meas_output_dir = utils.get_operation_build_name_and_dir(
         "measurement", None, language, output_dir)
-    utils.add_logger(meas_output_dir)
+    utils.add_loggers(meas_output_dir)
     d_res = await measure.measure_list_patterns(
         l_pattern_id, language, tools, tp_lib_path, meas_output_dir, workers)
     print("Measuring patterns with SAST completed.")
@@ -130,7 +129,7 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
     # TODO: add implementation for only_last_measurement=False
     print("Reporting for SAST measurement results started...")
     output_dir.mkdir(exist_ok=True, parents=True)
-    utils.add_logger(output_dir)
+    utils.add_loggers(output_dir)
     results = []
     for pattern_id in pattern_ids:
         instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
@@ -171,7 +170,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     print("Check/Test discovery rules for patterns started...")
     utils.check_tp_lib(tp_lib_path)
     output_dir.mkdir(exist_ok=True, parents=True)
-    utils.add_logger(output_dir)
+    utils.add_loggers(output_dir)
     results = discovery.check_discovery_rules(language, pattern_ids,
                           timeout_sec,
                           tp_lib_path,
