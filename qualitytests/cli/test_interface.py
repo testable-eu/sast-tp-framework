@@ -9,7 +9,7 @@ pytest_plugins = ('pytest_asyncio',)
 
 from cli import interface
 from core.errors import measurementNotFound
-from core.exceptions import JoernQueryParsingResultError
+from core.exceptions import DiscoveryRuleParsingResultError
 
 from qualitytests_utils import join_resources_path, create_mock_cpg, \
     get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \

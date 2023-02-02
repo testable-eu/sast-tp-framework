@@ -11,7 +11,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils, measurement
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
-    CPGLanguageNotSupported, JoernQueryError, JoernQueryParsingResultError, InvalidSastTools
+    CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
 from core.instance import Instance, instance_from_dict
@@ -98,7 +98,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
-            logger.info(f"Discovery - rule execution: {run_joern_scala_query}")
+            logger.info(f"Discovery - rule execution started: {run_joern_scala_query}")
             raw_joern_output = run_discovery_rule_cmd(run_joern_scala_query)
             if isinstance(raw_joern_output, bytes):
                 joern_output: str = raw_joern_output.decode('utf-8-sig')
@@ -106,7 +106,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
                 joern_output: str = raw_joern_output
             logger.info(f"Discovery - rule raw output: {joern_output}")
         except subprocess.CalledProcessError as e:
-            ee = JoernQueryError("Failed in either executing the discovery rule or fetching its raw output" + utils.get_exception_message(e))
+            ee = DiscoveryRuleError("Failed in either executing the discovery rule or fetching its raw output" + utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
         # Parsing Joern results
@@ -116,9 +116,10 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
             query_name: str = splitted_elements[1]
             findings_str: str = joern_output.split("," + query_name + ",")[1][:-2]
             findings: list[Dict] = json.loads(findings_str)
+            logger.info(f"Discovery - rule execution done and raw output parsed.")
             return cpg_file_name, query_name, findings
         except Exception as e:
-            ee = JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e))
+            ee = DiscoveryRuleParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
     else:
@@ -306,21 +307,27 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     for discovery_rule in discovery_rules:
         try:
             cpg_file_name, query_name, findings_for_rule = run_discovery_rule(cpg, discovery_rule, discovery_method)
-            if len(findings_for_rule) == 0:
-                findings.append({
-                    "filename": None,
-                    "methodFullName": None,
-                    "lineNumber": None,
-                    "queryName": query_name,
-                    "queryFile": str(discovery_rule),
-                    "result": discovery_result_strings["no_discovery"]
-                })
+            try:
+                if len(findings_for_rule) == 0:
+                    findings.append({
+                        "filename": None,
+                        "methodFullName": None,
+                        "lineNumber": None,
+                        "queryName": query_name,
+                        "queryFile": str(discovery_rule),
+                        "result": discovery_result_strings["no_discovery"]
+                    })
+            except Exception as e:
+                ee = DiscoveryRuleParsingResultError(
+                    f"Failed in parsing the findings from the discovery rule. Exception raised: {utils.get_exception_message(e)}")
+                logger.exception(ee)
+                raise ee
 
             for f in findings_for_rule:
                 if any(k not in f for k in mand_finding_joern_keys):
                     error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`"
                     logger.error(error)
-                    raise JoernQueryError(error)
+                    raise DiscoveryRuleError(error)
                 findings.append({
                     "filename": f["filename"],
                     "methodFullName": f["methodFullName"],
@@ -329,7 +336,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                     "queryFile": str(discovery_rule),
                     "result": discovery_result_strings["discovery"]
                 })
-        except JoernQueryError as e:
+        except Exception as e:
             findings.append({
                 "filename": None,
                 "methodFullName": None,

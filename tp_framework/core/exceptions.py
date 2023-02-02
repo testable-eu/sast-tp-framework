@@ -98,19 +98,19 @@ class CPGLanguageNotSupported(Exception):
         super().__init__(self.message)
 
 
-class JoernQueryError(Exception):
+class DiscoveryRuleError(Exception):
     def __init__(self, stderr=None):
         if stderr:
             self.message = stderr
         else:
-            self.message = errors.joernQueryError()
+            self.message = errors.discoveryRuleError()
         super().__init__(self.message)
 
 
-class JoernQueryParsingResultError(Exception):
+class DiscoveryRuleParsingResultError(Exception):
     def __init__(self, stderr=None):
         if stderr:
             self.message = stderr
         else:
-            self.message = errors.joernQueryParsingResultError()
+            self.message = errors.discoveryRuleParsingResultError()
         super().__init__(self.message)

@@ -75,11 +75,11 @@ def cpgLanguageNotSupported(language):
     return f"Language `{language}` is not supported for CPG generation."
 
 
-def joernQueryError():
+def discoveryRuleError():
     return "Error running Joern query."
 
 
-def joernQueryParsingResultError():
+def discoveryRuleParsingResultError():
     return "Error while parsing the result returned by Joern query."
 
 
