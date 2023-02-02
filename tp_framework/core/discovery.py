@@ -30,7 +30,7 @@ discovery_result_strings = {
 
 def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_dir: Path,
                  timeout_sec: int = 0) -> Path:
-    logger.info(f"Generation of CPG started for {rel_src_dir_path}")
+    logger.info(f"Generation of CPG for {rel_src_dir_path}: started...")
     try:
         language_cpg_conf: Dict = utils.load_yaml(config.JOERN_CPG_GEN_CONFIG_FILE)["cpg_gen"][language.lower()]
     except KeyError as e:
@@ -73,7 +73,7 @@ def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_
         logger.exception(rs)
         raise rs
     os.chdir(config.ROOT_DIR)
-    logger.info(f"Generation of CPG completed.")
+    logger.info(f"Generation of CPG for {rel_src_dir_path}: done.")
     return binary_out
 
 
@@ -101,7 +101,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
                 joern_output: str = raw_joern_output
             logger.info(f"Discovery - rule raw output: {joern_output}")
         except subprocess.CalledProcessError as e:
-            ee = JoernQueryError(e)
+            ee = JoernQueryError("Failed in either executing the discovery rule or fetching its raw output" + utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
         # Parsing Joern results
@@ -113,13 +113,14 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
             findings: list[Dict] = json.loads(findings_str)
             return cpg_file_name, query_name, findings
         except Exception as e:
-            ee = JoernQueryParsingResultError(utils.get_exception_message(e))
+            ee = JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. "+ utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
     else:
         e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
         logger.exception(e)
         raise e
+
 
 
 # TODO - discovery: refactoring needed. Even more important, we do not want to run the same discovery rule (actually, the same

@@ -216,3 +216,26 @@ class TestInterface:
         assert (output_dir and output_dir.iterdir())
         logfile = get_logfile_path(captured_out_lines)
         assert logfile and logfile.is_file()
+
+
+    def test_check_discovery_rules_3(self, tmp_path, capsys, mocker):
+        init = {}
+        self._init_discovery_test(tmp_path, mocker)
+        init_test(init, mocker)
+        # overwrite few testing variables
+        init["patterns"] = [32,37]
+        init["tp_lib_path"] = join_resources_path("sample_patlib_issue9")
+        #
+        export_file = "test_export.csv"
+        interface.check_discovery_rules(
+            init["language"], init["patterns"], 0,
+            tp_lib_path=init["tp_lib_path"], export_file=export_file, output_dir=tmp_path
+        )
+        out = capsys.readouterr().out
+        captured_out_lines = out.split("\n")
+        sys.stdout.write(out)
+        output_dir = get_result_output_dir(captured_out_lines)
+        assert (output_dir and output_dir.iterdir())
+        logfile = get_logfile_path(captured_out_lines)
+        assert logfile and logfile.is_file()
+
