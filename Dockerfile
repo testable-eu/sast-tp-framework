@@ -18,6 +18,8 @@ RUN apt-get install maven -y
 # discovery, joern: js2cpg
 RUN apt-get install nodejs -y
 RUN apt-get install npm -y
+# sudo required to correctly set up symlinks with joern-install.sh
+RUN apt-get install sudo -y
 
 ARG TPF_HOME="/tp-framework"
 ARG SAST_DIR="${TPF_HOME}/SAST"
@@ -41,9 +43,9 @@ RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern/joern-install.sh
-RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/joern/ && ./joern-install.sh'
-RUN ln -s /opt/joern/joern-cli/joern /usr/local/bin/joern
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/joern/ && ./joern-install.sh --version=v1.1.1269 --install-dir=/opt/joern'
 
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/querydb-php/ && ln -s /opt/joern/ -T joern-inst'
 RUN chmod +x ${DISCOVERY_HOME}/joern/querydb-php/install.sh
 RUN ${DISCOVERY_HOME}/joern/querydb-php/install.sh
 
