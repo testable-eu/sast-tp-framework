@@ -171,15 +171,19 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     utils.check_tp_lib(tp_lib_path)
     output_dir.mkdir(exist_ok=True, parents=True)
     utils.add_loggers(output_dir)
-    results = discovery.check_discovery_rules(language, pattern_ids,
+    d_res = discovery.check_discovery_rules(language, pattern_ids,
                           timeout_sec,
                           tp_lib_path,
                           output_dir)
+    results = d_res["results"]
     header = discovery.get_check_discovery_rule_result_header()
     utils.report_results(results, output_dir, header, export_file=export_file)
     print("")
     print("Check/Test discovery rules for patterns completed.")
     print(f"- results available here: {output_dir}")
+    print(f"  - num successful (discovery rule was run): {d_res['counters']['successful']}")
+    print(f"  - num unsuccessful (discovery rule was run): {d_res['counters']['unsuccessful']}")
+    print(f"  - num errors: {d_res['counters']['errors']}")
     if export_file:
         print(f"- csv file available here: {output_dir / export_file}")
     print(f"- log file available here: {output_dir / config.logfile}")

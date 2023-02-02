@@ -279,3 +279,21 @@ def get_exception_message(e):
         return e.message
     else:
         return e
+
+
+def get_tp_op_status_string(t_tp_info, status="started...", op=None):
+    return get_tpi_op_status_string(t_tp_info, t_tpi_info=None, status=status, op=op)
+
+
+def get_tpi_op_status_string(t_tp_info, t_tpi_info=None, status="started...", op=None):
+    i, tot, tp_id = t_tp_info
+    tpi_id_str = ""
+    tpi_count_str = ""
+    if t_tpi_info:
+        j, tpi_tot, tpi_id = t_tpi_info
+        tpi_count_str = f" {j}/{tpi_tot} -"
+        tpi_id_str = f", instance id {tpi_id}"
+    op_str = ""
+    if op:
+        op_str = f"{op} - "
+    return f"{i}/{tot} -{tpi_count_str} {op_str}pattern id {tp_id}{tpi_id_str}: {status}"
