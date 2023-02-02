@@ -89,12 +89,17 @@ def run_generate_cpg_cmd(gen_cpg_with_params_cmd: str):
     return output
 
 
+def run_discovery_rule_cmd(run_joern_scala_query: str):
+    output = subprocess.check_output(run_joern_scala_query, shell=True)
+    return output
+
+
 def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -> Tuple[str, str, list[Dict]]:
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
             logger.info(f"Discovery - rule execution: {run_joern_scala_query}")
-            raw_joern_output = subprocess.check_output(run_joern_scala_query, shell=True)
+            raw_joern_output = run_discovery_rule_cmd(run_joern_scala_query)
             if isinstance(raw_joern_output, bytes):
                 joern_output: str = raw_joern_output.decode('utf-8-sig')
             else:
@@ -113,7 +118,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
             findings: list[Dict] = json.loads(findings_str)
             return cpg_file_name, query_name, findings
         except Exception as e:
-            ee = JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. "+ utils.get_exception_message(e))
+            ee = JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e))
             logger.exception(ee)
             raise ee
     else:

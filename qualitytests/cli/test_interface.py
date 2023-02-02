@@ -9,6 +9,7 @@ pytest_plugins = ('pytest_asyncio',)
 
 from cli import interface
 from core.errors import measurementNotFound
+from core.exceptions import JoernQueryParsingResultError
 
 from qualitytests_utils import join_resources_path, create_mock_cpg, \
     get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \
@@ -218,14 +219,29 @@ class TestInterface:
         assert logfile and logfile.is_file()
 
 
+
+    def init_check_discovery_rules_3(self, init, tmp_path, mocker):
+        init["language"] = "PHP"
+        init["patterns"] = [32, 37]
+        init["tp_lib_path"] = join_resources_path("sample_patlib_issue9")
+        mocker.patch("core.discovery.run_generate_cpg_cmd",
+                     return_value="Done",
+                     side_effect=create_mock_cpg(tmp_path / "cpg_binary.bin"))
+        mocker.patch("core.discovery.run_joern_scala_query_for_test",
+                     return_value="Done")
+        exp_discovery_rule_results = (
+            str(join_resources_path("sample_joern") / "binary.bin"),
+            "1_static_variables_iall",
+            1
+        )
+        mocker.patch("core.discovery.run_discovery_rule_cmd",
+                     return_value=bytes(str(exp_discovery_rule_results), 'utf-8'))
+        #                     side_effect=JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e)))
+
+
     def test_check_discovery_rules_3(self, tmp_path, capsys, mocker):
         init = {}
-        self._init_discovery_test(tmp_path, mocker)
-        init_test(init, mocker)
-        # overwrite few testing variables
-        init["patterns"] = [32,37]
-        init["tp_lib_path"] = join_resources_path("sample_patlib_issue9")
-        #
+        self.init_check_discovery_rules_3(init, tmp_path, mocker)
         export_file = "test_export.csv"
         interface.check_discovery_rules(
             init["language"], init["patterns"], 0,

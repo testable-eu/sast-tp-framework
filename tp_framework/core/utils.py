@@ -278,7 +278,7 @@ def get_exception_message(e):
     if hasattr(e, 'message'):
         return e.message
     else:
-        return e
+        return str(e)
 
 
 def get_tp_op_status_string(t_tp_info, status="started...", op=None):
