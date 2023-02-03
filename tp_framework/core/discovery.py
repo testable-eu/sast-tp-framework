@@ -396,6 +396,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     results = []
     success = 0
     unsuccess = 0
+    missing = 0
     err = 0
     for i, tp_id in enumerate(pattern_ids):
         logger.info(utils.get_tp_op_status_string(
@@ -451,6 +452,12 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                                                               discovery_rule=dr_path, successful="no")
                         unsuccess += 1
                     results.append(res)
+                else:
+                    logger.info(f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
+                    res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
+                                                          instance_path=path, successful="missing")
+                    results.append(res)
+                    missing += 1
                 logger.info(utils.get_tpi_op_status_string(
                             (i+1, len(pattern_ids), tp_id),
                             t_tpi_info=(j+1, len(l_tpi_dir), tpi_id),
@@ -472,6 +479,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
         "counters": {
             "successful": success,
             "unsuccessful": unsuccess,
+            "missing": missing,
             "errors": err
         }
     }

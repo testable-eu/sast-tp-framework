@@ -183,6 +183,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     print(f"- results available here: {output_dir}")
     print(f"  - num successful (discovery rule was run): {d_res['counters']['successful']}")
     print(f"  - num unsuccessful (discovery rule was run): {d_res['counters']['unsuccessful']}")
+    print(f"  - num missing (no discovery rule): {d_res['counters']['missing']}")
     print(f"  - num errors: {d_res['counters']['errors']}")
     if export_file:
         print(f"- csv file available here: {output_dir / export_file}")

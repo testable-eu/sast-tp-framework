@@ -236,7 +236,6 @@ class TestInterface:
         )
         mocker.patch("core.discovery.run_discovery_rule_cmd",
                      return_value=bytes(str(exp_discovery_rule_results), 'utf-8'))
-        #                     side_effect=JoernQueryParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e)))
 
 
     def test_check_discovery_rules_3(self, tmp_path, capsys, mocker):
