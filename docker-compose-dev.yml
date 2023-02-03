@@ -17,7 +17,7 @@ services:
       context: .
       args:
         REQUIREMENTS_FILE: "requirements-dev.txt"
-        TESTS_DIR: "tests"
+        TESTS_DIR: "qualitytests"
       dockerfile: "./Dockerfile"
     env_file:
       - ./.env
