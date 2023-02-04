@@ -33,6 +33,20 @@ The result variable is a triple (1)
 
 The Joern query is the core part of the entire Scala rule. It can range from a very simple query searching for a specific syntax construct to something more complex requiring some backward reachability analysis in the CPG.
 
+__Important:__ For a rule to be properly parseable by the framework, the output needs to include at least the following mandatory fields:
+- `filename` 
+- `lineNumber` 
+
+Not all CPG nodes include these. 
+A query in the rule scala file should always end on
+`.location.toJson`.
+In general, test your queries in the joern interactive shell:
+```sh
+$ joern 
+[...]
+joern> importCode("./your_src_dir")
+```
+
 ## Template Patterns
 ### 1. grep-like
 a. __Search for Code Patterns:__ Many of Joern's CPG nodes take regex as an argument to filter search results:
