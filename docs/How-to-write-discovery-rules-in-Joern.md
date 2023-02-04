@@ -60,10 +60,22 @@ The string inside the quotes is parsed as regex, e.g., you search for multiple s
 To search for special characters such as `{`, you have to escape them with a double backslash `//`.
 </details>
 
-b. __Filter for Conditions:__ One of the most important filtering functionalities is the `where` clause. It takes a traversal as an input, i.e., another CPG query, and returns all nodes which are not empty.
+b. __Search for Conditions:__ One of the most important filtering functionalities is the `where` clause. It takes a traversal as an input, i.e., another CPG query, and returns all nodes which are not empty.
 Here we use it to search for a java-builtin method which consumes a non-static parameter:
 ```scala
 cpg.call.methodFullName(".*java.util.stream.Stream.*").whereNot(_.argument(1).isLiteral)
+```
+
+c. __Filter and Match on Lists:__ 
+Sometimes we want need to compare and match lists of strings, e.g., to find usages of certain methods or variables.  
+
+This example rule checks if there are any function invocations of a re-defined function declaration.
+For this, we get a list of all methods containing a `1` and match it against all methods which are being called.
+It leverages the fact that joern appends numerical numbers to the names of re-defined function declarations.
+```scala
+cpg.method.filter{
+    n => cpg.method.name.toList.contains(n.name+"1")
+}.callIn.location.toJson
 ```
 
 <details markdown=true>
