@@ -30,20 +30,23 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
         logger.debug(f"No dependencies will be considered")
 
     for tool in tools:
-        tool_name: str = tool["name"]
-        tool_version: str = tool["version"]
+        try:
+            tool_name: str = tool["name"]
+            tool_version: str = tool["version"]
 
-        sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
-        sast_interface_class: str = sast_config["tool_interface"]
-        sast_class = utils.get_class_from_str(sast_interface_class)
+            sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
+            sast_interface_class: str = sast_config["tool_interface"]
+            sast_class = utils.get_class_from_str(sast_interface_class)
 
-        # noinspection PyCallingNonCallable
-        sast: SAST = sast_class()
-        job_id = uuid.uuid4()
-        job_ids.append(job_id)
-        InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
-                              sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
-
+            # noinspection PyCallingNonCallable
+            sast: SAST = sast_class()
+            job_id = uuid.uuid4()
+            job_ids.append(job_id)
+            InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
+                                  sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
+        except Exception as e:
+            logger.warning(f"Failed in SAST measurement of pattern instance {instance.instance_id} with tool {tool}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
+            continue
     logger.info(f"SAST measurements (async) for pattern instance {instance.instance_id}: prepared")
     return job_ids
 
