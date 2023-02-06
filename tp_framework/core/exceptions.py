@@ -72,8 +72,10 @@ class DiscoveryMethodNotSupported(Exception):
     def __init__(self, message=None, discovery_method=None):
         if message:
             self.message = message
-        else:
+        elif discovery_method:
             self.message = errors.discoveryMethodNotSupported(discovery_method)
+        else:
+            self.message("")
         super().__init__(self.message)
 
 

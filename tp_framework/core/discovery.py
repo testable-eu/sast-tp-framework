@@ -19,7 +19,8 @@ from core.pattern import get_pattern_by_pattern_id
 
 
 
-mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
+# mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
+mand_finding_joern_keys = ["filename", "lineNumber"]
 
 discovery_result_strings = {
     "no_discovery": "NO_DISCOVERY",
@@ -95,6 +96,7 @@ def run_discovery_rule_cmd(run_joern_scala_query: str):
 
 
 def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -> Tuple[str, str, list[Dict]]:
+    logger.debug(f"Discovery - rule execution to be executed: {cpg}, {discovery_rule}, {discovery_method}")
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
@@ -178,9 +180,14 @@ def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Di
         ## JoernQueryParsingResultError(e)
         findings_for_pattern_refined: list[Dict] = []
         for f in findings_for_pattern:
+            if any(k not in f for k in mand_finding_joern_keys):
+                error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`"
+                logger.error(error)
+                # raise DiscoveryRuleError(error)
+                continue
             f_ref = {
                 "filename": f["filename"],
-                "methodFullName": f["methodFullName"],
+                "methodFullName": f["methodFullName"] if "methodFullName" in f else None,
                 "lineNumber": f["lineNumber"],
                 "patternId": pattern_meas.instance.pattern_id,
                 "instanceId": [d.instance.instance_id for d in discovery_rules_to_run[discovery_rule]],
@@ -307,6 +314,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     for discovery_rule in discovery_rules:
         try:
             cpg_file_name, query_name, findings_for_rule = run_discovery_rule(cpg, discovery_rule, discovery_method)
+            logger.info("Parsing the results of specific discovery rules started...")
             try:
                 if len(findings_for_rule) == 0:
                     findings.append({
@@ -330,7 +338,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
                     raise DiscoveryRuleError(error)
                 findings.append({
                     "filename": f["filename"],
-                    "methodFullName": f["methodFullName"],
+                    "methodFullName": f["methodFullName"] if "methodFullName" in f else None,
                     "lineNumber": f["lineNumber"],
                     "queryName": query_name,
                     "queryFile": str(discovery_rule),
@@ -361,6 +369,8 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     return d_results
 
 
+# check discovery rules
+
 def get_check_discovery_rule_result_header():
     return [
         "pattern_id",
@@ -387,20 +397,20 @@ def get_check_discovery_rule_result(pattern_id, language,
     }
 
 
-def check_discovery_rules(language: str, pattern_ids: list[int],
+def check_discovery_rules(language: str, l_tp_id: list[int],
                           timeout_sec: int,
                           tp_lib_path: Path,
                           output_dir: Path
                           ) -> Dict:
-    logger.info(f"Check/Test discovery rules for {len(pattern_ids)} patterns: started...")
+    logger.info(f"Check/Test discovery rules for {len(l_tp_id)} patterns: started...")
     results = []
     success = 0
     unsuccess = 0
     missing = 0
     err = 0
-    for i, tp_id in enumerate(pattern_ids):
+    for i, tp_id in enumerate(l_tp_id):
         logger.info(utils.get_tp_op_status_string(
-            (i+1, len(pattern_ids), tp_id) # tp_info
+            (i + 1, len(l_tp_id), tp_id) # tp_info
         ))
         try:
             target_tp, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_path)
@@ -422,7 +432,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
 
                 tpi_id = utils.get_id_from_name(path.name)
                 logger.info(utils.get_tpi_op_status_string(
-                            (i+1, len(pattern_ids), tp_id),
+                            (i + 1, len(l_tp_id), tp_id),
                             t_tpi_info=(j+1, len(l_tpi_dir), tpi_id)
                 ))
                 target_instance: Instance = instance_from_dict(instance_json, target_tp, language, tpi_id)
@@ -459,7 +469,7 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                     results.append(res)
                     missing += 1
                 logger.info(utils.get_tpi_op_status_string(
-                            (i+1, len(pattern_ids), tp_id),
+                            (i + 1, len(l_tp_id), tp_id),
                             t_tpi_info=(j+1, len(l_tpi_dir), tpi_id),
                             status="done."
                 ))
@@ -470,10 +480,10 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
                 err += 1
                 continue
         logger.info(utils.get_tp_op_status_string(
-            (i+1, len(pattern_ids), tp_id), # tp_info
+            (i + 1, len(l_tp_id), tp_id), # tp_info
             status="done."
         ))
-    logger.info(f"Check/Test discovery rules for {len(pattern_ids)} patterns: done")
+    logger.info(f"Check/Test discovery rules for {len(l_tp_id)} patterns: done")
     d_res = {
         "results": results,
         "counters": {

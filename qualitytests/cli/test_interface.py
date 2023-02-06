@@ -219,7 +219,6 @@ class TestInterface:
         assert logfile and logfile.is_file()
 
 
-
     def init_check_discovery_rules_3(self, init, tmp_path, mocker):
         init["language"] = "PHP"
         init["patterns"] = [32, 37]
