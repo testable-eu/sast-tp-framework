@@ -3,7 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict
 
-import config
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 import core.utils
 from core import utils
 from core.instance import Instance
@@ -15,13 +18,16 @@ from core.sast_job_runner import InQueue, OutQueue
 async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
                                    tools: list[Dict], language: str,
                                    date: datetime, output_dir: Path) -> list[uuid.UUID]:
+    logger.info(f"SAST measurements (async) for pattern instance {instance.instance_id} with {len(tools)} tools: in preparation...")
     job_ids: list[uuid.UUID] = []
 
     # pattern instance dependencies (if any)
     if instance.compile_dependencies:
         lib_dir: Path = instance.compile_dependencies
+        logger.debug(f"Dependencies will be considered {lib_dir}")
     else:
         lib_dir = None
+        logger.debug(f"No dependencies will be considered")
 
     for tool in tools:
         tool_name: str = tool["name"]
@@ -38,6 +44,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
         InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
                               sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
 
+    logger.info(f"SAST measurements (async) for pattern instance {instance.instance_id}: prepared")
     return job_ids
 
 

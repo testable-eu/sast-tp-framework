@@ -35,7 +35,9 @@ def list_pattern_instances_by_pattern_id(language: str, pattern_id: int, tp_lib_
         p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
         return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
     except:
-        raise PatternDoesNotExists(pattern_id)
+        ee = PatternDoesNotExists(pattern_id)
+        logger.exception(ee)
+        raise ee
 
 
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:

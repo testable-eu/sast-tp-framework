@@ -3,10 +3,16 @@ from pathlib import Path
 from typing import Dict
 from datetime import datetime
 
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
+
 from core import utils
 
 
 class SAST(metaclass=abc.ABCMeta):
+    tool = None
+
     @classmethod
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, "launcher") and callable(subclass.launcher) and
@@ -37,6 +43,7 @@ class SAST(metaclass=abc.ABCMeta):
     async def get_tool_version(self) -> str:
         raise NotImplementedError
 
+
     @staticmethod
     def build_project_name(name: str, tool: str | None, language: str, timestamp: bool = True):
         now = None
@@ -48,3 +55,12 @@ class SAST(metaclass=abc.ABCMeta):
             comp = name
         return utils.build_timestamp_language_name(comp, language, now, extra="TPF")
 
+
+    def logging(self, what="launcher", message=None, status=None):
+        messagestr = ""
+        if message:
+            messagestr = f" - {message}"
+        statusstr = ""
+        if status:
+            statusstr = f": {status}"
+        logger.info(f"SAST tool {self.tool} - {what}{messagestr}{statusstr}")

@@ -1,10 +1,13 @@
 import asyncio
 import json
 import shutil
-import uuid
 from pathlib import Path
 from typing import Dict
 import yaml
+
+import logging
+from core import loggermgr
+logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 from core.sast import SAST
 import config
@@ -19,13 +22,13 @@ with open(CODEQL_CONFIG_FILE) as sast_config_file:
 
 
 class CodeQL_v_2_9_2(SAST):
-
+    tool = "codeql_2_9_2"
 
     async def launcher(self, src_dir: Path, language: str,
                        output_dir: Path, **kwargs) -> Path:
+        self.logging(what="launcher", status="started...")
         # project_name: str = f"TPF_{language}_{src_dir.name}_{uuid.uuid4()}"
-        tool = "codeql_2_9_2"
-        project_name: str = SAST.build_project_name(src_dir.name, tool, language, timestamp=True)
+        project_name: str = SAST.build_project_name(src_dir.name, self.tool, language, timestamp=True)
         proj_dir_tmp: Path = output_dir / project_name
         proj_dir_tmp.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_dir, proj_dir_tmp / "src")
@@ -37,6 +40,7 @@ class CodeQL_v_2_9_2(SAST):
             language = "javascript"
 
         # Preparing the building command
+        self.logging(what="launcher", message=f"building", status="started...")
         codeql_createdb_cmd = f"{CODEQL_CONFIG['installation_path']}/codeql database create {codeql_db_location} --source-root {src_root} --language {language}"
         if "lib_dir" in kwargs and kwargs["lib_dir"]:
             lib_dir: Path = Path(src_root / kwargs["lib_dir"]).resolve()
@@ -51,22 +55,27 @@ class CodeQL_v_2_9_2(SAST):
                 build_file.write(build_filedata)
             pattern_build_cmd = f"\'{proj_dir_tmp}/build.sh\'"
             codeql_createdb_cmd += " --command={}".format(pattern_build_cmd)
-
         # if kwargs["measurement"]:
         #     pattern_build_cmd = f"\'find {src_root} -type f -name \"*.java\" -exec javac -cp ../lib/*.jar\'"
         #     codeql_createdb_cmd = f"{CODEQL_CONFIG['installation_path']}/codeql database create {codeql_db_location} --source-root {src_root} --language {language} --command={pattern_build_cmd}"
 
         codeql_createdb = await asyncio.create_subprocess_shell(codeql_createdb_cmd)
         await codeql_createdb.wait()
+        self.logging(what="launcher", message=f"building", status="done.")
 
+        self.logging(what="launcher", message=f"scanning", status="started...")
         codeql_analyze_cmd = f"{CODEQL_CONFIG['installation_path']}/codeql database analyze {codeql_db_location} --format=sarif-latest --output={proj_dir_tmp}/{project_name}.sarif"
         codeql_analyze = await asyncio.create_subprocess_shell(codeql_analyze_cmd)
         await codeql_analyze.wait()
+        self.logging(what="launcher", message=f"scanning", status="done.")
 
-        return proj_dir_tmp / f"{project_name}.sarif"
+        res = proj_dir_tmp / f"{project_name}.sarif"
+        self.logging(what="launcher", message=f"result {res}", status="done.")
+        return res
 
 
     def inspector(self, sast_res_file: Path, language: str) -> list[Dict]:
+        self.logging(what="inspector", status="started...")
         with open(sast_res_file) as sarif_file:
             codeql_sarif_report: Dict = json.load(sarif_file)
 
@@ -86,6 +95,7 @@ class CodeQL_v_2_9_2(SAST):
                     "line": location["physicalLocation"]["region"]["startLine"]
                 }
                 findings.append(finding)
+        self.logging(what="inspector", status="done.")
         return findings
 
 
