@@ -140,3 +140,38 @@ Explanation: A Javascript backend (e.g., NodeJS) accesses the .url field of the 
 </details>
 
 [Here](https://github.com/testable-eu/sast-testability-patterns/blob/131d6f6861b0cdc890778ad5dc98a83fa2486e57/JAVA/23_array/2_instance_23_array/2_instance_23_array.sc) you can find an example of how we use this technique to discover a testability pattern.
+
+### 4. PHP
+
+Since the CPG for PHP is based on PHP bytecode and still under developement it doesn't support the full CPG spec:
+
+For example it doesn't support constructs like `cpg.assignment`.
+
+```scala
+joern> cpg.assignment.l 
+res0: List[operatorextension.OpNodes.Assignment] = List()
+```
+
+But that functionality can be queried via calls:
+```scala
+joern> cpg.call("ASSIGN").l 
+res1: List[Call] = List(
+  Call(
+    id -> 512409557603043114L,
+    argumentIndex -> -1,
+    argumentName -> None,
+    code -> "ASSIGN CV($x) T2",
+    columnNumber -> None,
+    dispatchType -> "STATIC_DISPATCH",
+    dynamicTypeHintFullName -> ArraySeq(),
+    lineNumber -> Some(value = 1),
+    methodFullName -> "<empty>",
+    name -> "ASSIGN",
+    order -> 2,
+    signature -> "",
+    typeFullName -> "<empty>"
+  )
+)
+```
+
+Check out the documentation including links to useful resources at https://github.com/mal-tee/php-cpg-doc .
