@@ -426,7 +426,9 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
         for j, path in enumerate(l_tpi_dir):
             try:
                 target_src = path.parent
-                # TODO: use a function to load an instance, in general it looks to me we are going a bit back and forth from json and file system
+                # TODO: use a function to load an instance, in general it looks to me we are going a bit back and forth
+                #       from json and file system.
+                #       Also: this loading seems to be used in many other places (e.g., start_add_measurement_for_pattern)...
                 with open(path) as instance_json_file:
                     instance_json: Dict = json.load(instance_json_file)
 

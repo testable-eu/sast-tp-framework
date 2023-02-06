@@ -127,26 +127,31 @@ def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_js
     )
 
 
-async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], pattern_id: int, now,
-                                            pattern_lib_dir: Path, output_dir: Path):
-    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, pattern_lib_dir)
-    target_pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, pattern_lib_dir)
+async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], tp_id: int, now,
+                                            tp_lib_dir: Path, output_dir: Path):
+    l_tpi_path: list[Path] = utils.list_pattern_instances_by_pattern_id(language, tp_id, tp_lib_dir)
+    target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
 
-    list_job_ids: list[Tuple[str, list[uuid.UUID]]] = []
-    for path in pattern_instances:
-        with open(path) as instance_json_file:
-            instance_json: Dict = json.load(instance_json_file)
+    l_job_ids: list[Tuple[str, list[uuid.UUID]]] = []
+    for path in l_tpi_path:
+        try:
+            with open(path) as instance_json_file:
+                instance_json: Dict = json.load(instance_json_file)
 
-        instance_id = utils.get_id_from_name(path.name)
-        target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
+            instance_id = utils.get_id_from_name(path.name)
+            target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
 
-        job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
-            target_instance, path.parent, sast_tools, language, now, output_dir
-        )
+            job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
+                target_instance, path.parent, sast_tools, language, now, output_dir
+            )
 
-        list_job_ids.append((f"{pattern_id}_{instance_id}", job_ids))
+            l_job_ids.append((f"{tp_id}_{instance_id}", job_ids))
+        except Exception as e:
+            logger.warning(
+                f"Something went wrong for the instance at {path} of the pattern id {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
+            continue
 
-    return list_job_ids
+    return l_job_ids
 
 
 async def save_measurement_for_pattern(language: str, pattern_id: int, now: datetime, list_job_ids: list[uuid.UUID], tp_lib_dir: Path):
