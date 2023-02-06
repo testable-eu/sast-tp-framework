@@ -16,7 +16,7 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
                                 tp_lib_path: Path,
                                 output_dir: Path,
                                 workers: int) -> Dict:
-
+    logger.info(f"Collect jobs to run for SAST tools over patterns: started...")
     utils.check_tp_lib(tp_lib_path)
     ftools = utils.filter_sast_tools(tools, language)
     logger.info(f"SAST tools that will be used for measurement: {ftools}")
@@ -25,7 +25,6 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
     l_job_t_tpi = []
     l_existing_tp = []
     l_notfound_tp = []
-    logger.info(f"Collect jobs to run for SAST tools over pattern: started...")
     for i, tp_id in enumerate(l_tp_id):
         logger.info(utils.get_tp_op_status_string(
             (i + 1, len(l_tp_id), tp_id)  # tp_info
@@ -34,7 +33,7 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
             job_list_ids = await pattern_operations.start_add_measurement_for_pattern(
                 language, ftools, tp_id, now, tp_lib_path, output_dir
             )
-            logger.info(f"- collected {len(job_list_ids)} jobs for pattern is {tp_id}.")
+            logger.info(f"Collected {len(job_list_ids)} jobs for pattern id {tp_id}.")
             l_job_t_tpi.append(job_list_ids)
             l_existing_tp.append(tp_id)
         except PatternDoesNotExists as e:
@@ -44,7 +43,7 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
         logger.info(utils.get_tp_op_status_string(
             (i + 1, len(l_tp_id), tp_id), status="done."
         ))
-    logger.info(f"Collect jobs to run ({len(l_job_t_tpi)}) for SAST tools over pattern: completed.")
+    logger.info(f"Collected {len(l_job_t_tpi)} jobs to run for SAST tools over patterns: completed.")
 
     logger.info(f"Create SAST jobs: started...")
     tasks: list[asyncio.Task] = []

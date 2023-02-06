@@ -32,6 +32,22 @@ class TestMeasure:
         task_mock = mocker.patch("core.pattern_operations.start_add_measurement_for_pattern",
                                  return_value=[uuid.uuid4() for _ in range(10)])
         mocker.patch("core.pattern_operations.save_measurement_for_pattern")
-        d_res = await measure.measure_list_patterns([1, 2], init["language"], init["tools"], init["tp_lib_path"], 3)
+        d_res = await measure.measure_list_patterns([1, 2], init["language"], init["tools"], init["tp_lib_path"], tmp_path, 3)
         assert d_res['measured_patterns_ids'] == [1, 2]
         assert task_mock.call_count == 2
+
+
+    async def test_measure_list_patterns_with_sastmock(self, tmp_path, caplog, mocker: MockerFixture):
+        init = {}
+        qualitytests_utils.init_measure_test(init, mocker)
+        assert init["patterns"] == [1, 2, 3]
+        # task_mock = mocker.patch("core.pattern_operations.start_add_measurement_for_pattern",
+        #                          return_value=[uuid.uuid4() for _ in range(10)])
+        # mocker.patch("core.pattern_operations.save_measurement_for_pattern")
+        d_res = await measure.measure_list_patterns(init["patterns"], init["language"],
+                                                    init["tools"],
+                                                    init["tp_lib_path"],
+                                                    tmp_path, 3)
+        assert d_res['measured_patterns_ids'] == init["patterns"]
+        for record in caplog.records:
+            print(record.message)

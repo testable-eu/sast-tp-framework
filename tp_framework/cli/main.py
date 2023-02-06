@@ -18,7 +18,7 @@ def main(args=None):
     measure_pattern_cmd = tpf_commands.MeasurePatterns()
     discovery_pattern_cmd = tpf_commands.DiscoveryPatterns()
     manual_discovery_cmd = tpf_commands.ManualDiscovery()
-    results_cmd = tpf_commands.Report()
+    sastreport_cmd = tpf_commands.Report()
     check_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
     # Sub-parsers
     subparser = parser.add_subparsers(title="Commands", dest="command", metavar="")
@@ -27,7 +27,7 @@ def main(args=None):
     measure_pattern_cmd.add_command_subparser(subparser)
     discovery_pattern_cmd.add_command_subparser(subparser)
     manual_discovery_cmd.add_command_subparser(subparser)
-    results_cmd.add_command_subparser(subparser)
+    sastreport_cmd.add_command_subparser(subparser)
     check_discovery_rules_cmd.add_command_subparser(subparser) # TODO: in-progress, not tested
 
     # Parsing
@@ -46,8 +46,8 @@ def main(args=None):
             discovery_pattern_cmd.execute_command(args)
         case "inspect":
             return 0
-        case "result":
-            results_cmd.execute_command(args)
+        case "sastreport":
+            sastreport_cmd.execute_command(args)
         case "checkdiscoveryrules":
             check_discovery_rules_cmd.execute_command(args)
         case other:

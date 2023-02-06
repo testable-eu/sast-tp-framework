@@ -186,7 +186,7 @@ class TestInterface:
     def test_check_discovery_rules_1(self, tmp_path, capsys, mocker):
         init = {}
         self._init_discovery_test(tmp_path, mocker)
-        init_test(init, mocker)
+        init_test(init)
         export_file = "test_export.csv"
         interface.check_discovery_rules(
             init["language"], init["patterns"], 0,
@@ -204,7 +204,7 @@ class TestInterface:
     def test_check_discovery_rules_2(self, tmp_path, capsys, mocker):
         init = {}
         self._init_discovery_test(tmp_path, mocker)
-        init_test(init, mocker)
+        init_test(init)
         export_file = "test_export.csv"
         interface.check_discovery_rules(
             init["language"], init["patterns"], 0,

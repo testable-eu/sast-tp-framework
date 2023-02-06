@@ -52,7 +52,7 @@ def get_logfile_path(captured_out_lines, targ="log file available here: "):
     return get_path_after_string_from_output(targ, captured_out_lines)
 
 
-def init_test(init, mocker):
+def init_test(init):
     init["language"] = "PHP"
     init["tools"] = [
         {"name": "dummyTool", "version": "1"},
@@ -69,7 +69,7 @@ def init_test(init, mocker):
 
 
 def init_measure_test(init, mocker):
-    init_test(init, mocker)
+    init_test(init)
     mocked_tool_interface: Dict = {
         "supported_languages": ["PHP"],
         "tool_interface": "qualitytests.core.sast_test.SastTest"
@@ -78,7 +78,7 @@ def init_measure_test(init, mocker):
 
 
 def init_sastreport_test(init, mocker):
-    init_test(init, mocker)
+    init_test(init)
     # mocked_tool_interface: Dict = {
     #     "supported_languages": ["PHP"],
     #     "tool_interface": "qualitytests.core.sast_test.SastTest"

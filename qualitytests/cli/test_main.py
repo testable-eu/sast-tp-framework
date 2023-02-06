@@ -172,12 +172,13 @@ class TestMain:
 
     def test_cli_report_4(self, tmp_path, mocker):
         self._init_cli_report(mocker)
-        # Test: valid params, --export with filename
+        test_tp_lib_path = join_resources_path("sample_patlib")
+        # Test: valid params, --export with filename, -a requires a valid tp-lib
         main.main(['sastreport',
                    '--export', 'whatever.csv',
                    '-a',
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path),
+                   '--tp-lib', str(test_tp_lib_path),
                    '--output-dir', str(tmp_path)
                    # '--output-dir', str(tmp_path),
                    # '--only-last-measurement'
@@ -191,7 +192,6 @@ class TestMain:
                    '--export', 'whatever.csv',
                    '-a',
                    '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path),
                    '--output-dir', str(tmp_path)
                    # '--output-dir', str(tmp_path),
                    # '--only-last-measurement'
