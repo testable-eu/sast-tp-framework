@@ -66,6 +66,18 @@ Here we use it to search for a java-builtin method which consumes a non-static p
 cpg.call.methodFullName(".*java.util.stream.Stream.*").whereNot(_.argument(1).isLiteral)
 ```
 
+<details markdown=true>
+<summary>Query Decomposition</summary>
+
+1. `call`: consider all function calls
+2. `methodFullName`: get the full name of all functions being called.
+3. `([REGEX])`: filter the names for a java-builtin function called "Stream" (not the wildcards `.*` in the beginning and end)
+4. `whereNot`: only consider call nodes which
+5. `_.argument(1)`: this looks at the first argument of the call, for method calls this is the object itself (e.g., `this`)
+6. `isLiteral`: and finally we make sure that it is not a literal, e.g., not a static string or integer (`"s", 1337`) but a variable.  
+</details> 
+
+
 c. __Filter and Match on Lists:__ 
 Sometimes we want need to compare and match lists of strings, e.g., to find usages of certain methods or variables.  
 
@@ -78,19 +90,7 @@ cpg.method.filter{
 }.callIn.location.toJson
 ```
 
-<details markdown=true>
-<summary>Query Decomposition</summary>
-
-1. `call`: consider all function calls
-2. `methodFullName`: get the full name of all functions being called.
-3. `([REGEX])`: filter the names for a java-builtin function called "Stream" (not the wildcards `.*` in the beginning and end)
-4. `whereNot`: only consider call nodes which
-5. `_.argument(1)`: this looks at the first argument of the call, for method calls this is the object itself (e.g., `this`)
-6. `isLiteral`: and finally we make sure that it is not a literal, e.g., not a static string or integer (`"s", 1337`) but a variable.  
-</details>  
-
-
-### 2. AST Traversals  
+ ### 2. AST Traversals  
 
 a. __Check for Enclosing Control Block:__ For any found node, we can walk the AST backwards by using `inAst`.
 In this example we check whether an assignment is enclosed in an if block:
