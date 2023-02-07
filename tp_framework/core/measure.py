@@ -58,10 +58,19 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
                        return_when=asyncio.FIRST_COMPLETED)
     if not in_queue_has_complete.done():
         for task in tasks:
-            if task.done():
-                task.result()
+            try:
+                if task.done():
+                    task.result()
+            except Exception as e:
+                logger.warning(f"Failed in executing SAST task in queue. This will be ignored and execution continued. Exception raised: {utils.get_exception_message(e)}")
+                continue
     for task in tasks:
-        task.cancel()
+        try:
+            task.cancel()
+        except Exception as e:
+            logger.warning(
+                f"Failed in cancelling executed SAST task. This will be ignored and execution continued. Exception raised: {utils.get_exception_message(e)}")
+            continue
     await asyncio.gather(*tasks, return_exceptions=True)
     logger.info(f"Run SAST jobs: done.")
 
