@@ -25,7 +25,7 @@ git submodule update --remote
 ```
 
 Note that some submodules will also be pulled, including:
-- [Joern CPG for PHP](https://github.com/joernio/querydb-php)
+- [Joern CPG for PHP](https://github.com/joernio/querydb-php) <!-- TODO remove this submodule -->
 - [Joern CPG for JS](https://github.com/ShiftLeftSecurity/js2cpg)
 - [Joern](https://github.com/joernio/joern)
 - [Testability Pattern Library](https://github.com/testable-eu/sast-tp-framework)
