@@ -16,7 +16,8 @@ from core import utils, analysis
 from core.exceptions import PatternValueError
 from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
 from core.pattern import Pattern, get_pattern_by_pattern_id
-
+from core.sast_job_runner import SASTjob, job_list_to_dict
+from core.measurement import meas_list_to_tpi_dict
 
 def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_src_dir: Path | None,
                                    pattern_lib_dest: Path) -> Path:
@@ -128,58 +129,57 @@ def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_js
 
 
 async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], tp_id: int, now,
-                                            tp_lib_dir: Path, output_dir: Path):
-    l_tpi_path: list[Path] = utils.list_pattern_instances_by_pattern_id(language, tp_id, tp_lib_dir)
-    target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
+                                            tp_lib_dir: Path, output_dir: Path) -> Dict:
+    d_status_tp = {}
+    try:
+        l_tpi_path: list[Path] = utils.list_pattern_instances_by_pattern_id(language, tp_id, tp_lib_dir)
+        target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
+    except  Exception as e:
+        logger.warning(
+            f"SAST measurement - failed in fetching instances for pattern {tp_id}. Pattern will be ignored. Exception raised: {utils.get_exception_message(e)}")
 
-    l_job_ids: list[Tuple[str, list[uuid.UUID]]] = []
     for path in l_tpi_path:
         try:
             with open(path) as instance_json_file:
                 instance_json: Dict = json.load(instance_json_file)
 
-            instance_id = utils.get_id_from_name(path.name)
-            target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, instance_id)
+            tpi_id = utils.get_id_from_name(path.name)
+            target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, tpi_id)
 
-            job_ids: list[uuid.UUID] = await analysis.analyze_pattern_instance(
+            d_status_tp[tpi_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
                 target_instance, path.parent, sast_tools, language, now, output_dir
             )
-
-            l_job_ids.append((f"{tp_id}_{instance_id}", job_ids))
         except Exception as e:
+            d_status_tp[tpi_id] = []
             logger.warning(
-                f"Something went wrong for the instance at {path} of the pattern id {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
+                f"SAST measurement - failed in preparing SAST jobs for instance at {path} of the pattern {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
             continue
+    return d_status_tp
 
-    return l_job_ids
 
+async def save_measurement_for_patterns(language: str, now: datetime,
+                                        l_job: list[SASTjob],
+                                        tp_lib_dir: Path):
 
-async def save_measurement_for_pattern(language: str, pattern_id: int, now: datetime, list_job_ids: list[uuid.UUID], tp_lib_dir: Path):
-    pattern_instances: list[Path] = utils.list_pattern_instances_by_pattern_id(language, pattern_id, tp_lib_dir)
-    date_time_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+    d_job = job_list_to_dict(l_job)
+    l_meas = await analysis.inspect_analysis_results(d_job, language)
+    d_tpi_meas = meas_list_to_tpi_dict(l_meas)
 
-    job_dict = {}
-    for el in list_job_ids:
-        instance_id_for_job_ids = int(el[0].split("_")[1])
-        job_dict[instance_id_for_job_ids] = el[1]
+    for tpi_id in d_tpi_meas:
+        l_tpi_meas = []
+        for meas in d_tpi_meas[tpi_id]:
+            # meas.instance
+            tp_rel_dir = utils.get_pattern_dir_name_from_name(meas.instance.name, meas.instance.pattern_id)
+            tpi_rel_dir = utils.get_instance_dir_name_from_pattern(meas.instance.name, meas.instance.pattern_id, meas.instance.instance_id)
+            meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
+            meas_dir.mkdir(parents=True, exist_ok=True)
+            d_tpi_meas_ext: Dict = meas.__dict__
+            # TODO: rather than extending here we should extend the Measurement class
+            d_tpi_meas_ext["pattern_id"] = meas.instance.pattern_id
+            d_tpi_meas_ext["instance_id"] = meas.instance.instance_id
+            d_tpi_meas_ext["language"] = language
+            d_tpi_meas_ext["instance"] = f"./{meas.instance.language}/{tp_rel_dir}/{tpi_rel_dir}/{tpi_rel_dir}.json"
+            l_tpi_meas.append(d_tpi_meas_ext)
 
-    for path in pattern_instances:
-        measurement_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / path.parent.parent.name / path.parent.name
-        measurement_dir.mkdir(parents=True, exist_ok=True)
-
-        instance_id = utils.get_id_from_name(path.name)
-        job_ids = job_dict[instance_id]
-
-        measurements = await analysis.inspect_analysis_results(job_ids, language)
-
-        measurements_dict: list[Dict] = []
-        for meas in measurements:
-            meas_dict: Dict = meas.__dict__
-            pattern_dir_str = path.parent.parent.name
-            instance_dir_str = path.parent.name
-            meas_dict[
-                "instance"] = f"./{meas.instance.language}/{pattern_dir_str}/{instance_dir_str}/{instance_dir_str}.json"
-            measurements_dict.append(meas_dict)
-
-        with open(measurement_dir / f"measurement-{date_time_str}.json", "w") as measurement_file:
-            json.dump(measurements_dict, measurement_file, indent=4)
+        with open(meas_dir / utils.get_measurement_file(now), "w") as f_meas:
+            json.dump(l_tpi_meas, f_meas, indent=4)

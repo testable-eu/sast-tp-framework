@@ -82,6 +82,7 @@ class CodeQL_v_2_9_2(SAST):
         sarif_results: list[Dict] = codeql_sarif_report["runs"][0]["results"]
         supported_vulnerabilities = list(CODEQL_CONFIG["supported_vulnerability"].values())
 
+        # TODO - SAST: are we properly mapping the vulns here?
         sarif_results = list(
             filter(lambda x: [x["ruleId"].__contains__(vuln) for vuln in supported_vulnerabilities], sarif_results)
         )

@@ -68,13 +68,29 @@ def init_test(init):
     init["patterns"] = [1,2,3]
 
 
-def init_measure_test(init, mocker):
+def mocked_tools_interfaces(tool_name: str, tool_version: str) -> Dict:
+    if tool_name == "dummyTool" and tool_version == "2":
+        return {
+            "supported_languages": ["PHP"],
+            "tool_interface": "qualitytests.core.sast_test.SastTestException"
+        }
+    else:
+        return {
+            "supported_languages": ["PHP"],
+            "tool_interface": "qualitytests.core.sast_test.SastTest"
+        }
+
+
+def init_measure_test(init, mocker, exception=True):
     init_test(init)
-    mocked_tool_interface: Dict = {
-        "supported_languages": ["PHP"],
-        "tool_interface": "qualitytests.core.sast_test.SastTest"
-    }
-    mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+    if exception:
+        mocker.patch("core.utils.load_sast_specific_config", side_effect=mocked_tools_interfaces)
+    else:
+        mocked_tool_interface: Dict = {
+            "supported_languages": ["PHP"],
+            "tool_interface": "qualitytests.core.sast_test.SastTest"
+        }
+        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
 
 
 def init_sastreport_test(init, mocker):
