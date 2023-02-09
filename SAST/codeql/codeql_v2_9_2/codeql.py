@@ -84,14 +84,15 @@ class CodeQL_v_2_9_2(SAST):
 
         # TODO - SAST: are we properly mapping the vulns here?
         sarif_results = list(
-            filter(lambda x: [x["ruleId"].__contains__(vuln) for vuln in supported_vulnerabilities], sarif_results)
+            filter(lambda x: [SAST.vuln_match(vuln, x["ruleId"]) for vuln in supported_vulnerabilities], sarif_results)
         )
 
         findings: list[Dict] = []
         for sarif_res in sarif_results:
             for location in sarif_res["locations"]:
                 finding: Dict = {
-                    "type": sarif_res['ruleId'],
+                    "type": SAST.get_norm_vuln(sarif_res['ruleId'], CODEQL_CONFIG["supported_vulnerability"]),
+                    "type_orig": sarif_res['ruleId'],
                     "file": location["physicalLocation"]["artifactLocation"]["uri"].split("/")[-1],
                     "line": location["physicalLocation"]["region"]["startLine"]
                 }

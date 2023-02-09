@@ -64,3 +64,17 @@ class SAST(metaclass=abc.ABCMeta):
         if status:
             statusstr = f": {status}"
         logger.info(f"SAST tool {self.tool} - {what}{messagestr}{statusstr}")
+
+
+    @staticmethod
+    def get_norm_vuln(vuln: str, d_supported_vuln_map: Dict):
+        for norm_vuln in d_supported_vuln_map:
+            if SAST.vuln_match(d_supported_vuln_map[norm_vuln], vuln):
+                return norm_vuln
+        return None
+
+
+    @staticmethod
+    # simple sub-string but it could be elaborated more
+    def vuln_match(vcand, vtarget):
+        return vcand in vtarget
