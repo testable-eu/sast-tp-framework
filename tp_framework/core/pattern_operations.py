@@ -140,12 +140,10 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
 
     for path in l_tpi_path:
         try:
+            tpi_id = utils.get_id_from_name(path.name)
             with open(path) as instance_json_file:
                 instance_json: Dict = json.load(instance_json_file)
-
-            tpi_id = utils.get_id_from_name(path.name)
             target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, tpi_id)
-
             d_status_tp[tpi_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
                 target_instance, path.parent, sast_tools, language, now, output_dir
             )
