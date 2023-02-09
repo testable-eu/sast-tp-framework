@@ -134,11 +134,14 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
     return sorted(measurements_for_tool, reverse=True)[0]
 
 
-def meas_list_to_tpi_dict(l_meas: list[Measurement]) -> Dict:
-    d_tpi_meas = {}
+def meas_list_to_tp_dict(l_meas: list[Measurement]) -> Dict:
+    d_tp_meas = {}
     for meas in l_meas:
-        l_tpi_meas = d_tpi_meas.get(meas.instance.instance_id, [])
-        l_tpi_meas.append(meas)
-        d_tpi_meas[meas.instance.instance_id] = l_tpi_meas
-    return d_tpi_meas
+        if not meas.instance.pattern_id in d_tp_meas:
+            d_tp_meas[meas.instance.pattern_id] = {}
+        d_tpi_meas = d_tp_meas[meas.instance.pattern_id]
+        if not meas.instance.instance_id in d_tpi_meas:
+            d_tpi_meas[meas.instance.instance_id] = []
+        d_tpi_meas[meas.instance.instance_id].append(meas)
+    return d_tp_meas
 

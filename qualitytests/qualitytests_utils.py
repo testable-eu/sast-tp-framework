@@ -52,8 +52,8 @@ def get_logfile_path(captured_out_lines, targ="log file available here: "):
     return get_path_after_string_from_output(targ, captured_out_lines)
 
 
-def init_test(init):
-    init["language"] = "PHP"
+def init_test(init, language="PHP"):
+    init["language"] = language
     init["tools"] = [
         {"name": "dummyTool", "version": "1"},
         {"name": "dummyTool", "version": "2"},
@@ -71,23 +71,23 @@ def init_test(init):
 def mocked_tools_interfaces(tool_name: str, tool_version: str) -> Dict:
     if tool_name == "dummyTool" and tool_version == "2":
         return {
-            "supported_languages": ["PHP"],
+            "supported_languages": ["PHP", "JS", "JAVA"],
             "tool_interface": "qualitytests.core.sast_test.SastTestException"
         }
     else:
         return {
-            "supported_languages": ["PHP"],
+            "supported_languages": ["PHP", "JS", "JAVA"],
             "tool_interface": "qualitytests.core.sast_test.SastTest"
         }
 
 
-def init_measure_test(init, mocker, exception=True):
-    init_test(init)
+def init_measure_test(init, mocker, language="PHP", exception=True):
+    init_test(init, language=language)
     if exception:
         mocker.patch("core.utils.load_sast_specific_config", side_effect=mocked_tools_interfaces)
     else:
         mocked_tool_interface: Dict = {
-            "supported_languages": ["PHP"],
+            "supported_languages": [language],
             "tool_interface": "qualitytests.core.sast_test.SastTest"
         }
         mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)

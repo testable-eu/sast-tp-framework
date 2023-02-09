@@ -17,7 +17,7 @@ from core.exceptions import PatternValueError
 from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
 from core.pattern import Pattern, get_pattern_by_pattern_id
 from core.sast_job_runner import SASTjob, job_list_to_dict
-from core.measurement import meas_list_to_tpi_dict
+from core.measurement import meas_list_to_tp_dict
 
 def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_src_dir: Path | None,
                                    pattern_lib_dest: Path) -> Path:
@@ -129,9 +129,10 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
     try:
         l_tpi_path: list[Path] = utils.list_pattern_instances_by_pattern_id(language, tp_id, tp_lib_dir)
         target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
-    except  Exception as e:
+    except Exception as e:
         logger.warning(
             f"SAST measurement - failed in fetching instances for pattern {tp_id}. Pattern will be ignored. Exception raised: {utils.get_exception_message(e)}")
+        return d_status_tp
 
     for path in l_tpi_path:
         try:
@@ -156,23 +157,24 @@ async def save_measurement_for_patterns(language: str, now: datetime,
 
     d_job = job_list_to_dict(l_job)
     l_meas = await analysis.inspect_analysis_results(d_job, language)
-    d_tpi_meas = meas_list_to_tpi_dict(l_meas)
+    d_tp_meas = meas_list_to_tp_dict(l_meas)
 
-    for tpi_id in d_tpi_meas:
-        l_tpi_meas = []
-        for meas in d_tpi_meas[tpi_id]:
-            # meas.instance
-            tp_rel_dir = utils.get_pattern_dir_name_from_name(meas.instance.name, meas.instance.pattern_id)
-            tpi_rel_dir = utils.get_instance_dir_name_from_pattern(meas.instance.name, meas.instance.pattern_id, meas.instance.instance_id)
-            meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
-            meas_dir.mkdir(parents=True, exist_ok=True)
-            d_tpi_meas_ext: Dict = meas.__dict__
-            # TODO: rather than extending here we should extend the Measurement class
-            d_tpi_meas_ext["pattern_id"] = meas.instance.pattern_id
-            d_tpi_meas_ext["instance_id"] = meas.instance.instance_id
-            d_tpi_meas_ext["language"] = language
-            d_tpi_meas_ext["instance"] = f"./{meas.instance.language}/{tp_rel_dir}/{tpi_rel_dir}/{tpi_rel_dir}.json"
-            l_tpi_meas.append(d_tpi_meas_ext)
+    for tp_id in d_tp_meas:
+        for tpi_id in d_tp_meas[tp_id]:
+            l_tpi_meas = []
+            for meas in d_tp_meas[tp_id][tpi_id]:
+                # meas.instance
+                tp_rel_dir = utils.get_pattern_dir_name_from_name(meas.instance.name, meas.instance.pattern_id)
+                tpi_rel_dir = utils.get_instance_dir_name_from_pattern(meas.instance.name, meas.instance.pattern_id, meas.instance.instance_id)
+                meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
+                meas_dir.mkdir(parents=True, exist_ok=True)
+                d_tpi_meas_ext: Dict = meas.__dict__
+                # TODO: rather than extending here we should extend the Measurement class
+                d_tpi_meas_ext["pattern_id"] = meas.instance.pattern_id
+                d_tpi_meas_ext["instance_id"] = meas.instance.instance_id
+                d_tpi_meas_ext["language"] = language
+                d_tpi_meas_ext["instance"] = f"./{meas.instance.language}/{tp_rel_dir}/{tpi_rel_dir}/{tpi_rel_dir}.json"
+                l_tpi_meas.append(d_tpi_meas_ext)
 
-        with open(meas_dir / utils.get_measurement_file(now), "w") as f_meas:
-            json.dump(l_tpi_meas, f_meas, indent=4)
+            with open(meas_dir / utils.get_measurement_file(now), "w") as f_meas:
+                json.dump(l_tpi_meas, f_meas, indent=4)

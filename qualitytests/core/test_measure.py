@@ -56,3 +56,18 @@ class TestMeasure:
         assert len(d_res['sast_job_execution_valid']) == 8
         for record in caplog.records:
             print(record.message)
+
+
+    async def test_measure_list_patterns_with_sastmockexception_JS(self, tmp_path, caplog, mocker: MockerFixture):
+        init = {}
+        qualitytests_utils.init_measure_test(init, mocker, language="JS", exception=True)
+        assert init["patterns"] == [1, 2, 3]
+        d_res = await measure.measure_list_patterns(init["patterns"], init["language"],
+                                                    init["tools"],
+                                                    init["tp_lib_path"],
+                                                    tmp_path, 3)
+        assert len(d_res['sast_job_execution_error']) == 4
+        assert len(d_res['sast_job_collection_error']) == 1
+        assert len(d_res['sast_job_execution_valid']) == 8
+        for record in caplog.records:
+            print(record.message)
