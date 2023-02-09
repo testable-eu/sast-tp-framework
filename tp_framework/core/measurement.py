@@ -76,8 +76,14 @@ class Measurement:
 
 
 def load_from_metadata(file: Path, language: str) -> list[Measurement]:
-    with open(file) as f:
-        meas: Dict = json.load(f)
+    try:
+        with open(file) as f:
+            meas: Dict = json.load(f)
+    except Exception as e:
+        logger.exception(f"Failed in loading measurement json file {file}. It seems corrupted and it is renamed. Raised exception: {utils.get_exception_message(e)}")
+        f.close()
+        file.rename(file.with_suffix(".corrupted"))
+        return []
 
     parsed_meas: list[Measurement] = []
     for m in meas:

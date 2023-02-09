@@ -1,6 +1,5 @@
 {
     "name": "Global Array",
-    "description": "",
     "family": "code_pattern_php",
     "tags": ["sast", "php", "php_v7.4.9"],
     "instances": [

@@ -39,6 +39,10 @@ class TestMeasure:
         assert len(d_res['sast_job_collection_error']) == 0
 
 
+    # TODO: the test works fine when it is run on its own,
+    #       but it does not terminate when run in a test batch.
+    #       To be investigated...
+
     async def test_measure_list_patterns_with_sastmockexception(self, tmp_path, caplog, mocker: MockerFixture):
         init = {}
         qualitytests_utils.init_measure_test(init, mocker, exception=True)

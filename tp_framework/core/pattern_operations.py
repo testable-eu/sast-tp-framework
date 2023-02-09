@@ -22,16 +22,11 @@ from core.measurement import meas_list_to_tpi_dict
 def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_src_dir: Path | None,
                                    pattern_lib_dest: Path) -> Path:
     try:
-        pattern: Pattern = Pattern(
-            pattern_dict["name"],
-            pattern_dict["description"],
-            pattern_dict["family"],
-            pattern_dict["tags"],
-            [pattern_src_dir / instance_relative_path for instance_relative_path in pattern_dict["instances"] if
-             pattern_src_dir],
-            language,
-            pattern_dir=pattern_lib_dest
-        )
+        pattern: Pattern = Pattern(pattern_dict["name"], language,
+                                   [pattern_src_dir / instance_relative_path for instance_relative_path in
+                                    pattern_dict["instances"] if
+                                    pattern_src_dir], pattern_dict["family"], pattern_dict["description"],
+                                   pattern_dict["tags"], pattern_dir=pattern_lib_dest)
     except KeyError as e:
         raise PatternValueError(message=errors.patternKeyError(e))
 
