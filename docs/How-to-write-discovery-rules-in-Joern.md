@@ -143,7 +143,7 @@ Explanation: A Javascript backend (e.g., NodeJS) accesses the .url field of the 
 
 ### 4. PHP
 
-Since the CPG for PHP is based on PHP bytecode and still under developement it doesn't support the full CPG spec:
+Since the CPG for PHP is based on PHP bytecode and it is still under developement it doesn't support the full CPG spec:
 
 For example it doesn't support constructs like `cpg.assignment`.
 
