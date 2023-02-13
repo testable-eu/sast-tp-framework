@@ -1,18 +1,13 @@
-FROM python:3.10
+FROM malt33/php-cpg
 
 WORKDIR /tp-framework
 
 RUN apt-get update
-
-RUN echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | tee /etc/apt/sources.list.d/sbt.list
-RUN echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | tee /etc/apt/sources.list.d/sbt_old.list
-RUN curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/scalasbt-release.gpg --import
-RUN chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
 
 RUN apt-get update
-RUN apt-get install openjdk-11-jdk -y
+RUN apt-get install python3 python3-pip python-is-python3 -y
 RUN apt-get install php -y
-RUN apt-get install sbt -y
 RUN apt-get install gradle -y
 RUN apt-get install maven -y
 # discovery, joern: js2cpg
@@ -44,10 +39,6 @@ RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern/joern-install.sh
 RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/joern/ && ./joern-install.sh --version=v1.1.1269 --install-dir=/opt/joern'
-
-RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/querydb-php/ && ln -s /opt/joern/ -T joern-inst'
-RUN chmod +x ${DISCOVERY_HOME}/joern/querydb-php/install.sh
-RUN ${DISCOVERY_HOME}/joern/querydb-php/install.sh
 
 #install js2cpg
 RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/js2cpg/; sbt stage'
