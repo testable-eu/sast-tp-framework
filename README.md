@@ -39,7 +39,7 @@ The complete list of patterns is available at [Testability Pattern Catalogs for 
 
 ## Running
 
-After following the [installation instructions](https://github.com/testable-eu/sast-tp-framework/blob/master/docs/How-to-install.md), you can run the TP-Framework with docker:
+After following the [installation instructions](./docs/How-to-install.md), you can run the TP-Framework with docker:
 
 ```bash
 $ docker-compose up --build
