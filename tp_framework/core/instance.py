@@ -66,9 +66,9 @@ class Instance(Pattern):
             pattern_dir: Path = None,
     ) -> None:
         if pattern_id is None:
-            super().__init__(name, description, family, tags, instances, language, pattern_dir=pattern_dir)
+            super().__init__(name, language, instances, family, description, tags, pattern_dir=pattern_dir)
         else:
-            super().__init__(name, description, family, tags, instances, language, pattern_id)
+            super().__init__(name, language, instances, family, description, tags, pattern_id)
 
         self.code_injection_skeleton_broken = code_injection_skeleton_broken
         self.compile_dependencies = compile_dependencies # added 092022

@@ -25,7 +25,7 @@ def setup_three_pattern(tmp_path: Path):
 class TestPattern:
 
     def test_pattern_init_with_id(self):
-        pattern = Pattern("TestName", "TestDesc", "FAMILY", [], [], "PHP", 1)
+        pattern = Pattern("TestName", "PHP", [], "FAMILY", "TestDesc", [], 1)
         assert pattern.pattern_id == 1
         assert pattern.name == "TestName"
         assert pattern.description == "TestDesc"
@@ -35,7 +35,7 @@ class TestPattern:
 
     def test_pattern_init_without_id(self, tmp_path):
         language, tmp_tp_path, p1, p2, p3 = setup_three_pattern(tmp_path)
-        pattern = Pattern("TestName", "TestDesc", "FAMILY", [], [], language, pattern_dir=tmp_path)
+        pattern = Pattern("TestName", language, [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         assert pattern.pattern_id == 4
         assert pattern.name == "TestName"
         assert pattern.description == "TestDesc"
@@ -47,7 +47,7 @@ class TestPattern:
         language: str = "PHP"
         tmp_tp_path: Path = tmp_path / language
         tmp_tp_path.mkdir()
-        pattern = Pattern("TestName", "TestDesc", "FAMILY", [], [], language, pattern_dir=tmp_path)
+        pattern = Pattern("TestName", language, [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         assert pattern.pattern_id == 1
         assert pattern.name == "TestName"
         assert pattern.description == "TestDesc"
@@ -56,7 +56,7 @@ class TestPattern:
         assert len(pattern.instances) == 0
 
     def test_pattern_non_existing_language(self, tmp_path):
-        pattern: Pattern = Pattern("TestName", "TestDesc", "FAMILY", [], [], "JS", pattern_dir=tmp_path)
+        pattern: Pattern = Pattern("TestName", "JS", [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         assert pattern.pattern_id == 1
 
     def test_get_pattern_path_by_pattern_id(self, tmp_path):
@@ -77,7 +77,7 @@ class TestPattern:
         p1 = tmp_tp_path / "1_pattern_one"
         p1.mkdir()
 
-        pattern: Pattern = Pattern("Pattern Two", "TestDesc", "FAMILY", [], [], language, pattern_dir=tmp_path)
+        pattern: Pattern = Pattern("Pattern Two", language, [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         pattern.add_pattern_to_tp_library(language, tmp_path, tmp_path)
 
         expected_new_pattern_path: Path = tmp_tp_path / "2_pattern_two"
@@ -95,7 +95,7 @@ class TestPattern:
         language: str = "JS"
         tmp_tp_path: Path = tmp_path / language
 
-        pattern: Pattern = Pattern("Pattern One JS", "TestDesc", "FAMILY", [], [], language, pattern_dir=tmp_path)
+        pattern: Pattern = Pattern("Pattern One JS", language, [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         pattern.add_pattern_to_tp_library(language, tmp_path)
 
         expected_new_pattern_path: Path = tmp_tp_path / "1_pattern_one_js"
@@ -113,7 +113,7 @@ class TestPattern:
         language: str = "JS"
         tmp_tp_path: Path = tmp_path / language
 
-        pattern: Pattern = Pattern("Pattern One JS", "TestDesc", "FAMILY", [], [], language, pattern_dir=tmp_path)
+        pattern: Pattern = Pattern("Pattern One JS", language, [], "FAMILY", "TestDesc", [], pattern_dir=tmp_path)
         pattern.add_pattern_to_tp_library(language, tmp_path)
 
         pattern.add_new_instance_reference(language, tmp_path, "./new_instance_test")
@@ -144,9 +144,25 @@ class TestPattern:
         assert pattern.instances == pattern_dict["instances"]
 
 
-    def test_pattern_from_dict_missing_field(self):
+    def test_pattern_from_dict_missing_non_mand_field(self):
         pattern_dict: Dict = {
             "name": "Try Catch Finally",
+            "instances": [
+                "./1_instance_52_try_catch_finally/1_instance_52_try_catch_finally.json",
+                "./2_instance_52_try_catch_finally/2_instance_52_try_catch_finally.json"
+            ]
+        }
+        pattern = pattern_from_dict(pattern_dict, "PHP", 1)
+        assert pattern.name == pattern_dict["name"]
+        assert pattern.pattern_id == 1
+        assert pattern.language == "PHP"
+        assert pattern.instances == pattern_dict["instances"]
+
+
+    def test_pattern_from_dict_missing_mandatory_field(self):
+        # name is a mandatory field
+        pattern_dict: Dict = {
+            # "name": "Try Catch Finally",
             "description": "",
             "tags": [],
             "instances": [

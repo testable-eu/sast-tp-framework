@@ -202,7 +202,7 @@ class TestPatternOperations:
         pi1.mkdir()
         pi2.mkdir()
 
-        pattern = Pattern("Try Catch Finally", "TestDesc", "FAMILY", [], [], language, pattern_id=4)
+        pattern = Pattern("Try Catch Finally", language, [], "FAMILY", "TestDesc", [], pattern_id=4)
 
         source_path: Path = Path(__file__).resolve().parent / "testing_samples" / "sample_pattern"
 

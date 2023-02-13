@@ -28,20 +28,37 @@ class Measurement:
         self.version = version
         self.instance = instance
 
-    def define_verdict(self, date: datetime, instance: Instance, finding: Dict, tool: str, version: str) -> Measurement:
+
+    def define_verdict(self, date: datetime, instance: Instance, findings: list[Dict], tool: str, version: str,
+                       sink_line_strict : bool = False,
+                       sink_file_strict : bool = False) -> Measurement:
         date_time_str = date.strftime("%Y-%m-%d %H:%M:%S")
         self.date = date_time_str
-        # TODO - measurement: it should be checking for the expectation!
-        if not finding:
-            self.result = False
-        elif instance.expectation_sink_line is not None:
-            self.result = (instance.expectation_sink_line == int(finding["line"])) and (
-                    instance.expectation_sink_file.name == finding["file"])
-            if not self.result:
-                logger.warning(f"Sink for pattern instance: <{instance.pattern_id}, {instance.name}, {instance.instance_id}> not matching SAST: {tool}:{version} scan findings")
-        else:
-            self.result = instance.expectation_sink_file.name == finding["file"]
-
+        found = False
+        for finding in findings:
+            c_type = (instance.expectation_type == finding["type"])
+            c_sink_file = not instance.expectation_sink_file or (instance.expectation_sink_file.name == finding["file"])
+            c_sink_line = not instance.expectation_sink_line or (instance.expectation_sink_line == int(finding["line"]))
+            # logger debug
+            logger.debug(
+                f"Pattern {instance.pattern_id} instance {instance.instance_id} - Verdict condition - type: {c_type} [exp: {instance.expectation_type}, finding: {finding['type']}]")
+            if instance.expectation_sink_file:
+                logger.debug(
+                    f"Pattern {instance.pattern_id} instance {instance.instance_id} - Verdict condition - sink file: {c_sink_file} [exp: {instance.expectation_sink_file}, finding: {finding['file']}]")
+            if instance.expectation_sink_line:
+                logger.debug(
+                    f"Pattern {instance.pattern_id} instance {instance.instance_id} - Verdict condition - sink line: {c_sink_line} [exp: {instance.expectation_sink_line}, finding: {finding['line']}]")
+            #
+            found = c_type and (c_sink_file or not sink_file_strict) and (c_sink_line or not sink_line_strict)
+            # if instance.expectation_sink_line is not None:
+            #     found = (instance.expectation_sink_line == int(finding["line"])) and (instance.expectation_sink_file.name == finding["file"])
+            #     if not found:
+            #         logger.warning(f"Sink for pattern instance: <{instance.pattern_id}, {instance.name}, {instance.instance_id}> not matching SAST: {tool}:{version} scan findings")
+            # else:
+            #     found = instance.expectation_sink_file.name == finding["file"]
+            if found:
+                break # we found a matching finding
+        self.result = (found == instance.expectation)
         self.tool = tool
         self.version = version
         self.instance = instance
@@ -59,8 +76,14 @@ class Measurement:
 
 
 def load_from_metadata(file: Path, language: str) -> list[Measurement]:
-    with open(file) as f:
-        meas: Dict = json.load(f)
+    try:
+        with open(file) as f:
+            meas: Dict = json.load(f)
+    except Exception as e:
+        logger.exception(f"Failed in loading measurement json file {file}. It seems corrupted and it is renamed. Raised exception: {utils.get_exception_message(e)}")
+        f.close()
+        file.rename(file.with_suffix(".corrupted"))
+        return []
 
     parsed_meas: list[Measurement] = []
     for m in meas:
@@ -110,4 +133,15 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
     )
     return sorted(measurements_for_tool, reverse=True)[0]
 
+
+def meas_list_to_tp_dict(l_meas: list[Measurement]) -> Dict:
+    d_tp_meas = {}
+    for meas in l_meas:
+        if not meas.instance.pattern_id in d_tp_meas:
+            d_tp_meas[meas.instance.pattern_id] = {}
+        d_tpi_meas = d_tp_meas[meas.instance.pattern_id]
+        if not meas.instance.instance_id in d_tpi_meas:
+            d_tpi_meas[meas.instance.instance_id] = []
+        d_tpi_meas[meas.instance.instance_id].append(meas)
+    return d_tp_meas
 

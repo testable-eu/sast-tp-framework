@@ -115,9 +115,12 @@ async def measure_list_patterns(l_pattern_id: list[int], language: str,
         l_pattern_id, language, tools, tp_lib_path, meas_output_dir, workers)
     print("Measuring patterns with SAST completed.")
     print(f"- measurement results available here: {d_res['measurement_dir']}")
-    print(f"--- measured patterns ids: {d_res['measured_patterns_ids']}")
-    print(f"--- not measured patterns ids: {d_res['not_measured_patterns_ids']}")
     print(f"- SAST tool results available here: {meas_output_dir}")
+    print(f"--- {len(d_res['sast_job_execution_valid'])} SAST jobs run successfully")
+    if d_res['sast_job_collection_error']:
+        print(f"--- {len(d_res['sast_job_collection_error'])} errors in collecting SAST jobs")
+    if d_res['sast_job_execution_error']:
+        print(f"--- {len(d_res['sast_job_execution_error'])} errors in executing SAST jobs")
     print(f"- log file available here: {meas_output_dir / config.logfile}")
 
 

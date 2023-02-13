@@ -61,11 +61,11 @@ def get_or_create_pattern_dir(language: str, pattern_id: int, pattern_name: str,
 
 
 def get_pattern_dir_name_from_name(name: str, pattern_id: int) -> str:
-    return "{}_{}".format(pattern_id, name.lower().replace(" ", "_"))
+    return f"{pattern_id}_{name.lower().replace(' ', '_')}"
 
 
 def get_instance_dir_name_from_pattern(name: str, pattern_id: int, instance_id: int) -> str:
-    return "{}_instance_{}_{}".format(instance_id, pattern_id, name.lower().replace(" ", "_"))
+    return f"{instance_id}_instance_{get_pattern_dir_name_from_name(name, pattern_id)}"
 
 
 def get_id_from_name(name: str) -> int:
@@ -81,8 +81,17 @@ def get_class_from_str(class_str: str) -> object:
         raise ImportError(class_str)
 
 
+def get_tp_dir_for_language(tp_lib_dir: Path, language: str):
+    return Path(tp_lib_dir / language)
+
+
 def get_measurement_dir_for_language(tp_lib_dir: Path, language: str):
     return Path(tp_lib_dir / config.MEASUREMENT_REL_DIR / language)
+
+
+def get_measurement_file(date: datetime):
+    date_time_str = date.strftime("%Y-%m-%d_%H-%M-%S")
+    return f"measurement-{date_time_str}.json"
 
 
 def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:

@@ -6,17 +6,8 @@ from typing import Dict, Tuple
 
 
 class Pattern:
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            family: str,
-            tags: list[str],
-            instances: list[Path],
-            language: str,
-            pattern_id: int = None,
-            pattern_dir: Path = None
-    ) -> None:
+    def __init__(self, name: str, language: str, instances: list[Path], family: str = None, description: str = "",
+                 tags: list[str] = [], pattern_id: int = None, pattern_dir: Path = None) -> None:
         self.name = name
         self.description = description
         self.family = family
@@ -82,14 +73,10 @@ def get_pattern_path_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: P
 
 def pattern_from_dict(pattern_dict: Dict, language: str, pattern_id: int) -> Pattern:
     try:
-        return Pattern(
-            pattern_dict["name"],
-            pattern_dict["description"],
-            pattern_dict["family"],
-            pattern_dict["tags"],
-            pattern_dict["instances"],
-            language,
-            pattern_id
-        )
+        return Pattern(pattern_dict["name"], language, pattern_dict["instances"],
+                       family=pattern_dict.get("family", None),
+                       description=pattern_dict.get("description", ""),
+                       tags=pattern_dict.get("tags", []),
+                       pattern_id=pattern_id)
     except KeyError as e:
         raise PatternValueError(message=f"Key {e} was not found in pattern metadata")
