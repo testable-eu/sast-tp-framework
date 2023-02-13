@@ -1,3 +1,7 @@
+## Prerequisites
+
+- [Proposal for a new testability pattern](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-adding.md)
+
 # How to run: Add pattern
 
 ## Overview
@@ -7,7 +11,7 @@ TP Framework exposes a command to add a new pattern to a TP Catalog. This comman
 ## Command line
 To add a new pattern to the catalog you can use the command:
 
- ```bash
+```bash
 tpframework add [-h] -p PATTERN_DIR -l LANGUAGE [-j JSON_FILE] [--tp-lib TP_LIB_DIR] [-m]
 
 options:
@@ -22,7 +26,7 @@ options:
   -m, --measure         Measure pattern against all installed SASTs tools
 ```
 
-The `PATTERN_DIR` and the `LANGUAGE` are mandatory options. The `PATTERN_DIR` needs to comply with the [Testability patterns structure/schema](./Testability-patterns-structure.md). 
+The `PATTERN_DIR` and the `LANGUAGE` are mandatory options. The `PATTERN_DIR` needs to comply with the [Testability patterns structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md). 
 
 **Warning**: If successful the pattern and all its necessary artifacts will be added to the proper catalog. However any other file/folder in `PATTERN_DIR` that is not a mandatory pattern artifact will simply be ignored. If you want to add those additional files/folders, please do that manually after the pattern has been added.
 
@@ -32,5 +36,5 @@ _Optional_: You can specify the flag `--measure` if you want to measure your new
 
 _Optional_: By default TP Framework will use `./testability_pattern` folder as TP Catalogs root, but you can specify a different one by adding the _optional_ argument `--tp-lib TP_LIB_DIR` to your command.
 
-## Example [TODO]
+
 

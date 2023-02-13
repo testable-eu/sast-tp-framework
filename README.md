@@ -22,7 +22,7 @@ __Concepts__
 __How to__
 - [install](./docs/How-to-install.md)
 - [run (CLI)](./docs/How-to-run-CLI-Usage.md)
-- [add a Testability Pattern](./docs/How-to-add-a-Testability-Pattern.md)
+- [add a Testability Pattern](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-adding.md)
 - [add a SAST tool](./docs/How-to-add-a-SAST-tool.md)
 - [write discovery rules in Joern](./docs/How-to-write-discovery-rules-in-Joern.md)
 

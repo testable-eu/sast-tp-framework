@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - [Testability patterns overview](./Testability-Patterns.md)
-- [Testability patterns structure/schema](./Testability-patterns-structure.md)
+- [Testability patterns structure/schema](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
 
 ## Steps
 A pattern can be added to a SAST catalog either manually or via the tp-framework (see [here](./How-to-run-add-pattern.md)). The second option is recommended. 
@@ -26,9 +26,3 @@ In both the cases the pattern needs first to be created (as explained in the Tes
 ```
 
 __Important__: the pattern folder shall be _self-contained_ as files and folders outside it will be neglected! For instance, dependencies should not point outside the pattern folder.
-
-### Add via the framework
-_TODO_
-
-### Add manually
-_TODO_
