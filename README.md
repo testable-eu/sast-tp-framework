@@ -1,5 +1,5 @@
 # TP-Framework: Testability Pattern Framework for SAST
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/) [![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/) [![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 TP-Framework relies on [testability patterns](https://github.com/testable-eu/sast-testability-patterns) to reduce false positive/negative rate in SAST analysis over supported programming languages. Testability patterns are code patterns that make difficult for SAST tools to detect a vulnerability.
 
@@ -75,7 +75,7 @@ Follow us on Twitter on [@Testable_EU](https://twitter.com/Testable_EU) or check
 
 ## License
 
-This project is licensed under `GNU AFFERO GENERAL PUBLIC LICENSE V3.0`. See [LICENSE](LICENSE) for more information.
+This project is licensed under `Apache License Version 2.0 `. See [LICENSE](LICENSE) for more information. 
 
 ## Acknowledgements
 
