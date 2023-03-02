@@ -46,7 +46,7 @@ By running the following, the TP framework will be built and ready to be run
 docker-compose up --build
 ```
 
-> [NOTE] the build command may take a while, even 20 minutes
+> [NOTE] the build command may take a while, even 20 minutes. Our main docker file is based on a pre-built image based on ubuntu and including the Joern CPG for PHP (see here for more details: `https://hub.docker.com/r/malt33/php-cpg`).
 
 ### 4. Docker compose: run
 By running the following, the TP-framework will be running and a shell terminal will be started:  
