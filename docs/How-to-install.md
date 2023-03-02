@@ -5,8 +5,8 @@ We recommend using docker compose to install our framework, as explained hereaft
 ### 0. Requirements
 
 #### General requirements
-- [Docker](https://docs.docker.com/get-docker/).
-- [Joern CPG for PHP](https://github.com/joernio/querydb-php): you need to have access to this private repository (authentication through SSH). If you have not, get in touch with us. 
+- [Docker](https://docs.docker.com/get-docker/)
+<!-- - [Joern CPG for PHP](https://github.com/joernio/querydb-php): you need to have access to this private repository (authentication through SSH). If you have not, get in touch with us. -->
 
 #### SAST Tools requirements 
 
@@ -25,7 +25,7 @@ git submodule update --remote
 ```
 
 Note that some submodules will also be pulled, including:
-- [Joern CPG for PHP](https://github.com/joernio/querydb-php) <!-- TODO remove this submodule -->
+<!-- - [Joern CPG for PHP](https://github.com/joernio/querydb-php) -->
 - [Joern CPG for JS](https://github.com/ShiftLeftSecurity/js2cpg)
 - [Joern](https://github.com/joernio/joern)
 - [Testability Pattern Library](https://github.com/testable-eu/sast-tp-framework)
