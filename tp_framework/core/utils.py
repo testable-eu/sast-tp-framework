@@ -288,6 +288,8 @@ def report_results(results, output_dir, header, export_file=None):
 def get_exception_message(e):
     if hasattr(e, 'message'):
         return e.message
+    elif hasattr(e, 'msg'):
+        return e.msg
     else:
         return str(e)
 

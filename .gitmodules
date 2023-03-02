@@ -1,9 +1,6 @@
 [submodule "joern/js2cpg"]
 	path = discovery/joern/js2cpg
 	url = git@github.com:ShiftLeftSecurity/js2cpg.git
-[submodule "joern/querydb-php"]
-	path = discovery/joern/querydb-php
-	url = git@github.com:joernio/querydb-php.git
 [submodule "joern/joern"]
 	path = discovery/joern/joern
 	url = git@github.com:joernio/joern.git
