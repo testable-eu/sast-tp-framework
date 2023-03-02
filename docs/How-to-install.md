@@ -20,7 +20,7 @@ You can contribute by [adding an interface to a new SAST tool](./How-to-add-a-SA
 
 Clone our repository in your `<REPO>` folder and update submodules to last version with:
 ```buildoutcfg
-git clone -c core.autocrlf=false --recurse-submodules git@github.wdf.sap.corp:sast-testability-patterns/tp-framework.git
+git clone -c core.autocrlf=false --recurse-submodules git@github.com:testable-eu/sast-tp-framework.git
 git submodule update --remote
 ```
 
