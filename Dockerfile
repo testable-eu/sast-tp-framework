@@ -38,7 +38,7 @@ RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern/joern-install.sh
-RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/joern/ && ./joern-install.sh --version=v1.1.1269 --install-dir=/opt/joern'
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/joern/ && ./joern-install.sh --version=v1.1.1512 --install-dir=/opt/joern'
 
 #install js2cpg
 RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/js2cpg/; sbt stage'
