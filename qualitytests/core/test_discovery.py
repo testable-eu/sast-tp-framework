@@ -109,3 +109,9 @@ class TestDiscovery:
         with pytest.raises(CPGGenerationError):
             discovery.generate_cpg("whatever", "PHP", "test", tmp_path)
 
+
+    def test_patch_PHP_discovery_rule(self, tmp_path, capsys, mocker):
+        language = "PHP"
+        dr : Path = join_resources_path("sample_patlib/PHP/3_global_array/1_instance_3_global_array/1_instance_3_global_array.sc")
+        pdr = discovery.patch_PHP_discovery_rule(dr, language)
+        assert Path.is_file(pdr)

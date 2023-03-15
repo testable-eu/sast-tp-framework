@@ -130,6 +130,28 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
         raise e
 
 
+def patch_PHP_discovery_rule(discovery_rule, language):
+    if language != "PHP":
+        return discovery_rule
+    with open(discovery_rule) as ifile:
+        # TODO: to be continued
+        t_str = ".location.toJson);"
+        p_str = ".repeat(_.astParent)(_.until(_.filter(x => x.lineNumber.getOrElse(-1) != -1))).location.toJson);"
+        lines = ifile.readlines()
+        newlines = []
+        changed = False
+        for l in lines:
+            newl = l.replace(t_str, p_str)
+            newlines.append(newl)
+            if newl != l:
+                changed = True
+        if not changed:
+            return discovery_rule
+        new_discovery_rule = discovery_rule.parent / str("patched_"+discovery_rule.name)
+        with open(new_discovery_rule, "w") as ofile:
+            ofile.writelines(newlines)
+        return new_discovery_rule
+
 
 # TODO - discovery: refactoring needed. Even more important, we do not want to run the same discovery rule (actually, the same
 #  Joern rule of the discovery rule) more than once. E.g., there may be a pattern instance not supported by many tools,
@@ -168,8 +190,11 @@ def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Di
     for discovery_rule in discovery_rules_to_run.keys():
         pattern_meas = discovery_rules_to_run[discovery_rule][0]
         try:
+            # related to #42
+            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language)
+            #
             cpg_file_name, query_name, findings_for_pattern = run_discovery_rule(
-                cpg, discovery_rule,
+                cpg, patched_discovery_rule,
                 pattern_meas.instance.discovery_method
             )
         except DiscoveryMethodNotSupported as e:
