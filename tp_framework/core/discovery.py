@@ -338,7 +338,11 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     failed = []
     for discovery_rule in discovery_rules:
         try:
-            cpg_file_name, query_name, findings_for_rule = run_discovery_rule(cpg, discovery_rule, discovery_method)
+            # related to #42
+            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language)
+            #
+            cpg_file_name, query_name, findings_for_rule = run_discovery_rule(
+                cpg, patched_discovery_rule, discovery_method)
             logger.info("Parsing the results of specific discovery rules started...")
             try:
                 if len(findings_for_rule) == 0:
