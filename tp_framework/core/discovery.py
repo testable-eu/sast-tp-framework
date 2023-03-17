@@ -130,7 +130,7 @@ def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -
         raise e
 
 
-def patch_PHP_discovery_rule(discovery_rule, language):
+def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Path = None):
     if language != "PHP":
         return discovery_rule
     with open(discovery_rule) as ifile:
@@ -147,7 +147,9 @@ def patch_PHP_discovery_rule(discovery_rule, language):
                 changed = True
         if not changed:
             return discovery_rule
-        new_discovery_rule = discovery_rule.parent / str("patched_"+discovery_rule.name)
+        if not output_dir:
+            output_dir = discovery_rule.parent
+        new_discovery_rule = output_dir / str("patched_"+discovery_rule.name)
         with open(new_discovery_rule, "w") as ofile:
             ofile.writelines(newlines)
         return new_discovery_rule
@@ -157,7 +159,7 @@ def patch_PHP_discovery_rule(discovery_rule, language):
 #  Joern rule of the discovery rule) more than once. E.g., there may be a pattern instance not supported by many tools,
 #  so discovery by tool is not the right way...
 def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Dict, language: str,
-                       tp_lib_dir: Path):
+                       tp_lib_dir: Path, output_dir: Path = None):
     if tool is {}:
         pattern_not_supported_by_tool: list[Measurement] = pattern_instances
     else:
@@ -191,7 +193,7 @@ def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Di
         pattern_meas = discovery_rules_to_run[discovery_rule][0]
         try:
             # related to #42
-            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language)
+            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=output_dir)
             #
             cpg_file_name, query_name, findings_for_pattern = run_discovery_rule(
                 cpg, patched_discovery_rule,
@@ -304,10 +306,10 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
 
     findings_for_tools: list[Dict] = []
     if tools is []:
-        discovery_for_tool(cpg, last_meas, {}, language, tp_lib_path)
+        discovery_for_tool(cpg, last_meas, {}, language, tp_lib_path, output_dir=disc_output_dir)
     else:
         for tool in tools:
-            findings_for_tools = findings_for_tools + discovery_for_tool(cpg, last_meas, tool, language, tp_lib_path)
+            findings_for_tools = findings_for_tools + discovery_for_tool(cpg, last_meas, tool, language, tp_lib_path, output_dir=disc_output_dir)
 
     for f in findings_for_tools:
         f["instanceId"] = (''.join(f'{iid}, ' for iid in f["instanceId"]))[:-2]
@@ -339,7 +341,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     for discovery_rule in discovery_rules:
         try:
             # related to #42
-            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language)
+            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=disc_output_dir)
             #
             cpg_file_name, query_name, findings_for_rule = run_discovery_rule(
                 cpg, patched_discovery_rule, discovery_method)

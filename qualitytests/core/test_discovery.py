@@ -110,8 +110,18 @@ class TestDiscovery:
             discovery.generate_cpg("whatever", "PHP", "test", tmp_path)
 
 
-    def test_patch_PHP_discovery_rule(self, tmp_path, capsys, mocker):
+    def test_patch_PHP_discovery_rule_1(self, tmp_path):
         language = "PHP"
         dr : Path = join_resources_path("sample_patlib/PHP/3_global_array/1_instance_3_global_array/1_instance_3_global_array.sc")
         pdr = discovery.patch_PHP_discovery_rule(dr, language)
         assert Path.is_file(pdr)
+        assert str(dr.parent) in str(pdr)
+
+
+    def test_patch_PHP_discovery_rule_2(self, tmp_path):
+        language = "PHP"
+        dr: Path = join_resources_path(
+            "sample_patlib/PHP/3_global_array/1_instance_3_global_array/1_instance_3_global_array.sc")
+        pdr = discovery.patch_PHP_discovery_rule(dr, language, output_dir=tmp_path)
+        assert Path.is_file(pdr)
+        assert str(tmp_path) in str(pdr)
