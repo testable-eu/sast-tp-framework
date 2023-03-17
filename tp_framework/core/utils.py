@@ -96,6 +96,8 @@ def get_measurement_file(date: datetime):
 
 def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:
     measurements: list[Path] = list(meas_inst_dir.iterdir())
+    if len(measurements) == 1:
+        return measurements[0]
     sorted_meas: list[Tuple[datetime, Path]] = list(sorted(
         zip(
             map(lambda m: datetime.strptime(m.name.split(".")[0].split("measurement-")[1], "%Y-%m-%d_%H-%M-%S"),

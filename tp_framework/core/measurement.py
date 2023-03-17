@@ -87,7 +87,7 @@ def load_from_metadata(file: Path, language: str) -> list[Measurement]:
 
     parsed_meas: list[Measurement] = []
     for m in meas:
-        instance = load_instance_from_metadata(m["instance"], file.parents[4], language)
+        instance = load_instance_from_metadata(m["instance"], file.parents[4], language) # TODO: the tp_lib root is computed from the file assuming a very strict file system structure. Can we do better?
         parsed_meas.append(Measurement(
             m["date"],
             m["result"],
