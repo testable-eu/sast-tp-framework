@@ -145,16 +145,19 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                 meas: measurement.Measurement = measurement.load_last_measurement_for_tool(
                     tool, language, tp_lib_path, pattern_id, instance_id
                 )
-                row = {
-                    "pattern_id": meas.instance.pattern_id,
-                    "instance_id": meas.instance.instance_id,
-                    "pattern_name": meas.instance.name,
-                    "language": language,
-                    "tool": f"{meas.tool}:{meas.version}",
-                    "results": "YES" if meas.result else "NO",
-                    "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
-                }
-                results.append(row)
+                if not meas:
+                    continue
+                else:
+                    row = {
+                        "pattern_id": meas.instance.pattern_id,
+                        "instance_id": meas.instance.instance_id,
+                        "pattern_name": meas.instance.name,
+                        "language": language,
+                        "tool": f"{meas.tool}:{meas.version}",
+                        "results": "YES" if meas.result else "NO",
+                        "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
+                    }
+                    results.append(row)
     header = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
     utils.report_results(results, output_dir, header, export_file=export_file)
     print("")

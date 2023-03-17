@@ -52,9 +52,15 @@ def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_
     if timeout_sec > 0:
         gen_cpg_with_params_cmd = f"timeout {timeout_sec} {gen_cpg_with_params_cmd}"
 
-    os.chdir(config.ROOT_DIR / language_cpg_conf['installation_dir'])
+    # related #46
+    inst_dir: str = language_cpg_conf['installation_dir']
+    if inst_dir.startswith("/"):
+        working_dir = Path(inst_dir)
+    else:
+        working_dir = config.ROOT_DIR / inst_dir
+    #
     try:
-        cpg_gen_output = run_generate_cpg_cmd(gen_cpg_with_params_cmd)
+        cpg_gen_output = run_generate_cpg_cmd(gen_cpg_with_params_cmd, working_dir)
     except Exception:
         logger.debug("CPG generation failed while running the os command")
         rs = CPGGenerationError()
@@ -73,7 +79,7 @@ def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_
         rs = CPGGenerationError()
         logger.exception(rs)
         raise rs
-    os.chdir(config.ROOT_DIR)
+    # os.chdir(config.ROOT_DIR) # it should not be necessary anymore after changes done for #46
     logger.info(f"Generation of CPG for {rel_src_dir_path}: done.")
     return binary_out
 
@@ -84,9 +90,16 @@ def run_joern_scala_query_for_test(joern_scala_query_for_test_cmd):
     return output
 
 
-def run_generate_cpg_cmd(gen_cpg_with_params_cmd: str):
+def run_generate_cpg_cmd(gen_cpg_with_params_cmd: str, working_dir: Path):
     # created a specific function to ease the testing mock-up
-    output = subprocess.check_output(gen_cpg_with_params_cmd, shell=True).decode('utf-8-sig')
+    curr_working_dir = os.getcwd()
+    os.chdir(working_dir)
+    try:
+        output = subprocess.check_output(gen_cpg_with_params_cmd, shell=True).decode('utf-8-sig')
+        os.chdir(curr_working_dir)
+    except Exception as e:
+        os.chdir(curr_working_dir)
+        raise e
     return output
 
 
@@ -97,6 +110,13 @@ def run_discovery_rule_cmd(run_joern_scala_query: str):
 
 def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -> Tuple[str, str, list[Dict]]:
     logger.debug(f"Discovery - rule execution to be executed: {cpg}, {discovery_rule}, {discovery_method}")
+    # related to #36
+    default_discovery_method = config.DEFAULT_DISCOVERY_METHOD
+    if not discovery_method and discovery_rule.suffix == utils.get_discovery_rule_ext(default_discovery_method):
+        logger.warning(
+            f"No discovery method has been specified. Likely you need to modify the discovery->method property in the JSON file of the pattern instance related to the discovery rule {discovery_rule}. We will continue with the default discovery method for Scala discovery rules (aka '{default_discovery_method}').")
+        discovery_method = default_discovery_method
+    #
     if discovery_method == "joern":
         run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
         try:
@@ -149,7 +169,7 @@ def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Pa
             return discovery_rule
         if not output_dir:
             output_dir = discovery_rule.parent
-        new_discovery_rule = output_dir / str("patched_"+discovery_rule.name)
+        new_discovery_rule = output_dir / str(config.PATCHED_PREFIX + discovery_rule.name)
         with open(new_discovery_rule, "w") as ofile:
             ofile.writelines(newlines)
         return new_discovery_rule
@@ -273,7 +293,9 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
     # ###########
 
     meas_lang_dir: Path = utils.get_measurement_dir_for_language(tp_lib_path, language)
-    dirs = list(meas_lang_dir.iterdir())
+    dirs = []
+    if meas_lang_dir.is_dir():
+        dirs = list(meas_lang_dir.iterdir())
     meas_p_id_path_list: Dict = dict(zip(
         map(lambda d: utils.get_id_from_name(d.name), dirs),
         dirs

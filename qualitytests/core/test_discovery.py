@@ -17,7 +17,7 @@ from qualitytests_utils import join_resources_path, get_result_output_dir
 class TestDiscovery:
     testdir = Path(__file__).parent.parent.resolve()
 
-    def test_discovery(self, mocker: MockerFixture, capsys, tmp_path):
+    def test_discovery_1(self, mocker: MockerFixture, capsys, tmp_path):
         samples_src_dir: Path = join_resources_path("sample_tarpit")
         sample_tp_lib: Path = join_resources_path("sample_patlib")
         output_dir = join_resources_path("../temp").resolve()
@@ -40,6 +40,44 @@ class TestDiscovery:
         assert d_res["used_measured_patterns_ids"] == [1,2]
         assert d_res["ignored_not_measured_patterns_ids"] == []
         assert any(Path(d_res["discovery_result_file"]).name == e.name for e in disc_output_dir.iterdir())
+
+
+    def test_discovery_2(self, mocker: MockerFixture, capsys, tmp_path, caplog):
+        # Test JS patterns for which some has no discovery method specified
+        samples_src_dir: Path = join_resources_path("sample_tarpit")
+        sample_tp_lib: Path = join_resources_path("sample_patlib")
+        output_dir = join_resources_path("../temp").resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        tools: list[Dict] = [{
+            "name": "dummyTool",
+            "version": "1"
+        }]
+        language = "JS"
+        mocked_tool_interface: Dict = {
+            "supported_languages": ["JS"],
+            "tool_interface": "qualitytests.core.sast_test.SastTest"
+        }
+        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+        mocker.patch("core.discovery.generate_cpg",
+                     return_value=tmp_path / "cpg_binary.bin",
+                     side_effect=self._create_mock_cpg(tmp_path / "cpg_binary.bin"))
+
+        # with open(join_resources_path("sample_joern") / "joern_discovery_query_res.json", "r") as data_file:
+        #     joern_res = json.load(data_file)
+
+        with open(join_resources_path("sample_joern") / "joern_discovery_scala_rule_res.txt", "r") as data_file:
+            exp_joern_res = bytes(data_file.read(), 'utf-8-sig')
+        # mocker.patch("core.discovery.subprocess.check_output",
+        #              return_value=exp_joern_res)
+        mocker.patch("core.discovery.run_discovery_rule_cmd",
+                     return_value=exp_joern_res)
+        mocker.patch.object(config, "RESULT_DIR", tmp_path)
+        build_name, disc_output_dir = utils.get_operation_build_name_and_dir("discovery", samples_src_dir, language, output_dir)
+        d_res = discovery.discovery(samples_src_dir, [1, 2], sample_tp_lib, tools, language, build_name, disc_output_dir)
+        assert d_res["used_measured_patterns_ids"] == [2]
+        assert d_res["ignored_not_measured_patterns_ids"] == [1]
+        assert any(Path(d_res["discovery_result_file"]).name == e.name for e in disc_output_dir.iterdir())
+        assert any(f"No discovery method has been specified. Likely you need to modify the discovery->method property" in record.message for record in caplog.records)
 
 
     # TODO
@@ -112,7 +150,7 @@ class TestDiscovery:
 
     def test_patch_PHP_discovery_rule_1(self, tmp_path):
         language = "PHP"
-        dr : Path = join_resources_path("sample_patlib/PHP/3_global_array/1_instance_3_global_array/1_instance_3_global_array.sc")
+        dr: Path = join_resources_path("sample_patlib/PHP/3_global_array/1_instance_3_global_array/1_instance_3_global_array.sc")
         pdr = discovery.patch_PHP_discovery_rule(dr, language)
         assert Path.is_file(pdr)
         assert str(dr.parent) in str(pdr)
