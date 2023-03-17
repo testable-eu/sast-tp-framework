@@ -99,23 +99,23 @@ def load_from_metadata(file: Path, language: str) -> list[Measurement]:
     return parsed_meas
 
 
-def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, pattern_id: int,
-                                   instance_id: int) -> Measurement:
+def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, p_id: int,
+                                   pi_id: int) -> Measurement:
     # TODO - load last measurement: the code hereafter strongly depends on the folder notation in place for
     #       patterns and pattern instances. Make sure to factorize in function what needs to
     #       and to generalize the approach as much as we can to rely the least possible on
     #       the strict notation
-    pattern_dir: Path = utils.get_pattern_dir_from_id(pattern_id, language, tp_lib_dir)
+    pattern_dir: Path = utils.get_pattern_dir_from_id(p_id, language, tp_lib_dir)
     pattern_dir_name: str = pattern_dir.name
-    instance_dir_name: str = f"{instance_id}_instance_{pattern_dir_name}"
+    instance_dir_name: str = f"{pi_id}_instance_{pattern_dir_name}"
     instance_dir: Path = pattern_dir / instance_dir_name
     if not instance_dir.is_dir():
-        ee = InstanceDoesNotExists(instance_id=instance_id)
+        ee = InstanceDoesNotExists(instance_id=pi_id)
         logger.exception(ee)
         raise ee
     measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib_dir, language) / pattern_dir_name / instance_dir_name
     if not measurement_dir_for_pattern_instance.is_dir():
-        ee = MeasurementNotFound(pattern_id)
+        ee = MeasurementNotFound(p_id)
         logger.exception(ee)
         raise ee
     meas_file_list = list(
@@ -131,6 +131,9 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
                utils.sast_tool_version_match(m.version, tool["version"]),
                measurements)
     )
+    if not measurements_for_tool:
+        logger.warning(f'No measurement has been found for tool {tool["name"]}:{tool["version"]} on pattern {p_id} instance {pi_id}')
+        return None
     return sorted(measurements_for_tool, reverse=True)[0]
 
 

@@ -163,6 +163,9 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
             logger.warning(errors.wrongDiscoveryRule(discovery_rule) + " It is not a valid path. The script will try to continue ignoring this discovery rule.")
         if discovery_rule_path.is_dir():
             for p in discovery_rule_path.glob('**/*' + discovery_rule_ext):
+                # related to #42
+                if p.name.startswith(config.PATCHED_PREFIX):
+                    continue
                 discovery_rules_to_run.add(p)
         elif str(discovery_rule_path).endswith(discovery_rule_ext) and discovery_rule_path.is_file():
             discovery_rules_to_run.add(discovery_rule_path)

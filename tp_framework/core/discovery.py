@@ -169,7 +169,7 @@ def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Pa
             return discovery_rule
         if not output_dir:
             output_dir = discovery_rule.parent
-        new_discovery_rule = output_dir / str("patched_"+discovery_rule.name)
+        new_discovery_rule = output_dir / str(config.PATCHED_PREFIX + discovery_rule.name)
         with open(new_discovery_rule, "w") as ofile:
             ofile.writelines(newlines)
         return new_discovery_rule

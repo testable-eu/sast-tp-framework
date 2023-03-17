@@ -40,3 +40,4 @@ DISCOVERY_RULE_MAPPING = {
     "joern": ".sc"
 }
 
+PATCHED_PREFIX = "__P@TCHED__"
