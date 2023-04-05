@@ -15,6 +15,7 @@ tpframework COMMAND --help
 ```
 
 The following main commands are currently implemented:
+
 - [`add`](./How-to-run-add-pattern.md): add a pattern
 - [`measure`](./How-to-run-Measure-SAST-tools-over-patterns.md): measure SAST tools against patterns 
 - discovery: discover patterns in project source code
@@ -23,6 +24,7 @@ The following main commands are currently implemented:
 - reporting: create reports about SAST measurement and/or pattern discovery (__TODO__)
 
 The following are under-investigation:
+
 - `update`: update a pattern (_to be implemented_)
 - `scan`: scan a project source code (_to be implemented_)
 - `remediation`: remediate a pattern via code transformations, SAST custom rules, ... (_to be implemented_)

@@ -1,10 +1,12 @@
 __Concepts__
-- [Testability pattern overview](./Testability-Patterns.md) 
-- [Testability pattern structure/schema](./Testability-patterns-structure.md)
-- [Catalogs of Testability Patterns](./Catalogs-of-Testability-Patterns.md)
+
+- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md#testability-patterns-introduction)
+- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md#prerequisites)
+- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/README.md)
 - Framework architecture
 
 __How to__
+
 - [install](./How-to-install.md)
 - [run (CLI)](./How-to-run-CLI-Usage.md)
 - [add a Testability Pattern](./How-to-add-a-Testability-Pattern.md)
@@ -12,4 +14,5 @@ __How to__
 - [write discovery rules in Joern](./How-to-write-discovery-rules-in-Joern.md)
 
 __Others__
+
 - [community](./Community.md)
