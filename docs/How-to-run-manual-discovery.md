@@ -8,7 +8,7 @@ This command allows to execute discovery rules on a target application source co
 
 To execute discovery rules against a targeted application source code run this command:
 
-```
+```text
 tpframework manual-discovery [-h] -t TARGET_DIR -l LANGUAGE -m METHOD -r RULES_PATH [RULES_PATH ...]
                                                       [-s NUMBER]
 

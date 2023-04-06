@@ -1,11 +1,11 @@
-# A Community around Testability Patterns for SAST 
+# A Community around Testability Patterns for SAST
 
 Our SAST testability patterns and related framework target the following main groups:
 
 - Web developers
   - discover our testability patterns in development project so to get awareness of the code areas that are not analysed by the SAST tools used
   - with that awareness, a developer can estimate the risk of SAST incomplete analysis in her project
-  - this can trigger remediation actions such as 
+  - this can trigger remediation actions such as
     - refactoring the code problematic for SAST
     - performing more intensive code review for the code areas missed by SAST
     - interacting with the central security team to get feedback and remediation guidelines

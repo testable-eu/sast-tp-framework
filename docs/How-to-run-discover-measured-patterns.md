@@ -2,7 +2,7 @@
 
 ## Overview
 
-This commands allows to discover pattern instances not supported by any of the tools in the arsenal. This requires the pattern instances intended to be discovered to be associated with discovery rules. 
+This commands allows to discover pattern instances not supported by any of the tools in the arsenal. This requires the pattern instances intended to be discovered to be associated with discovery rules.
 
 ## Command line
 
