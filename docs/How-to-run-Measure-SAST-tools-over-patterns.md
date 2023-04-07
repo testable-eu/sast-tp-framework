@@ -1,9 +1,11 @@
 # How to run: Measure SAST tools over patterns
 
 ## Overview
-This command measures the SAST tools in the framework against the patterns in the catalogs. The goal is to have a precise idea of which patterns are problematic for a SAST tool and which ones are not. 
- 
+
+This command measures the SAST tools in the framework against the patterns in the catalogs. The goal is to have a precise idea of which patterns are problematic for a SAST tool and which ones are not.
+
 ## Command line
+
 To measure a pattern already added to the catalogs using all available SAST in the arsenal run:
 
 ```bash
@@ -23,13 +25,14 @@ options:
                         Number of workers running measurements in parallel
 ```
 
-The only mandatory option is `LANGUAGE`. 
+You have to at least provide the language (`LANGUAGE`) and the pattern ids (`PATTERN_ID`) to be measured.
+Instead of specifying certain pattern ids, you can use `-a`.
+**Warning** if `-a` is set, the framework will run a measurement on every pattern present in the catalog relatively to the specified language.
 
-**Warning**: If you don't specify any `PATTERN_ID ` in `-p`, the framework will run a measurement on every pattern present in the catalog relatively to the specified language.
-
-_Optional_: By default the framework will use `./testability_pattern` folder as root for TP Catalog, but you can specify a different one by adding the _optional_ argument `--tp-lib TP_LIB_DIR` to your command.
+*Optional*: By default the framework will use `./testability_pattern` folder as root for TP Catalog, but you can specify a different one by adding the *optional* argument `--tp-lib TP_LIB_DIR` to your command.
 
 **Output**: The result of the measurement will be available in the folder `./TP_LIB_DIR/measurements/LANGUAGE` that simply mirrors the structure of the `TP_LIB_DIR/LANGUAGE/` and will only list the patterns that have been measured. For each pattern instance measured, the command will produce a json file like the following, where two SAST tools have been measured and only one provided the correct expected result:
+
 ```json
 [
     {
@@ -50,7 +53,14 @@ _Optional_: By default the framework will use `./testability_pattern` folder as 
 ```
 
 ## Example
+
 Here a simple example that will measure patterns 1, 2, 4 and 7 from the PHP catalog with 3 workers:
+
 ```bash
 tpframework measure -l PHP -p 1 2 4 7 -w 3
 ```
+
+## Required fields in instance `json` metadata
+
+The explanation for the instance `json` metadata can be found [here](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
+TODO: write here which json fields are required so that the framework can implement measure

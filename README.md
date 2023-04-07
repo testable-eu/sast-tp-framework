@@ -1,25 +1,28 @@
 # TP-Framework: Testability Pattern Framework for SAST
+
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/download/releases/3.10/) [![Generic badge](https://img.shields.io/badge/dockerized-yes-<COLOR>.svg)](https://shields.io/) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 TP-Framework relies on [testability patterns](https://github.com/testable-eu/sast-testability-patterns) to reduce false positive/negative rate in SAST analysis over supported programming languages. Testability patterns are code patterns that make difficult for SAST tools to detect a vulnerability.
 
 TP-Framework enables operations such as:
-- measurement of SAST tools against a catalog of testability patterns, and 
-- discovery of testability patterns within application source code 
 
-In the future, we aim to enable patterns' transformations from the framework to improve the testability of the application to be scanned via SAST.   
+- measurement of SAST tools against a catalog of testability patterns, and
+- discovery of testability patterns within application source code
 
-**OWASP Project:** This project has a OWASP website available at: https://owasp.org/www-project-testability-patterns-for-web-applications/.
+In the future, we aim to enable patterns' transformations from the framework to improve the testability of the application to be scanned via SAST.
 
+__OWASP Project:__ This project has a OWASP website available at: https://owasp.org/www-project-testability-patterns-for-web-applications/.
 
 ## Quick Start
 
 __Concepts__
-- [Testability pattern overview](./docs/Testability-Patterns.md) 
-- [Testability pattern structure](./docs/Testability-patterns-structure.md)
+
+- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md#testability-patterns-introduction)
+- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md#prerequisites)
 - [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/README.md)
 
 __How to__
+
 - [install](./docs/How-to-install.md)
 - [run (CLI)](./docs/How-to-run-CLI-Usage.md)
 - [add a Testability Pattern](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-adding.md)
@@ -57,25 +60,21 @@ tpframework -h
 
 Detailed documentation is available in the [docs](./docs/README.md) folder. Also, a related publication presented at NDSS 2022 is available [here](https://www.ndss-symposium.org/wp-content/uploads/2022-150-paper.pdf).
 
-
 ## Contributions
 
 You can contribute to this repository through bug-reports, bug-fixes, new code or new documentation. For any report, please [raise an issue](https://github.com/testable-eu/sast-tp-framework/issues/new) in the repository before submitting a PR. We welcome suggestions and feedback from the community.
-
 
 ## Publications
 
 To see the complete list publications, please visit [https://testable.eu/publications/](https://testable.eu/publications/).
 
-
 ## News
 
 Follow us on Twitter on [@Testable_EU](https://twitter.com/Testable_EU) or check out TESTABLE website available at [https://testable.eu/](https://testable.eu/).
 
-
 ## License
 
-This project is licensed under `Apache License Version 2.0 `. See [LICENSE](LICENSE) for more information. 
+This project is licensed under `Apache License Version 2.0 `. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 
