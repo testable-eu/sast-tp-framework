@@ -16,12 +16,12 @@ htmlcov
 *.crt
 *.pub
 
-# tp-framework: in/out folders
-out/
-discovery-in/
-in/
+# tp-framework: in/out root folders and similar ones
+/out/
+/discovery-in/
+/in/
 /results/
-reviews/
+/reviews/
 
 # tp-framework: specific environment variables
 .env
