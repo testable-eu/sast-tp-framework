@@ -62,5 +62,5 @@ tpframework measure -l PHP -p 1 2 4 7 -w 3
 
 ## Required fields in instance `json` metadata
 
-The explanation for the instance `json` metadata can be found [here](./../testability_patterns/docs/testability-patterns-structure.md)
+The explanation for the instance `json` metadata can be found [here](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
 TODO: write here which json fields are required so that the framework can implement measure

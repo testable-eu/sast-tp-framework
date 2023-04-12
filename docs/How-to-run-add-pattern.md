@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [Proposal for a new testability pattern](./../testability_patterns/docs/testability-patterns-adding.md)
+- [Proposal for a new testability pattern](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-adding.md)
 
 ## Overview
 
@@ -27,7 +27,7 @@ options:
   -m, --measure         Measure pattern against all installed SASTs tools
 ```
 
-The `PATTERN_DIR` and the `LANGUAGE` are mandatory options. The `PATTERN_DIR` needs to comply with the [Testability patterns structure](./../testability_patterns/docs/testability-patterns-structure.md).
+The `PATTERN_DIR` and the `LANGUAGE` are mandatory options. The `PATTERN_DIR` needs to comply with the [Testability patterns structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md).
 
 **Warning**: If successful the pattern and all its necessary artifacts will be added to the proper catalog. However any other file/folder in `PATTERN_DIR` that is not a mandatory pattern artifact will simply be ignored. If you want to add those additional files/folders, please do that manually after the pattern has been added.
 

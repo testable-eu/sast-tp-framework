@@ -36,5 +36,5 @@ For instance, the following will execute the scala discovery rule `3_instance_80
 
 ## Required fields in instance `json` metadata
 
-The explanation for the instance `json` metadata can be found [here](./../testability_patterns/docs/testability-patterns-structure.md)
+The explanation for the instance `json` metadata can be found [here](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
 TODO: write here which json fields are required so that the framework can implement manual discover

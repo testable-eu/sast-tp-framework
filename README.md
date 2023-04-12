@@ -17,15 +17,15 @@ __OWASP Project:__ This project has a OWASP website available at: https://owasp.
 
 __Concepts__
 
-- [Testability Pattern Overview](./testability_patterns/docs/testability-patterns.md)
-- [Testability Pattern Structure](./testability_patterns/docs/testability-patterns-structure.md)
-- [Catalogs of Testability Patterns](./testability_patterns/docs/catalogs-of-testability-patterns.md)
+- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md)
+- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
+- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/catalogs-of-testability-patterns.md)
 
 __How to__
 
 - [install](./docs/How-to-install.md)
 - [run (CLI)](./docs/How-to-run-CLI-Usage.md)
-- [add a Testability Pattern](./testability_patterns/docs/testability-patterns-adding.md)
+- [add a Testability Pattern](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-adding.md)
 - [add a SAST tool](./docs/How-to-add-a-SAST-tool.md)
 - [write discovery rules in Joern](./docs/How-to-write-discovery-rules-in-Joern.md)
 
