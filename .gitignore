@@ -20,7 +20,7 @@ htmlcov
 out/
 discovery-in/
 in/
-results/
+/results/
 reviews/
 
 # tp-framework: specific environment variables
