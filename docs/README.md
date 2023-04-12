@@ -2,9 +2,9 @@
 
 ## Concepts
 
-- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md#testability-patterns-introduction)
-- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md#prerequisites)
-- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/README.md)
+- [Testability Pattern Overview](./../testability_patterns/docs/testability-patterns.md)
+- [Testability Pattern Structure](./../testability_patterns/docs/testability-patterns-structure.md)
+- [Catalogs of Testability Patterns](./../testability_patterns/docs/catalogs-of-testability-patterns.md)
 - Framework architecture
 
 ## How to
