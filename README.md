@@ -17,9 +17,9 @@ __OWASP Project:__ This project has a OWASP website available at: https://owasp.
 
 __Concepts__
 
-- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md#testability-patterns-introduction)
-- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md#prerequisites)
-- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/README.md)
+- [Testability Pattern Overview](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns.md)
+- [Testability Pattern Structure](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/testability-patterns-structure.md)
+- [Catalogs of Testability Patterns](https://github.com/testable-eu/sast-testability-patterns/blob/master/docs/catalogs-of-testability-patterns.md)
 
 __How to__
 
@@ -37,7 +37,7 @@ So far, we have created a catalog of testability patterns for the following prog
 - PHP
 - JavaScript
 
-The complete list of patterns is available at [Testability Pattern Catalogs for SAST](https://github.com/testable-eu/sast-testability-patterns) repository.
+The complete list of patterns is available at [Testability Patterns for SAST](https://github.com/testable-eu/sast-testability-patterns) repository (also included as a submodule of this project `.\testability_patterns`).
 
 
 ## Running
