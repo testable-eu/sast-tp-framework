@@ -5,4 +5,10 @@ services:
     build:
       context: .
       dockerfile: './Dockerfile'
+      args:
+        REQUIREMENTS_FILE: "requirements-dev.txt"
+        TESTS_DIR: "qualitytests"
+    volumes:
+      - ./out:/tp-framework/out
+      - ./qualitytests:/tp-framework/qualitytests
     entrypoint: pytest

@@ -29,6 +29,7 @@ services:
       - ./in:/tp-framework/in
       - ./SAST:/SAST
       - ./tp_framework:/tp-framework/tp_framework
+      - ./discovery:/tp-framework/discovery
     entrypoint: bash
 
 volumes:

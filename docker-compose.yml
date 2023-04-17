@@ -16,7 +16,7 @@ services:
       context: .
       args:
         REQUIREMENTS_FILE: "requirements.txt"
-        TESTS_DIR: "config.py" # fake tests directory to prevent copying `tests` in production
+        TESTS_DIR: "qualitytests"
       dockerfile: "./Dockerfile"
     env_file:
       - ./.env
@@ -26,6 +26,7 @@ services:
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out
       - ./in:/tp-framework/in
+      - ./qualitytests:/tp-framework/qualitytests
     entrypoint: bash
 
 volumes:
