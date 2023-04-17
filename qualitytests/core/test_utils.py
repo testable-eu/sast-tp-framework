@@ -7,7 +7,7 @@ import core.instance
 import core.pattern
 from core import utils
 from core.exceptions import PatternDoesNotExists, TPLibDoesNotExist, LanguageTPLibDoesNotExist, DiscoveryMethodNotSupported
-import qualitytests_utils
+import qualitytests.qualitytests_utils as qualitytests_utils
 
 def setup_three_pattern(tmp_path: Path):
     language: str = "PHP"

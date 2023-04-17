@@ -5,7 +5,7 @@ import asyncio
 from pytest_mock import MockerFixture
 pytest_plugins = ('pytest_asyncio',)
 
-import qualitytests_utils
+import qualitytests.qualitytests_utils as qualitytests_utils
 
 from core import measure
 from core.exceptions import PatternDoesNotExists

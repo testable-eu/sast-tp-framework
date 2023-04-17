@@ -11,7 +11,7 @@ from cli import interface
 from core.errors import measurementNotFound
 from core.exceptions import DiscoveryRuleParsingResultError
 
-from qualitytests_utils import join_resources_path, create_mock_cpg, \
+from qualitytests.qualitytests_utils import join_resources_path, create_mock_cpg, \
     get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \
     init_sastreport_test, init_test
 
