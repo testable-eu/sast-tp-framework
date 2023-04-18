@@ -29,7 +29,7 @@ COPY pytest.ini ${TPF_HOME}/pytest.ini
 COPY SAST/requirements.txt ${SAST_DIR}/requirements.txt
 COPY SAST/sast-config.yaml ${SAST_DIR}/sast-config.yaml
 
-ARG TESTS_DIR
+ARG TESTS_DIR="qualitytests"
 COPY ${TESTS_DIR}/requirements.txt ${TPF_HOME}/${TESTS_DIR}/requirements.txt
 
 ARG REQUIREMENTS_FILE

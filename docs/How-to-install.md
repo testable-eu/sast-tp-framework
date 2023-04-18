@@ -96,7 +96,7 @@ docker-compose -f <name_if_yml_file> up --build
 
 **Note**: When runnning tests, you might want to add `-d` in the end, such that the container runs in detached mode. Once the image is build, for running the tests, you can omit the `--build`.
 
-**Note**: When the `-f` option is omitted, the default `docker-compose.yml` will be used. If using the default or the development you can get a shell as described [here](./How-to-install.md#4-docker-compose-run)
+**Note**: When the `-f` option is omitted, the default `docker-compose.yml` will be used. If using the default or the development you can get a shell as described [here](./How-to-install.md#4-docker-compose-run) for development, you might need to replace `tp-framework` with `tp-framework-dev`.
 
 ## FAQ
 
