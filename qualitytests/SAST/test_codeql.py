@@ -2,7 +2,7 @@ import pytest
 import asyncio
 pytest_plugins = ('pytest_asyncio',)
 
-import qualitytests_utils
+import qualitytests.qualitytests_utils as qualitytests_utils
 
 from SAST.codeql.codeql_v2_9_2.codeql import CodeQL_v_2_9_2
 

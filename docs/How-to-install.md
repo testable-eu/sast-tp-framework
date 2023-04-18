@@ -80,6 +80,24 @@ You can run the following to see the help and ensure the framework is properly w
 tpframework -h
 ```
 
+## 6. Docker images
+
+We provide three different docker images for running containers with different purposes.
+
+- `docker-compose.yml` default configuration. Can be used for running experiments, changes in your local code require a rebuild of the container. Only `/in` and `/out` folder are container volumes.
+- `docker-compose-dev.yml` development configuration. Can be used to develop the framework using a docker container, local changes in your code, in the tests are reflected in the container.
+- `docker-compose-test.yml` test configuration. Can be used to run the framework tests within a docker container. Any modifications made to the framework tests will be automatically reflected in the container, eliminating the need to rebuild the image every time a new test is written.
+
+For building one of the images use:
+
+```bash
+docker-compose -f <name_if_yml_file> up --build
+```
+
+**Note**: When runnning tests, you might want to add `-d` in the end, such that the container runs in detached mode. Once the image is build, for running the tests, you can omit the `--build`.
+
+**Note**: When the `-f` option is omitted, the default `docker-compose.yml` will be used. If using the default or the development you can get a shell as described [here](./How-to-install.md#4-docker-compose-run) for development, you might need to replace `tp-framework` with `tp-framework-dev`.
+
 ## FAQ
 
 ### About:  4. Docker compose: run

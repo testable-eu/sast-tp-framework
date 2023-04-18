@@ -17,7 +17,6 @@ services:
       context: .
       args:
         REQUIREMENTS_FILE: "requirements-dev.txt"
-        TESTS_DIR: "qualitytests"
       dockerfile: "./Dockerfile"
     env_file:
       - ./.env
@@ -29,6 +28,8 @@ services:
       - ./in:/tp-framework/in
       - ./SAST:/SAST
       - ./tp_framework:/tp-framework/tp_framework
+      - ./discovery:/tp-framework/discovery
+      - ./qualitytests:/tp-framework/qualitytests
     entrypoint: bash
 
 volumes:

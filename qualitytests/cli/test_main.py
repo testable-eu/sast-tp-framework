@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from qualitytests_utils import pyexe, join_resources_path
+from qualitytests.qualitytests_utils import pyexe, join_resources_path
 from cli import main
 
 

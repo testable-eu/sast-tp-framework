@@ -11,7 +11,7 @@ import config
 from core import utils
 from core import discovery, instance
 from core.exceptions import MeasurementNotFound, CPGGenerationError
-from qualitytests_utils import join_resources_path, get_result_output_dir
+from qualitytests.qualitytests_utils import join_resources_path, get_result_output_dir
 
 
 class TestDiscovery:

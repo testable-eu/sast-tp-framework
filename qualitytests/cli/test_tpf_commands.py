@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from qualitytests_utils import join_resources_path
+from qualitytests.qualitytests_utils import join_resources_path
 from cli import tpf_commands
 import config
 

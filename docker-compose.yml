@@ -16,7 +16,6 @@ services:
       context: .
       args:
         REQUIREMENTS_FILE: "requirements.txt"
-        TESTS_DIR: "config.py" # fake tests directory to prevent copying `tests` in production
       dockerfile: "./Dockerfile"
     env_file:
       - ./.env
