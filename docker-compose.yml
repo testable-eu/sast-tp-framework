@@ -26,7 +26,6 @@ services:
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out
       - ./in:/tp-framework/in
-      - ./qualitytests:/tp-framework/qualitytests
     entrypoint: bash
 
 volumes:
