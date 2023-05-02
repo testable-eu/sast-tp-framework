@@ -31,7 +31,7 @@ class Measurement:
 
     def define_verdict(self, date: datetime, instance: Instance, findings: list[Dict], tool: str, version: str,
                        sink_line_strict : bool = False,
-                       sink_file_strict : bool = False) -> Measurement:
+                       sink_file_strict : bool = True) -> Measurement:
         date_time_str = date.strftime("%Y-%m-%d %H:%M:%S")
         self.date = date_time_str
         found = False
