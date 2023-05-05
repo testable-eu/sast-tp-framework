@@ -3,8 +3,8 @@ cpg_gen:
     installation_dir: "/php-cpg"
     command: "./php2cpg $SRC_DIR -o $BINARY_OUT -c main.conf bytecode 7"
   js:
-    installation_dir: "./discovery/joern/js2cpg"
-    command: "./js2cpg.sh $SRC_DIR --output $BINARY_OUT"
+    installation_dir: "/opt/joern/joern-cli/frontends/jssrc2cpg/bin/"
+    command: "./jssrc2cpg $SRC_DIR --output $BINARY_OUT"
   java:
     installation_dir: "/opt/joern/joern-cli/frontends/javasrc2cpg/bin/"
     command: "./javasrc2cpg $SRC_DIR --output $BINARY_OUT"
