@@ -1,9 +1,3 @@
-[submodule "joern/js2cpg"]
-	path = discovery/joern/js2cpg
-	url = git@github.com:ShiftLeftSecurity/js2cpg.git
-[submodule "joern/joern"]
-	path = discovery/joern/joern
-	url = git@github.com:joernio/joern.git
 [submodule "testability_patterns"]
 	path = testability_patterns
 	url = git@github.com:testable-eu/sast-testability-patterns.git
