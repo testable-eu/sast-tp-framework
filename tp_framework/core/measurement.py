@@ -9,6 +9,7 @@ import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
+import config
 from core import utils
 from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
 from core.instance import Instance, load_instance_from_metadata
@@ -75,19 +76,18 @@ class Measurement:
         return self.__str__()
 
 
-def load_from_metadata(file: Path, language: str) -> list[Measurement]:
+def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Measurement]:
     try:
-        with open(file) as f:
+        with open(meas_file) as f:
             meas: Dict = json.load(f)
     except Exception as e:
-        logger.exception(f"Failed in loading measurement json file {file}. It seems corrupted and it is renamed. Raised exception: {utils.get_exception_message(e)}")
+        logger.exception(f"Failed in loading measurement json file {meas_file}. It seems corrupted and it is renamed. Raised exception: {utils.get_exception_message(e)}")
         f.close()
-        file.rename(file.with_suffix(".corrupted"))
+        meas_file.rename(meas_file.with_suffix(".corrupted"))
         return []
-
     parsed_meas: list[Measurement] = []
     for m in meas:
-        instance = load_instance_from_metadata(m["instance"], file.parents[4], language) # TODO: the tp_lib root is computed from the file assuming a very strict file system structure. Can we do better?
+        instance = load_instance_from_metadata(m["instance"], tp_lib, language)
         parsed_meas.append(Measurement(
             m["date"],
             m["result"],
@@ -95,17 +95,16 @@ def load_from_metadata(file: Path, language: str) -> list[Measurement]:
             m["version"],
             instance,
         ))
-
     return parsed_meas
 
 
-def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, p_id: int,
+def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, p_id: int,
                                    pi_id: int) -> Measurement:
     # TODO - load last measurement: the code hereafter strongly depends on the folder notation in place for
     #       patterns and pattern instances. Make sure to factorize in function what needs to
     #       and to generalize the approach as much as we can to rely the least possible on
     #       the strict notation
-    pattern_dir: Path = utils.get_pattern_dir_from_id(p_id, language, tp_lib_dir)
+    pattern_dir: Path = utils.get_pattern_dir_from_id(p_id, language, tp_lib)
     pattern_dir_name: str = pattern_dir.name
     instance_dir_name: str = f"{pi_id}_instance_{pattern_dir_name}"
     instance_dir: Path = pattern_dir / instance_dir_name
@@ -113,7 +112,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
         ee = InstanceDoesNotExists(instance_id=pi_id)
         logger.exception(ee)
         raise ee
-    measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib_dir, language) / pattern_dir_name / instance_dir_name
+    measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib, language) / pattern_dir_name / instance_dir_name
     if not measurement_dir_for_pattern_instance.is_dir():
         ee = MeasurementNotFound(p_id)
         logger.exception(ee)
@@ -123,7 +122,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib_dir: Path, 
 
     measurements: list[Measurement] = []
     for meas_file in meas_file_list:
-        measurements.extend(load_from_metadata(meas_file, language))
+        measurements.extend(load_measurements(meas_file, tp_lib, language))
 
     measurements_for_tool: list[Measurement] = list(
         filter(lambda m:
@@ -148,3 +147,9 @@ def meas_list_to_tp_dict(l_meas: list[Measurement]) -> Dict:
         d_tpi_meas[meas.instance.instance_id].append(meas)
     return d_tp_meas
 
+
+def any_tool_matching(meas, tools, version=config.discovery_under_measurement["enforce_tool_version"]):
+    if not version:
+        return any(meas.tool == tool["name"] for tool in tools)
+    else:
+        return any(meas.tool == tool["name"] and meas.version == tool["version"] for tool in tools)

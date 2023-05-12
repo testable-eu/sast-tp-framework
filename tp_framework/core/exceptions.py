@@ -16,6 +16,12 @@ class InstanceDoesNotExists(Exception):
         super().__init__(self.message)
 
 
+class PatternFolderNotFound(Exception):
+    def __init__(self):
+        self.message = errors.patternFolderNotFound()
+        super().__init__(self.message)
+
+
 class MeasurementNotFound(Exception):
     def __init__(self, pattern_id):
         self.pattern_id = pattern_id

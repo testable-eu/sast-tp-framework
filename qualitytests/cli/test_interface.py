@@ -45,7 +45,7 @@ class TestInterface:
             "1_static_variables_iall",
             joern_res
         )
-        mocker.patch("core.discovery.run_discovery_rule", return_value=exp_discovery_rule_results)
+        mocker.patch("core.discovery.run_joern_discovery_rule", return_value=exp_discovery_rule_results)
         return init
 
 
@@ -233,7 +233,7 @@ class TestInterface:
             "1_static_variables_iall",
             1
         )
-        mocker.patch("core.discovery.run_discovery_rule_cmd",
+        mocker.patch("core.discovery.run_and_process_discovery_rule",
                      return_value=bytes(str(exp_discovery_rule_results), 'utf-8'))
 
 

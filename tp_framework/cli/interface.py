@@ -76,9 +76,23 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
-    ignored = len(d_res["ignored_not_measured_patterns_ids"])
-    if ignored > 0:
-        print(f"- discovery failed for {ignored} patterns: {d_res['ignored_not_measured_patterns_ids']}")
+    if ignore:
+        print(f"- SAST measurement: ignored")
+    else:
+        print(f"- SAST measurement: considered")
+        l_ign_tp = discovery.get_ignored_tp_from_results(d_res)
+        l_ign_tpi = discovery.get_ignored_tpi_from_results(d_res, "not_found")
+        l_ign_tpi_as_supported = discovery.get_ignored_tpi_from_results(d_res, "supported")
+        print(f"  - measurement not found for {len(l_ign_tp)} patterns: {l_ign_tp}")
+        print(f"  - measurement not found for {len(l_ign_tpi)} pattern instances: {l_ign_tpi}")
+        print(f"  - discovery skipped for {len(l_ign_tpi_as_supported)} pattern instances as supported by SAST tools: {l_ign_tpi_as_supported}")
+    l_tpi_unsucc_dr = discovery.get_unsuccessful_discovery_tpi_from_results(d_res)
+    l_tpi_succ_dr = discovery.get_successful_discovery_tpi_from_results(d_res)
+    nfindings = discovery.get_num_discovery_findings_from_results(d_res)
+    print(f"- discovery rules:")
+    print(f"  - not found for {len(l_tpi_unsucc_dr)} pattern instances: {l_tpi_unsucc_dr}")
+    print(f"  - successful for {len(l_tpi_succ_dr)} pattern instances")
+    print(f"  - {nfindings} occurrences of pattern instances discovered")
 
 
 def manual_discovery(src_dir: str, discovery_method: str, discovery_rule_list: list[str], language: str,
@@ -135,7 +149,7 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
     utils.add_loggers(output_dir)
     results = []
     for pattern_id in pattern_ids:
-        instance_dir_list_for_pattern: list[Path] = utils.list_pattern_instances_by_pattern_id(
+        instance_dir_list_for_pattern: list[Path] = utils.list_tpi_paths_by_tp_id(
             language, pattern_id, tp_lib_path
         )
         instance_ids: list[int] = list(map(lambda p: utils.get_id_from_name(p.name), instance_dir_list_for_pattern))
