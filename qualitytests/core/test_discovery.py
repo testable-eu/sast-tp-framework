@@ -136,11 +136,29 @@ class TestDiscovery:
         assert any(f"No discovery method has been specified. Likely you need to modify the discovery->method property" in record.message for record in caplog.records)
 
 
+    def test_manualdiscovery_1(self, mocker: MockerFixture, capsys, tmp_path, caplog):
+        samples_src_dir: Path = join_resources_path("sample_tarpit") # not a problem that it does not exist
+        language = "PHP"
+        dr1: Path = join_resources_path(
+            "sample_patlib") / language / "1_static_variables/1_instance_1_static_variables/1_instance_1_static_variables.sc"
+        dr2: Path = join_resources_path(
+            "sample_patlib") / language / "2_global_variables/1_instance_2_global_variables/1_instance_2_global_variables.sc"
+        discovery_rules = [dr1, dr2]
+        output_dir = join_resources_path("../temp").resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with open(join_resources_path("sample_joern") / "joern_discovery_scala_rule_res.txt", "r") as data_file:
+            exp_joern_res = bytes(data_file.read(), 'utf-8-sig')
+        mocker.patch("core.discovery.subprocess.check_output",
+                     return_value=exp_joern_res)
+        cpg: Path = join_resources_path("sample_joern/cpg_binary.bin")
+        mocker.patch("core.discovery.generate_cpg", return_value=cpg)
+        mocker.patch.object(config, "RESULT_DIR", tmp_path)
+        build_name, disc_output_dir = utils.get_operation_build_name_and_dir("manual_discovery", samples_src_dir, language, output_dir)
+        d_res = discovery.manual_discovery(samples_src_dir, "joern", discovery_rules, language, build_name, disc_output_dir)
+        assert len(d_res["findings"]) == 4
+        assert len(d_res['failed_discovery_rules']) == 0
+        assert any(Path(d_res['manual_discovery_result_file']).name == e.name for e in disc_output_dir.iterdir())
 
-    # TODO
-    @pytest.mark.skip()
-    def test_manualdiscovery(self):
-        pass
 
     def test_run_discovery_rule(self, mocker):
         discovery_rule: Path = join_resources_path("sample_patlib/PHP/1_static_variables/1_instance_1_static_variables/1_instance_1_static_variables.sc")

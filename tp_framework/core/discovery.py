@@ -604,6 +604,9 @@ def get_num_discovery_findings_from_results(d_res):
 def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list[Path], language: str,
                      build_name: str, disc_output_dir: Path,
                      timeout_sec: int = 0) -> Dict:
+    # TODO: only support Joern as discovery method, discovery method param is thus irrelevant
+    # - refactor to support additional discovery method.
+    # - maybe the discovery_method can be simply decided from the discovery rule extension?
     logger.info("Execution of specific discovery rules started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     findings: list[dict] = []
@@ -614,7 +617,7 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
             patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=disc_output_dir)
             #
             cpg_file_name, query_name, findings_for_rule = run_joern_discovery_rule(
-                cpg, patched_discovery_rule, discovery_method)
+                cpg, patched_discovery_rule)
             logger.info("Parsing the results of specific discovery rules started...")
             try:
                 if len(findings_for_rule) == 0:
