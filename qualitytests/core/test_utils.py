@@ -189,7 +189,7 @@ class TestUtils:
         assert utils.get_pattern_dir_from_id(1, "PHP", tp_lib).name == "1_static_variables"
         assert utils.get_pattern_dir_from_id(2, "PHP", tp_lib).name == "2_global_variables"
         with pytest.raises(Exception):
-            utils.get_pattern_dir_from_id(4, "PHP", tp_lib)
+            utils.get_pattern_dir_from_id(99, "PHP", tp_lib)
 
 
     def test_get_instance_dir_from_id(self):

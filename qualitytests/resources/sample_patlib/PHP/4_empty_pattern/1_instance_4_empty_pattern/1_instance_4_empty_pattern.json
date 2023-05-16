@@ -1,0 +1,37 @@
+{
+    "code": {
+        "path": "./1_instance_4_empty_pattern.php",
+        "injection_skeleton_broken": false
+    },
+    "discovery": {
+        "rule": "",
+        "method": "joern",
+        "rule_accuracy": "FP",
+        "notes": "This instance should test if the framework can deal with an empty rule"
+    },
+    "remediation": {
+        "notes": null,
+        "transformation": null,
+        "modeling_rule": null
+    },
+    "compile": {
+        "binary": "",
+        "dependencies": null,
+        "instruction": null
+    },
+    "expectation": {
+        "type": "xss",
+        "sink_file": "",
+        "sink_line": null,
+        "source_file": "",
+        "source_line": null,
+        "expectation": true
+    },
+    "properties": {
+        "category": "S0",
+        "feature_vs_internal_api": "FEATURE",
+        "input_sanitizer": false,
+        "source_and_sink": false,
+        "negative_test_case": false
+    }
+}
