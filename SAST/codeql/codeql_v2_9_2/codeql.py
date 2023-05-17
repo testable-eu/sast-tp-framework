@@ -2,9 +2,10 @@ from pathlib import Path
 import yaml
 from typing import Dict
 import sys
-sys.path.append('/tp-framework/SAST/codeql/core')
+sys.path.append('/tp-framework/SAST')
 
-from codeql_core import CodeQL
+from codeql.core.codeql import CodeQL
+
 class CodeQL_v_2_9_2(CodeQL):
 
     def __init__(self):

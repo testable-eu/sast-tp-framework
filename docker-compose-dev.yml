@@ -2,31 +2,15 @@ version: "3.9"
 
 services:
 
-  codeql_core:
-    image: tpf_codeql_core
+  codeql:
+    image: tpf_codeql
     build:
-      context: './SAST/codeql/core'
+      context: './SAST/codeql'
       dockerfile: "./Dockerfile"
     volumes:
-      - codeql_core_interface:/tp-framework/SAST/codeql/core
-
-  codeql_v2_9_2:
-    image: tpf_codeql_v2_9_2
-    build:
-      context: './SAST/codeql/codeql_v2_9_2'
-      dockerfile: "./Dockerfile"
-    volumes:
-      - codeql_v2_9_2:/codeql
-      - codeql_interface_v2_9_2:/tp-framework/SAST/codeql/codeql_v2_9_2
-  
-  codeql_v2_13_1:
-    image: tpf_codeql_v2_13_1
-    build:
-      context: './SAST/codeql/codeql_v2_13_1'
-      dockerfile: "./Dockerfile"
-    volumes:
-      - codeql_v2_13_1:/codeql
-      - codeql_interface_v2_13_1:/tp-framework/SAST/codeql/codeql_v2_13_1
+      - codeql_interface:/tp-framework/SAST/codeql
+      - codeql_v2_9_2:/codeql_v2_9_2
+      - codeql_v2_13_1:/codeql_v2_13_1
 
   tp-framework-dev:
     image: tp-framework-dev
@@ -38,11 +22,9 @@ services:
     env_file:
       - ./.env
     volumes:
-      - codeql_core_interface:/tp-framework/SAST/codeql/core
+      - codeql_interface:/tp-framework/SAST/codeql
       - codeql_v2_9_2:/codeql_v2_9_2
-      - codeql_interface_v2_9_2:/tp-framework/SAST/codeql/codeql_v2_9_2
       - codeql_v2_13_1:/codeql_v2_13_1
-      - codeql_interface_v2_13_1:/tp-framework/SAST/codeql/codeql_v2_13_1
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out
       - ./in:/tp-framework/in
@@ -53,8 +35,6 @@ services:
     entrypoint: bash
 
 volumes:
-  codeql_core_interface:
+  codeql_interface:
   codeql_v2_9_2:
-  codeql_interface_v2_9_2:
   codeql_v2_13_1:
-  codeql_interface_v2_13_1:
