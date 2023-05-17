@@ -48,7 +48,10 @@ def get_tpi_id_from_jsonpath(jp: Path) -> int:
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:
     tp_lib_dir_lang_dir: Path = tp_lib_dir / language
     if tp_lib_dir_lang_dir.is_dir():
-        return list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))[0]
+       pattern_with_id = list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))
+        if pattern_with_id:
+            return pattern_with_id[0]
+    raise PatternDoesNotExists(pattern_id)
     else:
         raise PatternDoesNotExists(pattern_id)
 
