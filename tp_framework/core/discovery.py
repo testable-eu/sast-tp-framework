@@ -405,7 +405,8 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
 def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, disc_output_dir: Path,
                       measurement_stop: bool = False, already_executed: dict = {}) -> Dict:
     msgpre = f"pattern {tpi_instance.pattern_id} instance {tpi_instance.instance_id} - "
-    d_tpi_discovery = {}
+    d_tpi_discovery = dict.fromkeys(["rule_path", "method", "rule_name", "rule_accuracy", "rule_hash", \
+                                     "rule_name", "results", "rule_already_executed"], None)
     # execute the discovery rule
     if not measurement_stop and tpi_instance.discovery_rule:
         # prepare and execute the discovery rule (if not done yet)
