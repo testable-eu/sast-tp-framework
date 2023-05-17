@@ -444,13 +444,6 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
             d_tpi_discovery["results"] = already_executed[d_tpi_discovery["rule_hash"]]
     else:
         # no rule to execute
-        d_tpi_discovery["rule_path"] = None
-        d_tpi_discovery["method"] = None
-        d_tpi_discovery["rule_name"] = None
-        d_tpi_discovery["rule_accuracy"] = None
-        d_tpi_discovery["rule_hash"] = None
-        d_tpi_discovery["rule_name"] = None
-        d_tpi_discovery["results"] = None
         logger.warning(
             f"{msgpre}No discovery rule for this pattern instance...")
     return d_tpi_discovery
