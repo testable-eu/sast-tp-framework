@@ -8,14 +8,17 @@ from pathlib import Path
 from typing import Tuple, Dict
 import yaml
 
+import hashlib
+
 import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core import pattern
+from core import pattern, instance
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists
+
 from core import errors
 
 
@@ -27,10 +30,10 @@ def list_pattern_paths_for_language(language: str, tp_lib_dir: Path) -> list[Pat
     all_pattern_dirs_by_lang: Path = tp_lib_dir / language
     if not all_pattern_dirs_by_lang.is_dir():
         raise LanguageTPLibDoesNotExist
-    return list(all_pattern_dirs_by_lang.iterdir())
+    return list_dirs_only(all_pattern_dirs_by_lang)
 
 
-def list_pattern_instances_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
+def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
     try:
         p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
         return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
@@ -40,13 +43,32 @@ def list_pattern_instances_by_pattern_id(language: str, pattern_id: int, tp_lib_
         raise ee
 
 
+def get_tpi_id_from_jsonpath(jp: Path) -> int:
+    return get_id_from_name(jp.parent.name)
+
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:
     tp_lib_dir_lang_dir: Path = tp_lib_dir / language
     if tp_lib_dir_lang_dir.is_dir():
-        return list(filter(lambda p: int(p.name.split("_")[0]) == pattern_id, tp_lib_dir_lang_dir.iterdir()))[0]
+        pattern_with_id = list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))
+        if pattern_with_id:
+            return pattern_with_id[0]
+        raise PatternDoesNotExists(pattern_id)
     else:
         raise PatternDoesNotExists(pattern_id)
 
+
+def get_instance_dir_from_id(instance_id: int, pattern_dir: Path) -> Path:
+    if pattern_dir.is_dir():
+        return get_instance_dir_from_list(instance_id, list_dirs_only(pattern_dir))
+    else:
+        raise PatternFolderNotFound()
+
+
+def get_instance_dir_from_list(instance_id: int, l_pattern_dir: list[Path]):
+    instance_with_id = list(filter(lambda tpi_dir: get_id_from_name(tpi_dir.name) == instance_id, l_pattern_dir))
+    if not instance_with_id:
+        raise InstanceDoesNotExists()
+    return instance_with_id[0]
 
 # def get_or_create_language_dir(language: str, tp_lib_dir: Path) -> Path:
 #     tp_lib_for_lang: Path = tp_lib_dir / language
@@ -119,7 +141,7 @@ def zipdir(path, ziph):
 # TODO (LC): are these related to pattern instance ?
 #
 def get_path_or_none(p: str) -> Path | None:
-    if p is not None:
+    if p:
         return Path(p)
     return p
 
@@ -132,7 +154,7 @@ def get_enum_value_or_none(enum) -> str | None:
 
 
 def get_relative_path_str_or_none(path) -> str | None:
-    if path is not None:
+    if path:
         return f"./{path}"
     return None
 
@@ -174,6 +196,10 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
     return list(discovery_rules_to_run)
 
 
+################################################################################
+# Others
+#
+
 def build_timestamp_language_name(name: Path | None, language: str, now: datetime, extra: str = None) -> str:
     res = language
     if name:
@@ -185,10 +211,6 @@ def build_timestamp_language_name(name: Path | None, language: str, now: datetim
         res = f"{nowstr}_{res}"
     return res
 
-
-################################################################################
-# Others
-#
 
 def check_tp_lib(tp_lib_path: Path):
     if not tp_lib_path.is_dir():
@@ -315,3 +337,18 @@ def get_tpi_op_status_string(t_tp_info, t_tpi_info=None, status="started...", op
     if op:
         op_str = f"{op} - "
     return f"{i}/{tot} -{tpi_count_str} {op_str}pattern id {tp_id}{tpi_id_str}: {status}"
+
+
+def list_dirs_only(dir: Path):
+    return [e for e in dir.iterdir() if e.is_dir()]
+
+
+def get_file_hash(fpath, bigfile=False):
+    with open(fpath, "rb") as f:
+        hash = hashlib.md5()
+        if not bigfile:
+            hash.update(f.read())
+        else:
+            while chunk := f.read(8192):
+                hash.update(chunk)
+    return hash.hexdigest()

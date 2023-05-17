@@ -64,7 +64,7 @@ def get_pattern_path_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: P
     tp_dir_for_language: Path = tp_lib_dir / language
     filtered_res: list[str] = list(filter(
         lambda x: x.split("_")[0] == str(pattern_id),
-        map(lambda y: y.name, list(tp_dir_for_language.iterdir()))
+        map(lambda y: y.name, utils.list_dirs_only(tp_dir_for_language))
     ))
     if not filtered_res:
         raise PatternDoesNotExists(pattern_id)

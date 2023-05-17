@@ -1,0 +1,8 @@
+{
+    "name": "Global Array",
+    "family": "code_pattern_php",
+    "tags": ["sast", "php", "php_v7.4.9"],
+    "instances": [
+        "./1_instance_4_empty_pattern/1_instance_4_empty_pattern.json"
+    ]
+}

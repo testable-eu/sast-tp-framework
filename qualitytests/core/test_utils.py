@@ -3,8 +3,6 @@ from pathlib import Path
 import pytest
 
 import config
-import core.instance
-import core.pattern
 from core import utils
 from core.exceptions import PatternDoesNotExists, TPLibDoesNotExist, LanguageTPLibDoesNotExist, DiscoveryMethodNotSupported
 import qualitytests.qualitytests_utils as qualitytests_utils
@@ -72,7 +70,7 @@ class TestUtils:
         pi3.mkdir()
 
         path_list_expected = [pi1, pi2, pi3]
-        path_list = utils.list_pattern_instances_by_pattern_id(language, 2, tmp_path)
+        path_list = utils.list_tpi_paths_by_tp_id(language, 2, tmp_path)
         assert sorted(path_list) == sorted(path_list_expected)
 
 
@@ -82,7 +80,7 @@ class TestUtils:
         tmp_tp_path.mkdir()
 
         with pytest.raises(PatternDoesNotExists):
-            utils.list_pattern_instances_by_pattern_id(language, 5, tmp_path)
+            utils.list_tpi_paths_by_tp_id(language, 5, tmp_path)
 
 
     # TODO: to be fixed
@@ -184,13 +182,31 @@ class TestUtils:
         assert not utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=4)
         assert not utils.sast_tool_version_match("1.5.3.4", "1.5.3", nv_max=4)
         assert utils.sast_tool_version_match("1.5.3.4.5.6.", "1.5.3", nv_max=3)
-        
-        
-    # def test_get_all_nested_tuples_from_dict(self):
-    #     sample_dict: Dict = {
-    #         "firstLevel": {
-    #             "secondLevel":
-    #         }
-    #     }
-    #     assert False
 
+
+    def test_get_pattern_dir_from_id(self):
+        tp_lib = qualitytests_utils.join_resources_path("sample_patlib")
+        assert utils.get_pattern_dir_from_id(1, "PHP", tp_lib).name == "1_static_variables"
+        assert utils.get_pattern_dir_from_id(2, "PHP", tp_lib).name == "2_global_variables"
+        with pytest.raises(Exception):
+            utils.get_pattern_dir_from_id(99, "PHP", tp_lib)
+
+
+    def test_get_instance_dir_from_id(self):
+        tp_path = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array"
+        assert utils.get_instance_dir_from_id(1, tp_path).name == "1_instance_3_global_array"
+        assert utils.get_instance_dir_from_id(2, tp_path).name == "2_instance_3_global_array"
+        with pytest.raises(Exception):
+            utils.get_instance_dir_from_id(3, tp_path)
+
+
+    def test_get_tpi_id_from_jsonpath(self):
+        jp = qualitytests_utils.join_resources_path(
+            "sample_patlib") / "PHP" / "3_global_array" / "1_instance_3_global_array" / "1_instance_3_global_array.json"
+        assert utils.get_tpi_id_from_jsonpath(jp) == 1
+        jp = qualitytests_utils.join_resources_path(
+            "sample_patlib") / "PHP" / "3_global_array" / "1_instance_3_global_array" / "111_instance_3_global_array.json"
+        assert utils.get_tpi_id_from_jsonpath(jp) == 1
+        jp = qualitytests_utils.join_resources_path(
+            "sample_patlib") / "PHP" / "3_global_array" / "2_instance_3_global_array" / "111_instance_3_global_array.json"
+        assert utils.get_tpi_id_from_jsonpath(jp) == 2

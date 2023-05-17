@@ -1,0 +1,18 @@
+[
+  {
+      "discovery": true,
+      "filename": "/tmp/foo1.php",
+      "methodFullName": "foo(a, b)",
+      "lineNumber": 113,
+      "queryFile": "/tmp/1_instance_1_static_variables.sc",
+      "queryName": "1_static_variables_iall"
+  },
+  {
+      "discovery": true,
+      "filename": "/tmp/foo2.php",
+      "methodFullName": "whatever()",
+      "lineNumber": 23,
+      "queryFile": "/tmp/1_instance_1_foo.sc",
+      "queryName": "foo_i1"
+  }
+]

@@ -127,7 +127,7 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
                                             tp_lib_dir: Path, output_dir: Path) -> Dict:
     d_status_tp = {}
     try:
-        l_tpi_path: list[Path] = utils.list_pattern_instances_by_pattern_id(language, tp_id, tp_lib_dir)
+        l_tpi_path: list[Path] = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib_dir)
         target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
     except Exception as e:
         logger.warning(

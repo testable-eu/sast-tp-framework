@@ -3,9 +3,11 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Dict, Tuple
+from copy import copy
 
 import logging
 from core import loggermgr
+
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
@@ -14,10 +16,8 @@ from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CP
     CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
-from core.instance import Instance, instance_from_dict
+from core.instance import Instance, instance_from_dict, load_instance_from_metadata
 from core.pattern import get_pattern_by_pattern_id
-
-
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 mand_finding_joern_keys = ["filename", "lineNumber"]
@@ -75,7 +75,8 @@ def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_
             logger.exception(rs)
             raise rs
     except:
-        logger.debug("CPG generation failed: exception while loading the CPG in Joern, CPG generation command was successful")
+        logger.debug(
+            "CPG generation failed: exception while loading the CPG in Joern, CPG generation command was successful")
         rs = CPGGenerationError()
         logger.exception(rs)
         raise rs
@@ -103,51 +104,42 @@ def run_generate_cpg_cmd(gen_cpg_with_params_cmd: str, working_dir: Path):
     return output
 
 
-def run_discovery_rule_cmd(run_joern_scala_query: str):
+def run_joern_discovery_rule_cmd(run_joern_scala_query: str):
     output = subprocess.check_output(run_joern_scala_query, shell=True)
     return output
 
 
-def run_discovery_rule(cpg: Path, discovery_rule: Path, discovery_method: str) -> Tuple[str, str, list[Dict]]:
-    logger.debug(f"Discovery - rule execution to be executed: {cpg}, {discovery_rule}, {discovery_method}")
-    # related to #36
-    default_discovery_method = config.DEFAULT_DISCOVERY_METHOD
-    if not discovery_method and discovery_rule.suffix == utils.get_discovery_rule_ext(default_discovery_method):
-        logger.warning(
-            f"No discovery method has been specified. Likely you need to modify the discovery->method property in the JSON file of the pattern instance related to the discovery rule {discovery_rule}. We will continue with the default discovery method for Scala discovery rules (aka '{default_discovery_method}').")
-        discovery_method = default_discovery_method
-    #
-    if discovery_method == "joern":
-        run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
-        try:
-            logger.info(f"Discovery - rule execution started: {run_joern_scala_query}")
-            raw_joern_output = run_discovery_rule_cmd(run_joern_scala_query)
-            if isinstance(raw_joern_output, bytes):
-                joern_output: str = raw_joern_output.decode('utf-8-sig')
-            else:
-                joern_output: str = raw_joern_output
-            logger.info(f"Discovery - rule raw output: {joern_output}")
-        except subprocess.CalledProcessError as e:
-            ee = DiscoveryRuleError("Failed in either executing the discovery rule or fetching its raw output" + utils.get_exception_message(e))
-            logger.exception(ee)
-            raise ee
-        # Parsing Joern results
-        try:
-            splitted_elements = joern_output[1:-1].split(",")
-            cpg_file_name: str = splitted_elements[0]
-            query_name: str = splitted_elements[1]
-            findings_str: str = joern_output.split("," + query_name + ",")[1][:-2]
-            findings: list[Dict] = json.loads(findings_str)
-            logger.info(f"Discovery - rule execution done and raw output parsed.")
-            return cpg_file_name, query_name, findings
-        except Exception as e:
-            ee = DiscoveryRuleParsingResultError("Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e))
-            logger.exception(ee)
-            raise ee
-    else:
-        e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
-        logger.exception(e)
-        raise e
+def run_joern_discovery_rule(cpg: Path, discovery_rule: Path) -> Tuple[str, str, list[Dict]]:
+    logger.debug(f"Discovery - joern rule execution to be executed: {cpg}, {discovery_rule}")
+    run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
+    try:
+        logger.info(f"Discovery - joern rule execution started: {run_joern_scala_query}")
+        raw_joern_output = run_joern_discovery_rule_cmd(run_joern_scala_query)
+        if isinstance(raw_joern_output, bytes):
+            joern_output: str = raw_joern_output.decode('utf-8-sig')
+        else:
+            joern_output: str = raw_joern_output
+        logger.info(f"Discovery - joern rule raw output: {joern_output}")
+    except subprocess.CalledProcessError as e:
+        ee = DiscoveryRuleError(
+            "Failed in either executing the joern discovery rule or fetching its raw output" + utils.get_exception_message(
+                e))
+        logger.exception(ee)
+        raise ee
+    # Parsing Joern output
+    try:
+        splitted_elements = joern_output[1:-1].split(",")
+        cpg_file_name: str = splitted_elements[0]
+        query_name: str = splitted_elements[1]
+        findings_str: str = joern_output.split("," + query_name + ",")[1][:-2]
+        findings: list[Dict] = json.loads(findings_str)
+        logger.info(f"Discovery - rule execution done and raw output parsed.")
+        return cpg_file_name, query_name, findings
+    except Exception as e:
+        ee = DiscoveryRuleParsingResultError(
+            "Failed in parsing the results of the discovery rule. " + utils.get_exception_message(e))
+        logger.exception(ee)
+        raise ee
 
 
 def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Path = None):
@@ -175,80 +167,77 @@ def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Pa
         return new_discovery_rule
 
 
-# TODO - discovery: refactoring needed. Even more important, we do not want to run the same discovery rule (actually, the same
-#  Joern rule of the discovery rule) more than once. E.g., there may be a pattern instance not supported by many tools,
-#  so discovery by tool is not the right way...
-def discovery_for_tool(cpg: Path, pattern_instances: list[Measurement], tool: Dict, language: str,
-                       tp_lib_dir: Path, output_dir: Path = None):
-    if tool is {}:
-        pattern_not_supported_by_tool: list[Measurement] = pattern_instances
-    else:
-        pattern_not_supported_by_tool: list[Measurement] = list(
-            filter(lambda meas: not meas.result and meas.tool == tool["name"], pattern_instances)
-        )
-
-    collected_discovery_rules: list[Tuple[Path, Measurement]] = []
-    discovery_rules_to_run: Dict = {}
-    findings: list[Dict] = []
-    for pattern_meas in pattern_not_supported_by_tool:
-        instance_dir: str = utils.get_instance_dir_name_from_pattern(
-            pattern_meas.instance.name,
-            pattern_meas.instance.pattern_id,
-            pattern_meas.instance.instance_id)
-        pattern_dir: str = utils.get_pattern_dir_name_from_name(
-            pattern_meas.instance.name,
-            pattern_meas.instance.pattern_id)
-        discovery_rule: Path = (
-                tp_lib_dir / language / pattern_dir / instance_dir / pattern_meas.instance.discovery_rule).resolve()
-
-        collected_discovery_rules.append((discovery_rule, pattern_meas))
-
-    for d in collected_discovery_rules:
-        discovery_rules_to_run[d[0]] = []
-
-    for d in collected_discovery_rules:
-        discovery_rules_to_run[d[0]] = discovery_rules_to_run[d[0]] + [d[1]]
-
-    for discovery_rule in discovery_rules_to_run.keys():
-        pattern_meas = discovery_rules_to_run[discovery_rule][0]
-        try:
-            # related to #42
-            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=output_dir)
-            #
-            cpg_file_name, query_name, findings_for_pattern = run_discovery_rule(
-                cpg, patched_discovery_rule,
-                pattern_meas.instance.discovery_method
-            )
-        except DiscoveryMethodNotSupported as e:
-            logger.error(
-                f"Discovery rule failure for {pattern_meas.instance.instance_id}_instance_{pattern_meas.instance.pattern_id}_{pattern_meas.instance.name}: {e}")
+def process_joern_discovery_rule_findings(discovery_rule: Path, query_name: str, raw_findings) -> list[dict]:
+    if not raw_findings:
+        return [{
+            "discovery": False,
+            "filename": None,
+            "methodFullName": None,
+            "lineNumber": None,
+            "queryFile": str(discovery_rule),
+            "queryName": query_name
+        }]
+    findings = []
+    for f in raw_findings:
+        if any(k not in f for k in mand_finding_joern_keys):
+            error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule {discovery_rule} and re-run. Often this amount to use `location.toJson`"
+            logger.error(error)
+            # raise DiscoveryRuleError(error)
             continue
-        ## JoernQueryError(e)
-        ## JoernQueryParsingResultError(e)
-        findings_for_pattern_refined: list[Dict] = []
-        for f in findings_for_pattern:
-            if any(k not in f for k in mand_finding_joern_keys):
-                error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`"
-                logger.error(error)
-                # raise DiscoveryRuleError(error)
-                continue
-            f_ref = {
-                "filename": f["filename"],
-                "methodFullName": f["methodFullName"] if "methodFullName" in f else None,
-                "lineNumber": f["lineNumber"],
-                "patternId": pattern_meas.instance.pattern_id,
-                "instanceId": [d.instance.instance_id for d in discovery_rules_to_run[discovery_rule]],
-                "patternName": pattern_meas.instance.name,
-                "queryFile": str(discovery_rule)
-
-            }
-
-            findings_for_pattern_refined.append(f_ref)
-
-        findings = findings + findings_for_pattern_refined
-
+        f_ref = {
+            "discovery": True,
+            "filename": f["filename"],
+            "methodFullName": f["methodFullName"] if "methodFullName" in f else None,
+            "lineNumber": f["lineNumber"],
+            "queryFile": str(discovery_rule),
+            "queryName": query_name
+        }
+        findings.append(f_ref)
     return findings
 
+
+def run_and_process_discovery_rule(cpg: Path, discovery_rule: Path,
+                                   discovery_method: str = config.DEFAULT_DISCOVERY_METHOD):
+    default_discovery_method = config.DEFAULT_DISCOVERY_METHOD
+    if not discovery_method and discovery_rule.suffix == utils.get_discovery_rule_ext(default_discovery_method):
+        logger.warning(
+            f"No discovery method has been specified. Likely you need to modify the discovery->method property in the JSON file of the pattern instance related to the discovery rule {discovery_rule}. We will continue with the default discovery method for Scala discovery rules (aka '{default_discovery_method}').")
+        discovery_method = default_discovery_method
+    if discovery_method == "joern":
+        cpg_file_name, query_name, raw_findings = run_joern_discovery_rule(cpg, discovery_rule)
+        findings = process_joern_discovery_rule_findings(discovery_rule, query_name, raw_findings)
+        return findings
+    else:
+        e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
+        logger.exception(e)
+        raise e
+
+
+############################################################################
+# Pattern driven discovery
+############################################################################
+# Methods hereafter rely on/generate the following data structure
+# {tp_id:
+#     "measurement_found": bool,
+#     "instances": {
+#         tpi_id: {
+#             "instance": instance.Instance,
+#             "measurement": "supported | not_found | not_supported",
+#             "jsonpath": Path,
+#             "discovery": {
+#                 "method" : "joern | ..."
+#                 "rule_accuracy": "FP | FN | FPFN | Perfect",
+#                 "rule_hash": hash
+#                 "rule_already_executed": bool
+#                 "results": [{
+#                         "discovery": bool,
+#                         "filename": "myfile.php"
+#                         "methodFullName": "funcFoo()",
+#                         "lineNumber": 133,
+#                         "queryFile": "path/to/query",
+#                         "queryName": "1_static_variables_iall"},
+#                             {}, ..]
+#                 }}}}}
 
 def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list[Dict],
               language: str,
@@ -257,105 +246,361 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               timeout_sec: int = 0,
               ignore=False) -> Dict:
     logger.info("Discovery for patterns started...")
+    # TODO: to support multiple discovery methods the following would need major refactoring.
+    # - CPG is specific to Joern
+    # - each discovery rule tells which method to use
+    # - on the other hand you do not want to compute the CPG multiple times
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
+    if not ignore:
+        return discovery_under_measurement(cpg, l_tp_id, tp_lib_path, itools, language, build_name, disc_output_dir,
+                                           timeout_sec=timeout_sec)
+    else:
+        return discovery_ignore_measurement(cpg, l_tp_id, tp_lib_path, language, build_name, disc_output_dir,
+                                            timeout_sec=timeout_sec)
 
+
+def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, itools: list[Dict],
+                                language: str,
+                                build_name: str,
+                                disc_output_dir: Path,
+                                timeout_sec: int = 0) -> Dict:
+    # filter over tools
     tools = utils.filter_sast_tools(itools, language)
     if not tools:
         e = InvalidSastTools()
         logger.exception(e)
         raise e
+    # Make end-user aware of the tools that do not support the targeted language and that thus will be ignored
     ns_tools = [t for t in itools if t not in tools]
     if ns_tools:
         logger.warning(
             f"Some of the tools do not support the {language} language: {ns_tools}. These tools will just be ignored for the discovery.")
-
-    # TODO - discovery:
-    ## - LC hereafter an initial idea of fixing/refactoring...to be continued...
-    ## - the argument `ignore` can only be considered after refactoring. At the moment the code is too intertwined to do so...
-    ## - while refactoring make sure we can report in the results about each one of the discovery rule, even when no discoveries are reported
-    # for tp_id in l_tp_id:
-    #     d_tp_meas = utils.get_measurements_for_pattern(tp_id, tp_lib_path, language_filter=language, tools_filter=tools, only_latest=True)
-    #     if not d_tp_meas:
-    #         logger.warning(f"No measurements associated to {language} pattern id {tp_id}. Run `tpframework measure -l {language} -p {tp_id} -w 2`")
-    #         continue
-    #     d_tpi_id = utils.list_pattern_instances_by_pattern_id(tp_id)
-    #     for tpi_id in d_tpi_id:
-    #         if not tpi_id in d_tp_meas:
-    #             logger.warning(
-    #                 f"No measurements associated to {language} pattern id {tp_id} instance id {tpi_id}.")
-    #             continue
-    #         for t in tools:
-    #             if t not in d_tp_meas[tpi_id]:
-    #                 logger.warning(
-    #                     f"No measurements for tool {t} associated to {language} pattern id {tp_id} instance id {tpi_id}.")
-    #                 continue
-    #             any( d_tp_meas[tpi_id][t][0] == for t in tools)
-    # ###########
-
-    meas_lang_dir: Path = utils.get_measurement_dir_for_language(tp_lib_path, language)
-    dirs = []
-    if meas_lang_dir.is_dir():
-        dirs = list(meas_lang_dir.iterdir())
+    # map patterns to measurement dirs
+    meas_lang_dir: Path = utils.get_measurement_dir_for_language(tp_lib, language)
+    dirs = utils.list_dirs_only(meas_lang_dir)
     meas_p_id_path_list: Dict = dict(zip(
         map(lambda d: utils.get_id_from_name(d.name), dirs),
         dirs
     ))
-
-    # Get input patterns' paths and then use utils to read from pattern the instances
-    # p_lang_dir: Path = tp_lib_dir / language
-    # p_id_path_list: Dict = dict(zip(
-    #     map(lambda d: int(d.name.split("_")[0]), list(p_lang_dir.iterdir())),
-    #     list(p_lang_dir.iterdir())
-    # ))
-
-    last_meas: list[Measurement] = []
-
-    l_measured_tp_id = []
-    l_not_measured_tp_id = []
-    for p_id in l_tp_id:
+    d_res = {}  # result data structure set to empty
+    # computing not supported testability patterns (tp) to be discovered
+    for tp_id in l_tp_id:
+        msgpre = f"pattern {tp_id} - "
+        msgpost = "Discovery tries to continue for the other patterns/instances..."
         try:
-            p_path: Path = Path(meas_p_id_path_list[p_id])
-            l_measured_tp_id.append(p_id)
+            meas_tp_path: Path = Path(meas_p_id_path_list[tp_id])
+            d_res[tp_id] = {
+                "measurement_found": True
+            }
+            # l_measured_tp_id.append(tp_id)
         except KeyError:
-            e = MeasurementNotFound(p_id)
-            logger.warning(f"{utils.get_exception_message(e)} The discovery process tries to continue for the other patterns (if any)...")
-            l_not_measured_tp_id.append(p_id)
+            e = MeasurementNotFound(tp_id)
+            logger.warning(
+                f"{msgpre}{utils.get_exception_message(e)}{msgpost}")
+            d_res[tp_id] = {
+                "measurement_found": False
+            }
+            # l_not_measured_tp_id.append(tp_id)
             continue
-        meas_inst_path_list = list(p_path.iterdir())
-        for inst_path in meas_inst_path_list:
-            last_meas = last_meas + measurement.load_from_metadata(
-                utils.get_last_measurement_for_pattern_instance(inst_path), language)
+        l_tpi_jsonpath = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib)  # TODO: do we need this later?
+        d_tpi_id_path = {}
+        for jp in l_tpi_jsonpath:
+            d_tpi_id_path[utils.get_tpi_id_from_jsonpath(jp)] = jp
+        l_meas_tpi_path = utils.list_dirs_only(meas_tp_path)
+        # computing not supported tp instances (tpi) to be discovered
+        d_res_tpi = {}
+        d_dr_executed = {}
+        for tpi_id in d_tpi_id_path:
+            msgpre = f"pattern {tp_id} instance {tpi_id} - "
+            tpi_json_path = d_tpi_id_path[tpi_id]
+            try:
+                meas_tpi_path = utils.get_instance_dir_from_list(tpi_id, l_meas_tpi_path)
+            except:
+                logger.warning(
+                    f"{msgpre}No measurements for this instance. {msgpost}")
+                d_res_tpi[tpi_id] = {
+                    "measurement": "not_found",
+                    "jsonpath": tpi_json_path
+                }
+                continue
+            l_last_meas = measurement.load_measurements(utils.get_last_measurement_for_pattern_instance(meas_tpi_path),
+                                                        tp_lib, language)
+            meas_tpi_by_tools: list[Measurement] = [meas for meas in l_last_meas if
+                                                    measurement.any_tool_matching(meas, tools)]
+            if not meas_tpi_by_tools:
+                logger.warning(
+                    f"{msgpre}No measurements of the tools specified ({[t['name'] + ':' + t['version'] for t in tools]}) for the instance. {msgpost}")
+                d_res_tpi[tpi_id] = {
+                    "measurement": "not_found",
+                    "jsonpath": tpi_json_path
+                }
+                continue
+            tpi_instance = meas_tpi_by_tools[0].instance
+            d_tpi = {
+                "instance": tpi_instance,
+                "measurement": "supported",
+                "jsonpath": tpi_json_path,
+                "discovery": {}
+            }
+            # discovery continue iff at least one tool not supporting the tpi
+            for tool in tools:
+                meas_tpi_by_tool = [meas for meas in meas_tpi_by_tools if measurement.any_tool_matching(meas, [tool])]
+                if not meas_tpi_by_tool:
+                    logger.warning(
+                        f"{msgpre}No measurements of tool {tool['name'] + ':' + tool['version']} for this instance. You may want to run that measurement...")
+                    continue
+                meas_tpi_not_supported_by_tool = [meas for meas in meas_tpi_by_tool if not meas.result]
+                if meas_tpi_not_supported_by_tool:
+                    logger.info(
+                        f"{msgpre} great, last measurement indicating that the tool {tool['name'] + ':' + tool['version']} does not support the pattern instance. Discovery rule will be run (if any)")
+                    d_tpi["measurement"] = "not_supported"
+            # discovery per tpi
+            measurement_stop: bool = d_tpi["measurement"] not in ["ignore", "not_supported"]
+            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
+                                                   measurement_stop=measurement_stop, already_executed=d_dr_executed)
+            d_res_tpi[tpi_id] = d_tpi
+        d_res[tp_id]["instances"] = d_res_tpi
 
-    findings_for_tools: list[Dict] = []
-    if tools is []:
-        discovery_for_tool(cpg, last_meas, {}, language, tp_lib_path, output_dir=disc_output_dir)
-    else:
-        for tool in tools:
-            findings_for_tools = findings_for_tools + discovery_for_tool(cpg, last_meas, tool, language, tp_lib_path, output_dir=disc_output_dir)
-
-    for f in findings_for_tools:
-        f["instanceId"] = (''.join(f'{iid}, ' for iid in f["instanceId"]))[:-2]
-
-    findings: list[Dict] = [dict(t) for t in {tuple(d.items()) for d in findings_for_tools}]
-
-    ofile = disc_output_dir / f"discovery_{build_name}.csv"
-    fields = ["filename", "lineNumber", "methodFullName", "patternId", "instanceId", "patternName", "queryFile"]
-    utils.write_csv_file(ofile, fields, findings)
-    d_results = {
-        "discovery_result_file": str(ofile),
-        "tools": tools,
-        "cpg_file:": str(cpg),
-        "used_measured_patterns_ids": l_measured_tp_id,
-        "ignored_not_measured_patterns_ids": l_not_measured_tp_id,
-        "findings": findings
-    }
+    # post-process results and export them
+    d_results = post_process_and_export_results(d_res, build_name, disc_output_dir)
+    d_results["tools"] = tools
+    d_results["cpg_file"] = str(cpg)
     logger.info("Discovery for patterns completed.")
     return d_results
 
 
+def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
+                                 language: str,
+                                 build_name: str,
+                                 disc_output_dir: Path,
+                                 timeout_sec: int = 0) -> Dict:
+    d_res = {}  # result data structure set to empty
+    # loop over testability patterns (tp) to be discovered
+    for tp_id in l_tp_id:
+        d_res[tp_id] = {"measurement_found": None}
+        l_tpi_jsonpath = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib)  # TODO: do we need this later?
+        d_tpi_id_path = {}
+        for jp in l_tpi_jsonpath:
+            d_tpi_id_path[utils.get_tpi_id_from_jsonpath(jp)] = jp
+        # loop over tp instances (tpi) to be discovered
+        d_res_tpi = {}
+        d_dr_executed = {}
+        for tpi_id in d_tpi_id_path:
+            tpi_json_path = d_tpi_id_path[tpi_id]
+            tpi_json_rel = os.path.relpath(tpi_json_path, start=tp_lib)
+            tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)  # get the instance
+            d_tpi = {"instance": tpi_instance, "measurement": "ignored", "jsonpath": tpi_json_path,
+                     "discovery": discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
+                                                    measurement_stop=False, already_executed=d_dr_executed)}
+            d_res_tpi[tpi_id] = d_tpi
+        d_res[tp_id]["instances"] = d_res_tpi
+
+    # post-process results and export them
+    d_results = post_process_and_export_results(d_res, build_name, disc_output_dir)
+    d_results["cpg_file"] = str(cpg)
+    logger.info("Discovery for patterns completed.")
+    return d_results
+
+
+def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, disc_output_dir: Path,
+                      measurement_stop: bool = False, already_executed: dict = {}) -> Dict:
+    msgpre = f"pattern {tpi_instance.pattern_id} instance {tpi_instance.instance_id} - "
+    d_tpi_discovery = dict.fromkeys(["rule_path", "method", "rule_name", "rule_accuracy", "rule_hash", \
+                                     "rule_name", "results", "rule_already_executed"], None)
+    # execute the discovery rule
+    if not measurement_stop and tpi_instance.discovery_rule:
+        # prepare and execute the discovery rule (if not done yet)
+        dr = (tpi_json_path.parent / tpi_instance.discovery_rule).resolve()
+        logger.info(
+            f"{msgpre}prepare discovery rule {dr}...")
+        d_tpi_discovery["rule_path"] = str(dr)
+        d_tpi_discovery["method"] = tpi_instance.discovery_method
+        d_tpi_discovery["rule_accuracy"] = tpi_instance.discovery_rule_accuracy
+        d_tpi_discovery["rule_hash"] = utils.get_file_hash(dr)
+        if d_tpi_discovery["rule_hash"] not in already_executed:
+            logger.info(
+                f"{msgpre}running discovery rule...")
+            # related to #42
+            pdr = patch_PHP_discovery_rule(dr, tpi_instance.language, output_dir=disc_output_dir)
+            #
+            try:
+                findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
+                d_tpi_discovery["results"] = findings
+                d_tpi_discovery["rule_already_executed"] = False
+            except DiscoveryMethodNotSupported as e:
+                d_tpi_discovery["results"] = None
+                already_executed[d_tpi_discovery["rule_hash"]] = None
+                logger.error(
+                    f"{msgpre}Discovery rule failure for this instance: {e}")
+                ## JoernQueryError(e)
+            ## JoernQueryParsingResultError(e)
+            already_executed[d_tpi_discovery["rule_hash"]] = findings
+            logger.info(
+                f"{msgpre} discovery rule executed.")
+
+        else:
+            logger.info(
+                f"{msgpre}discovery rule {dr} was already run. We will use the same result...")
+            d_tpi_discovery["rule_already_executed"] = True
+            d_tpi_discovery["results"] = already_executed[d_tpi_discovery["rule_hash"]]
+    else:
+        # no rule to execute
+        logger.warning(
+            f"{msgpre}No discovery rule for this pattern instance...")
+    return d_tpi_discovery
+
+
+def post_process_and_export_results(d_res: dict, build_name: str, disc_output_dir: Path) -> Dict:
+    # "sast_measurement" in ["ignored", "missing", "supported", "not_supported"]
+    fields = ["patternId", "instanceId", "instanceName", "sast_measurement",
+              "method", "queryFile", "queryHash", "queryName", "queryAccuracy",
+              "queryAlreadyExecuted", "discovery", "filename", "lineNumber", "methodFullName"]
+    rows = []
+    for tp_id in d_res:
+        if d_res[tp_id]["measurement_found"] is False:
+            rows.append(
+                {
+                    "patternId": tp_id,
+                    "instanceId": None,
+                    "instanceName": None,
+                    "sast_measurement": "missing",
+                    "method": None,
+                    "queryFile": None,
+                    "queryHash": None,
+                    "queryName": None,
+                    "queryAccuracy": None,
+                    "queryAlreadyExecuted": None,
+                    "discovery": None,
+                    "filename": None,
+                    "lineNumber": None,
+                    "methodFullName": None
+                })
+            continue
+        for tpi_id in d_res[tp_id]["instances"]:
+            tpi_data = d_res[tp_id]["instances"][tpi_id]
+            if tpi_data["measurement"] not in ["not_supported", "ignored"]:
+                rows.append(
+                    {
+                        "patternId": tp_id,
+                        "instanceId": tpi_id,
+                        "instanceName": tpi_data["instance"].name,
+                        "sast_measurement": tpi_data["measurement"],
+                        "method": None,
+                        "queryFile": None,
+                        "queryHash": None,
+                        "queryName": None,
+                        "queryAccuracy": None,
+                        "queryAlreadyExecuted": None,
+                        "discovery": None,
+                        "filename": None,
+                        "lineNumber": None,
+                        "methodFullName": None
+                    })
+                continue
+            else:
+                disc_data = tpi_data["discovery"]
+                base = {
+                    "patternId": tp_id,
+                    "instanceId": tpi_id,
+                    "instanceName": tpi_data["instance"].name,
+                    "sast_measurement": tpi_data["measurement"],
+                    "method": disc_data["method"],
+                    "queryFile": disc_data["rule_path"],
+                    "queryHash": disc_data["rule_hash"],
+                    "queryName": None,
+                    "queryAccuracy": disc_data["rule_accuracy"],
+                    "queryAlreadyExecuted": disc_data["rule_already_executed"],
+                    "discovery": None,
+                    "filename": None,
+                    "lineNumber": None,
+                    "methodFullName": None
+                }
+                if disc_data["results"] is None:
+                    base["discovery"] = "failure"
+                    rows.append(base)
+                else:
+                    for f in disc_data["results"]:
+                        try:
+                            row = copy(base)
+                            row["discovery"] = f["discovery"]
+                            row["queryName"] = f["queryName"]
+                            if f["discovery"]:
+                                row["filename"] = f["filename"]
+                                row["lineNumber"] = f["lineNumber"]
+                                row["methodFullName"] = f["methodFullName"]
+                            rows.append(row)
+                        except Exception as e:
+                            logger.error("Hell no")
+                            pass
+    ofile = disc_output_dir / f"discovery_{build_name}.csv"
+    utils.write_csv_file(ofile, fields, rows)
+    d_results = {
+        "discovery_result_file": str(ofile),
+        "results": d_res
+    }
+    return d_results
+
+
+def get_ignored_tp_from_results(d_res):
+    return [f"p{tp_id}" for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is False]
+
+
+def get_ignored_tpi_from_results(d_res, ignored_as):
+    return [f"p{tp_id}_i{tpi_id}"
+            for tp_id in d_res["results"]
+            for tpi_id in d_res["results"][tp_id]['instances']
+            if d_res["results"][tp_id]['measurement_found'] and
+            d_res["results"][tp_id]['instances'][tpi_id]["measurement"] == ignored_as]
+
+
+def get_ignored_tpi_from_results(d_res, ignored_as):
+    return [f"p{tp_id}_i{tpi_id}"
+            for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found']]
+            for tpi_id in d_res["results"][tp_id]['instances']
+            if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] == ignored_as]
+
+
+def get_unsuccessful_discovery_tpi_from_results(d_res):
+    return [f"p{tp_id}_i{tpi_id}"
+            for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
+            for tpi_id in d_res["results"][tp_id]['instances']
+            if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
+            d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is None]
+
+
+def get_successful_discovery_tpi_from_results(d_res):
+    return [f"p{tp_id}_i{tpi_id}"
+            for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
+            for tpi_id in d_res["results"][tp_id]['instances']
+            if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
+            d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is not None]
+
+
+def get_num_discovery_findings_from_results(d_res):
+    n = 0
+    for tp_id in d_res["results"]:
+        if d_res["results"][tp_id]['measurement_found'] is False:
+            continue
+        for tpi_id in d_res["results"][tp_id]['instances']:
+            tpi_data = d_res["results"][tp_id]['instances'][tpi_id]
+            if tpi_data["measurement"] in ["not_supported", "ignored"]  and tpi_data["discovery"]["results"] is not None:
+                for r in tpi_data["discovery"]["results"]:
+                    if r["discovery"] == True:
+                        n += 1
+    return n
+############################################################################
+
+
+############################################################################
+# Manual discovery: driven by mere discovery rules whether they are associated with patterns or not
+############################################################################
+
 def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list[Path], language: str,
                      build_name: str, disc_output_dir: Path,
                      timeout_sec: int = 0) -> Dict:
+    # TODO: only support Joern as discovery method, discovery method param is thus irrelevant
+    # - refactor to support additional discovery method.
+    # - maybe the discovery_method can be simply decided from the discovery rule extension?
     logger.info("Execution of specific discovery rules started...")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     findings: list[dict] = []
@@ -365,8 +610,8 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
             # related to #42
             patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=disc_output_dir)
             #
-            cpg_file_name, query_name, findings_for_rule = run_discovery_rule(
-                cpg, patched_discovery_rule, discovery_method)
+            cpg_file_name, query_name, findings_for_rule = run_joern_discovery_rule(
+                cpg, patched_discovery_rule)
             logger.info("Parsing the results of specific discovery rules started...")
             try:
                 if len(findings_for_rule) == 0:
@@ -422,8 +667,11 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
     return d_results
 
 
-# check discovery rules
+############################################################################
+# Check discovery rules: manual discovery of pattern instances' discovery rules over the instances themselves
+############################################################################
 
+# check discovery rules
 def get_check_discovery_rule_result_header():
     return [
         "pattern_id",
@@ -463,15 +711,16 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
     err = 0
     for i, tp_id in enumerate(l_tp_id):
         logger.info(utils.get_tp_op_status_string(
-            (i + 1, len(l_tp_id), tp_id) # tp_info
+            (i + 1, len(l_tp_id), tp_id)  # tp_info
         ))
         try:
             target_tp, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_path)
-            l_tpi_dir: list[Path] = utils.list_pattern_instances_by_pattern_id(
+            l_tpi_dir: list[Path] = utils.list_tpi_paths_by_tp_id(
                 language, tp_id, tp_lib_path
             )
         except Exception as e:
-            logger.warning(f"Either pattern id {tp_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
+            logger.warning(
+                f"Either pattern id {tp_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
             res = get_check_discovery_rule_result(tp_id, language)
             results.append(res)
             err += 1
@@ -487,15 +736,16 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
 
                 tpi_id = utils.get_id_from_name(path.name)
                 logger.info(utils.get_tpi_op_status_string(
-                            (i + 1, len(l_tp_id), tp_id),
-                            t_tpi_info=(j+1, len(l_tpi_dir), tpi_id)
+                    (i + 1, len(l_tp_id), tp_id),
+                    t_tpi_info=(j + 1, len(l_tpi_dir), tpi_id)
                 ))
                 target_instance: Instance = instance_from_dict(instance_json, target_tp, language, tpi_id)
 
                 if target_instance.discovery_rule:
                     dr_path = target_src / target_instance.discovery_rule
                     if not dr_path.is_file():
-                        logger.warning(f"Instance {tpi_id} of pattern {tp_id}: the discovery rule {dr_path} does not exist")
+                        logger.warning(
+                            f"Instance {tpi_id} of pattern {tp_id}: the discovery rule {dr_path} does not exist")
                         res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
                                                               instance_path=path, discovery_rule=dr_path)
                         results.append(res)
@@ -504,9 +754,11 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
 
                     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
                         "check_discovery_rules", target_src, language, output_dir)
-                    d_results = manual_discovery(target_src, target_instance.discovery_method, [dr_path], language, build_name, disc_output_dir, timeout_sec=timeout_sec)
+                    d_results = manual_discovery(target_src, target_instance.discovery_method, [dr_path], language,
+                                                 build_name, disc_output_dir, timeout_sec=timeout_sec)
                     # Inspect the d_results
-                    if d_results["findings"] and any( f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
+                    if d_results["findings"] and any(
+                            f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
                         res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
                                                               instance_path=path, pattern_name=target_tp.name,
                                                               discovery_rule=dr_path, successful="yes")
@@ -518,24 +770,26 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                         unsuccess += 1
                     results.append(res)
                 else:
-                    logger.info(f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
+                    logger.info(
+                        f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
                     res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
                                                           instance_path=path, successful="missing")
                     results.append(res)
                     missing += 1
                 logger.info(utils.get_tpi_op_status_string(
-                            (i + 1, len(l_tp_id), tp_id),
-                            t_tpi_info=(j+1, len(l_tpi_dir), tpi_id),
-                            status="done."
+                    (i + 1, len(l_tp_id), tp_id),
+                    t_tpi_info=(j + 1, len(l_tpi_dir), tpi_id),
+                    status="done."
                 ))
             except Exception as e:
-                logger.warning(f"Something went wrong for the instance at {path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
+                logger.warning(
+                    f"Something went wrong for the instance at {path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
                 res = get_check_discovery_rule_result(tp_id, language, pattern_name=target_tp.name, instance_path=path)
                 results.append(res)
                 err += 1
                 continue
         logger.info(utils.get_tp_op_status_string(
-            (i + 1, len(l_tp_id), tp_id), # tp_info
+            (i + 1, len(l_tp_id), tp_id),  # tp_info
             status="done."
         ))
     logger.info(f"Check/Test discovery rules for {len(l_tp_id)} patterns: done")
@@ -549,4 +803,3 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
         }
     }
     return d_res
-

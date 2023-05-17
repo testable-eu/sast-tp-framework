@@ -214,19 +214,19 @@ class DiscoveryPatterns(Command):
             help="Path to discovery target folder"
         )
         discovery_parser.add_argument(
-            "--tools",
-            metavar="TOOLS",
-            dest="tools",
-            nargs="+",
-            type=str,
-            help="List of SAST Tools (default in `config.py`) filtering on pattern discovery. Only the pattern instances not supported by at least one tool will be run for discovery."
-        )
-        discovery_parser.add_argument(
             "-i", "--ignore-measurements",
             action="store_true",
             default=False,
             dest="ignore",
             help="Ignore measurement results from SAST tools and just try to discover all the specified patterns. (False by default)."
+        )
+        discovery_parser.add_argument(
+            "--tools",
+            metavar="TOOLS",
+            dest="tools",
+            nargs="+",
+            type=str,
+            help="List of SAST Tools (default in `config.py`) filtering on pattern discovery. Only the pattern instances not supported by at least one tool will be run for discovery. An empty list is only accepted if `--ignore-measurement` is provided."
         )
         discovery_parser.add_argument(
             "-l", "--language",
@@ -563,7 +563,8 @@ def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path
         lang_tp_lib_path: Path = tp_lib_path / language
         utils.check_lang_tp_lib_path(lang_tp_lib_path)
         try:
-            id_list: list[int] = list(map(lambda d: utils.get_id_from_name(d.name), list(lang_tp_lib_path.iterdir())))
+            id_list: list[int] = list(map(lambda d: utils.get_id_from_name(d.name),
+                                          utils.list_dirs_only(lang_tp_lib_path)))
             return id_list
         except Exception as e:
             print("Some patterns could not be properly fetched from the pattern library.")

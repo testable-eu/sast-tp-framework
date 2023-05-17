@@ -41,3 +41,7 @@ DISCOVERY_RULE_MAPPING = {
 }
 
 PATCHED_PREFIX = "__P@TCHED__"
+
+discovery_under_measurement = {
+    "enforce_tool_version": False
+}

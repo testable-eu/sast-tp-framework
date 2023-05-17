@@ -102,7 +102,7 @@ class Instance(Pattern):
 
     def define_instance_id(self, pattern_dir: Path) -> int:
         try:
-            inst_list: list[Path] = utils.list_pattern_instances_by_pattern_id(
+            inst_list: list[Path] = utils.list_tpi_paths_by_tp_id(
                 self.language, self.pattern_id, pattern_dir)
             id_list: list[int] = sorted(list(map(lambda x: int(str(x.name).split("_")[0]), inst_list)))
             return id_list[-1] + 1 if len(id_list) > 0 else 1
@@ -173,7 +173,7 @@ def get_instance_path_from_instance_id(language: str, pattern_id: int, instance_
     pattern_path: Path = get_pattern_path_by_pattern_id(language, pattern_id, pattern_dir)
     filtered_res: list[str] = list(filter(
         lambda x: int(x.split("_")[0]) == instance_id,
-        map(lambda y: y.name, list(pattern_path.iterdir()))
+        map(lambda y: y.name, utils.list_dirs_only(pattern_path))
     ))
     if not filtered_res:
         raise InstanceDoesNotExists(instance_id)
