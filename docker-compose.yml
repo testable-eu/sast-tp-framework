@@ -2,6 +2,14 @@ version: "3.9"
 
 services:
 
+  codeql_core:
+    image: tpf_codeql_core
+    build:
+      context: './SAST/codeql/core'
+      dockerfile: "./Dockerfile"
+    volumes:
+      - codeql_core_interface:/tp-framework/SAST/codeql/core
+
   codeql_v2_9_2:
     image: tpf_codeql_v2_9_2
     build:
@@ -29,6 +37,7 @@ services:
     env_file:
       - ./.env
     volumes:
+      - codeql_core_interface:/tp-framework/SAST/codeql/core
       - codeql_v2_9_2:/codeql_v2_9_2
       - codeql_interface_v2_9_2:/tp-framework/SAST/codeql/codeql_v2_9_2
       - codeql_v2_13_1:/codeql_v2_13_1
@@ -39,6 +48,7 @@ services:
     entrypoint: bash
 
 volumes:
+  codeql_core_interface:
   codeql_v2_9_2:
   codeql_interface_v2_9_2:
   codeql_v2_13_1:
