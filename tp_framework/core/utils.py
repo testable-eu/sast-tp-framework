@@ -17,7 +17,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import pattern, instance
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists
+
 from core import errors
 
 
