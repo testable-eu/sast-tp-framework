@@ -239,9 +239,6 @@ class TestDiscovery:
             instance_dict = json.load(json_file)
         tpi_instance = instance.instance_from_dict(instance_dict, test_pattern, "PHP", 1)
         assert not tpi_instance.discovery_rule, "The test case is broken, instance 1 of PHP pattern 4 is not supposed to have a discovery rule"
-
         expected = dict.fromkeys(["rule_path", "method", "rule_name", "rule_accuracy", "rule_hash", "rule_name", "results", "rule_already_executed"], None)
-        expected["rule_already_executed"] = False
-
         actual = discovery.discovery_for_tpi(tpi_instance, None, None, None)
         assert expected == actual

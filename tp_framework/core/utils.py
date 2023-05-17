@@ -49,10 +49,10 @@ def get_tpi_id_from_jsonpath(jp: Path) -> int:
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:
     tp_lib_dir_lang_dir: Path = tp_lib_dir / language
     if tp_lib_dir_lang_dir.is_dir():
-       pattern_with_id = list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))
+        pattern_with_id = list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))
         if pattern_with_id:
             return pattern_with_id[0]
-    raise PatternDoesNotExists(pattern_id)
+        raise PatternDoesNotExists(pattern_id)
     else:
         raise PatternDoesNotExists(pattern_id)
 
@@ -141,7 +141,7 @@ def zipdir(path, ziph):
 # TODO (LC): are these related to pattern instance ?
 #
 def get_path_or_none(p: str) -> Path | None:
-    if p is not None:
+    if p:
         return Path(p)
     return p
 
@@ -154,7 +154,7 @@ def get_enum_value_or_none(enum) -> str | None:
 
 
 def get_relative_path_str_or_none(path) -> str | None:
-    if path is not None:
+    if path:
         return f"./{path}"
     return None
 
