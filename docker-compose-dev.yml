@@ -9,8 +9,7 @@ services:
       dockerfile: "./Dockerfile"
     volumes:
       - codeql_interface:/tp-framework/SAST/codeql
-      - codeql_v2_9_2:/codeql_v2_9_2
-      - codeql_v2_13_1:/codeql_v2_13_1
+      - codeql:/codeql
 
   tp-framework-dev:
     image: tp-framework-dev
@@ -23,8 +22,7 @@ services:
       - ./.env
     volumes:
       - codeql_interface:/tp-framework/SAST/codeql
-      - codeql_v2_9_2:/codeql_v2_9_2
-      - codeql_v2_13_1:/codeql_v2_13_1
+      - codeql:/codeql
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out
       - ./in:/tp-framework/in
@@ -36,5 +34,4 @@ services:
 
 volumes:
   codeql_interface:
-  codeql_v2_9_2:
-  codeql_v2_13_1:
+  codeql:

@@ -27,7 +27,7 @@ SAST_CONFIG_FILE: Path = ROOT_SAST_DIR / "sast-config.yaml"
 SAST_TOOLS_ENABLED: list[Dict] = [
     {
         "name": "codeql",
-        "version": "2.9.2"
+        "version": "2.13.1"
     }
 ]
 

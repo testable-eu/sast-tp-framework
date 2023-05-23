@@ -14,4 +14,4 @@ supported_vulnerability:
   xss: "xss"
 
 # Specific SAST config parameters
-installation_path: "/codeql_v2_13_1"
+installation_path: "/codeql/codeql_v2_13_1"
