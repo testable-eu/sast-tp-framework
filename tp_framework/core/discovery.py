@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Dict, Tuple
@@ -153,7 +154,7 @@ def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Pa
         newlines = []
         changed = False
         for l in lines:
-            newl = l.replace(t_str, p_str)
+            newl = l.replace(t_str, p_str) if re.match('\s*val x\d+ = \(name, "[^"]+", cpg\.call.*(\.location\.toJson)\);\s*', l) else l
             newlines.append(newl)
             if newl != l:
                 changed = True
