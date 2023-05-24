@@ -1,6 +1,6 @@
 # Mandatory configuration parameters
 name: "codeql"
-version: "2.9.2"
+version: "2.13.1"
 supported_languages:
   - "JS"
   - "JAVA"
@@ -9,9 +9,9 @@ supported_languages:
   - "CPP"
   - "CSHARP"
   - "GO"
-tool_interface: "SAST.codeql.codeql_v2_9_2.codeql.CodeQL_v_2_9_2"
+tool_interface: "SAST.codeql.codeql_v2_13_1.codeql.CodeQL_v_2_13_1"
 supported_vulnerability:
   xss: "xss"
 
 # Specific SAST config parameters
-installation_path: "/codeql/codeql_v2_9_2"
+installation_path: "/codeql/codeql_v2_13_1"
