@@ -85,3 +85,16 @@ def discoveryRuleParsingResultError():
 
 def unexpectedException(e):
     return f"Unexpected exception triggered: {e}."
+
+# Pattern Repair
+
+def measurementResultsDirDoesNotExist():
+    return "The directory with the measurements does not exist."
+
+
+def fileDoesNotExist():
+    return "The file you provided for does not exist or is the wrong file type."
+
+
+def templateDirDoesNotExist(not_exisitng_dir_or_file):
+    return f"Your tplib does not have {not_exisitng_dir_or_file}."

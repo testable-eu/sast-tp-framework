@@ -20,6 +20,7 @@ def main(args=None):
     manual_discovery_cmd = tpf_commands.ManualDiscovery()
     sastreport_cmd = tpf_commands.Report()
     check_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
+    pattern_repair_cmd = tpf_commands.PatternRepair()
     # Sub-parsers
     subparser = parser.add_subparsers(title="Commands", dest="command", metavar="")
     add_pattern_cmd.add_command_subparser(subparser)
@@ -29,6 +30,7 @@ def main(args=None):
     manual_discovery_cmd.add_command_subparser(subparser)
     sastreport_cmd.add_command_subparser(subparser)
     check_discovery_rules_cmd.add_command_subparser(subparser) # TODO: in-progress, not tested
+    pattern_repair_cmd.add_command_subparser(subparser)
 
     # Parsing
     args: Namespace = parser.parse_args(args)
@@ -50,6 +52,8 @@ def main(args=None):
             sastreport_cmd.execute_command(args)
         case "checkdiscoveryrules":
             check_discovery_rules_cmd.execute_command(args)
+        case "patternrepair":
+            pattern_repair_cmd.execute_command(args)
         case other:
             print("Command not valid...")
             exit(1)

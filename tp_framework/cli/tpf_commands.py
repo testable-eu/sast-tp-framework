@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict
 
 import config
+import pattern_repair.pattern_repair_interface as pr_interface
 from cli import interface
 from core import utils
 
@@ -507,6 +508,94 @@ class CheckDiscoveryRules(Command):
                                         export_file=args.export, output_dir=output_dir)
 
 
+class PatternRepair(Command):
+
+    # overriding abstract method
+    def add_command_subparser(self, subparser):
+        pattern_repair_parser = subparser.add_parser("patternrepair",
+                                             help="Repair patterns in your catalogue, helps you keeping the structure of all patterns the same")
+        pattern_repair_parser_pattern_selection_mode = pattern_repair_parser.add_mutually_exclusive_group(required=True)
+        pattern_repair_parser.add_argument(
+            "-l", "--language",
+            metavar="LANGUAGE",
+            dest="language",
+            required=True,
+            help="Programming language targeted"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "-p", "--patterns",
+            metavar="PATTERN_ID",
+            dest="patterns",
+            nargs="+",
+            type=int,
+            help="Specify pattern(s) ID(s) to test for discovery"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "--pattern-range",
+            metavar="RANGE_START-RANGE_END",
+            dest="pattern_range",
+            type=str,
+            help="Specify pattern ID range separated by`-` (ex. 10-50)"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "-a", "--all-patterns",
+            dest="all_patterns",
+            action="store_true",
+            help="Test discovery for all available patterns"
+        )
+        pattern_repair_parser.add_argument(
+            "--tp-lib",
+            metavar="TP_LIB_DIR",
+            dest="tp_lib",
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--output-dir",
+            metavar="OUTPUT_DIR",
+            dest="output_dir",
+            help=f"Absolute path to the folder where outcomes (e.g., log file, export file if any) will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--masking-file",
+            metavar="MASKING_FILE",
+            dest="masking_file",
+            help=f"Absolute path to a json file, that contains a mapping, if the name for some measurement tools should be kept secret, default is None"
+        )
+        pattern_repair_parser.add_argument(
+            "--measurement-results",
+            metavar="MEASUREMENT_DIR",
+            dest="measurement_dir",
+            help=f"Absolute path to the folder where measurement results are stored, default resolves to `./{config.MEASUREMENT_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--checkdiscoveryrules-results",
+            metavar="CHECKDISCOVERYRULES_FILE",
+            dest="checkdiscoveryrules_file",
+            help=f"Absolute path to the csv file, where the results of the `checkdiscoveryrules` command are stored, default resolves to `./checkdiscoveryrules.csv`"
+        )
+        pattern_repair_parser.add_argument(
+            "--skip-readme",
+            dest="skip_readme",
+            action="store_true",
+            help="If set, the README generation is skipped."
+        )
+    # overriding abstract method
+    def execute_command(self, args):
+        language: str = args.language.upper()
+        tp_lib_path: str = parse_tp_lib(args.tp_lib)
+        l_pattern_id = sorted(parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
+                                      tp_lib_path,
+                                      language))
+        output_dir: Path = parse_dir_or_file(args.output_dir)
+        measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
+        checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
+        masking_file: Path or None = parse_dir_or_file(args.masking_file) if args.masking_file else None
+        pr_interface.repair_patterns(language=language, pattern_ids=l_pattern_id,
+                                     masking_file=masking_file, include_README=args.skip_readme,
+                                     measurement_results=measurement_results, checkdiscoveryrule_results=checkdiscoveryrules_results,
+                                     output_dir=output_dir, tp_lib_path=tp_lib_path)
+
+
 # class Template(Command):
 #
 #     # overriding abstract method
@@ -531,7 +620,7 @@ def parse_tp_lib(tp_lib: str):
         exit(1)
 
 
-def parse_output_dir(output_dir: str):
+def parse_output_dir(output_dir: str) -> Path:
     if not output_dir:
         output_dir: str = str(config.RESULT_DIR)
     try:
@@ -539,6 +628,19 @@ def parse_output_dir(output_dir: str):
         return output_dir_path
     except Exception as e:
         print(f"Output directory is wrong: {output_dir}")
+        exit(1)
+
+
+def parse_dir_or_file(path_to_file_or_dir: str, 
+                      default_path: str = config.RESULT_DIR, 
+                      name: str = "Output directory") -> Path:
+    if not path_to_file_or_dir:
+        path_to_file_or_dir: str = str(default_path)
+    try:
+        path_to_file_or_dir_as_path: Path = Path(path_to_file_or_dir).resolve()
+        return path_to_file_or_dir_as_path
+    except Exception as e:
+        print(f"{name} is wrong: {path_to_file_or_dir}")
         exit(1)
 
 

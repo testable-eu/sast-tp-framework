@@ -17,7 +17,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import pattern, instance
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists, \
+    MeasurementResultsDoNotExist, FileDoesNotExist 
 
 from core import errors
 
@@ -45,6 +46,7 @@ def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) ->
 
 def get_tpi_id_from_jsonpath(jp: Path) -> int:
     return get_id_from_name(jp.parent.name)
+
 
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:
     tp_lib_dir_lang_dir: Path = tp_lib_dir / language
@@ -197,6 +199,24 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
 
 
 ################################################################################
+# Pattern Repair
+#
+
+def check_measurement_results_exist(measurement_dir: Path):
+    if not measurement_dir.is_dir():
+        e = MeasurementResultsDoNotExist()
+        logger.error(get_exception_message(e))
+        raise e
+
+
+def check_file_exist(file_path: Path, file_suffix = ".csv"):
+    if not file_path.is_file() or not file_path.suffix == file_suffix:
+        e = FileDoesNotExist(file_path)
+        logger.error(get_exception_message(e))
+        raise e
+
+
+################################################################################
 # Others
 #
 
@@ -289,7 +309,6 @@ def add_loggers(output_dir_path: Path, filename: str=None, console=True):
         loggermgr.add_logger(output_dir_path / logfilename)
     if console:
         loggermgr.add_console_logger()
-
 
 
 def get_operation_build_name_and_dir(op: str, src_dir: Path | None, language: str, output_dir: Path):

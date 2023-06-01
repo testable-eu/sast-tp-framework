@@ -52,6 +52,10 @@ Instead of specifying certain pattern ids, you can use `-a`.
 ]
 ```
 
+The value in `result` is a boolean value, where 'true' signifies the tool's correct output matching the expected result, while 'false' indicates an incorrect outcome.
+For example, if it is expected, that the pattern does not contain a vulnerability, ('expectation': false) and the tool result is 'no vulnerability', than the value of `result` will be true.
+If it is expected that the pattern contains a vulnerability ('expectation': true) and the tool does not detect that, the `result` field will be false.
+
 ## Example
 
 Here a simple example that will measure patterns 1, 2, 4 and 7 from the PHP catalog with 3 workers:

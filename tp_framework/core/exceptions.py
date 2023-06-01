@@ -122,3 +122,22 @@ class DiscoveryRuleParsingResultError(Exception):
         else:
             self.message = errors.discoveryRuleParsingResultError()
         super().__init__(self.message)
+
+# Pattern Repair
+
+class MeasurementResultsDoNotExist(Exception):
+    def __init__(self, message=errors.measurementResultsDirDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class FileDoesNotExist(Exception):
+    def __init__(self, message=errors.fileDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class TemplateDoesNotExist(Exception):
+    def __init__(self, message=errors.templateDirDoesNotExist('template')) -> None:
+        self.message = message
+        super().__init__(self.message)

@@ -22,6 +22,8 @@ The following main commands are currently implemented:
   - [`discovery`](./How-to-run-discover-measured-patterns.md): discover measured patterns within a project source code
   - [`manual-discovery`](./How-to-run-manual-discovery.md): execute discovery rules (normally associated to patterns) within a project source code
 - reporting: create reports about SAST measurement and/or pattern discovery (**TODO**)
+- [`checkdiscoveryrules`](./How-to-run-checkdiscoveryrules.md): Check/test the discovery rules of the pattern instances on the pattern instances themselves.
+- [`patternrepair`](./How-to-run-patternrepair.md): Helps you keeping your pattern catalogue nice and tidy.
 
 The following are under-investigation:
 
