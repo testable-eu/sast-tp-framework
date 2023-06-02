@@ -12,6 +12,7 @@ from pattern_repair.utils import (
     INSTANCE_JSON_NOT_MANDATORY_KEYS,
     get_template_instance_json_path,
     get_template_instance_discovery_rule_path,
+    get_files_with_ending
 )
 
 from core.utils import get_id_from_name
@@ -115,6 +116,25 @@ class InstanceRepair:
                 f"There is a rule, but no rule accuracy given for {self.instance_name}"
             )
 
+    def _find_and_rename_file(self, file_ending: str):
+        """Checks if there is already an existing file with the expected name '<number>_instance_<pattern_name>.<file_ending>'.
+        If not, it gets all files with that fileending in the instance directory. If there is only one, and it is in the instance_path,
+        it will be renamed into the expected filename.
+
+        Args:
+            file_ending (str): Ending of the files (without the `.` e.g. `txt`)
+        """
+        expected_abs_filepath = os.path.join(self.instance_path, f"{self.instance_name}.{file_ending}")
+        if os.path.isfile(expected_abs_filepath):
+            return
+        # list all files with that fileending in the instance
+        files_with_this_ending = get_files_with_ending(self.instance_path, f".{file_ending}", recursive=True)
+        if len(files_with_this_ending) == 1 and os.path.exists(os.path.join(self.instance_path, os.path.basename(files_with_this_ending[0]))):
+            # There is only one file with the file ending in the instance_path directory
+            os.rename(files_with_this_ending[0], expected_abs_filepath)
+            if files_with_this_ending[0] != expected_abs_filepath:
+                logger.info(f"Renamed file from {files_with_this_ending[0]} to {expected_abs_filepath}")
+
     def _repair_description(self) -> None:
         """Checks if 'description' is given in an instance dict, removes the key, when it is empty."""
         instance_dict = read_json(self.instance_json_file)
@@ -132,6 +152,7 @@ class InstanceRepair:
 
     def _repair_discovery_rule(self) -> None:
         """Repairs the discovery rule of a pattern instance"""
+        self._find_and_rename_file("sc")
         instance_dict = read_json(self.instance_json_file)
         path_to_discovery_rule = os.path.join(
             self.instance_path, f"{self.instance_name}.sc"
@@ -144,25 +165,17 @@ class InstanceRepair:
             if instance_dict["discovery"]["rule"]
             else ""
         )
-        # check if there is already a path to a discovery rule given
-        if os.path.isfile(os.path.join(self.instance_path, real)):
+        real_path = os.path.join(self.instance_path, real)
+        # check if there is already a path to a discovery rule given, and if this path is valid
+        if os.path.isfile(real_path):
             if expected_file == real:
                 # the file path is correct, just check the structure of the file
-                self._repair_discovery_rule_structure(
-                    os.path.join(self.instance_path, real)
-                )
+                self._repair_discovery_rule_structure(real_path)
                 return
             else:
-                real_path = os.path.join(self.instance_path, real)
-                if os.path.isfile(real_path):
-                    self._repair_discovery_rule_structure(real_path)
-                    return
-                # there is a discovery rule, but not a scala file
-                logger.warning(
-                    f"No scala discovery rule found for {self.instance_path}"
-                )
+                self._repair_discovery_rule_structure(real_path)
                 return
-        # given value is not a real file, so check if there is nevertheless a discovery rule
+        # given value is not a real file, so check if there is nevertheless a discovery rule with the expected name
         if not os.path.isfile(path_to_discovery_rule):
             logger.info(
                 f"Could not find discovery rule for {self.instance_name}, added sc file"
@@ -185,7 +198,9 @@ class InstanceRepair:
         self._check_rule_accuracy()
 
     def repair_instance_json(self) -> None:
-        """Repairs the instance JSON of the pattern"""
+        """Repairs the instance JSON of the pattern. 
+        Meaning, it makes sure that the JSON file is there, 
+        has all necessary keys and the description points to a markdown file containing the description."""
         if not os.path.isfile(self.instance_json_file):
             logger.info(
                 f"Could not find instance JSON for {self.instance_name}, copying template"

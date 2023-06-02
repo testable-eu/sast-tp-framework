@@ -40,7 +40,7 @@ class MarkdownCode(MarkdownElement):
         self.code_type = code_type
 
     def to_markdown(self) -> str:
-        return f"\n```{self.code_type}\n{self.content}\n```\n"
+        return f"\n```{self.code_type.lower()}\n{self.content}\n```\n"
 
 
 class MarkdownComment(MarkdownElement):
@@ -147,7 +147,7 @@ class MarkdownTable(MarkdownElement):
     Columns will be sorted alphabetically, if you wish to sort columns yourself you can prefix them using <number>::.
     """
 
-    def __init__(self, content: dict, style: str = ""):
+    def __init__(self, content: dict):
         assert isinstance(
             content, dict
         ), "content for Markdown table must be provided as dict"
@@ -155,7 +155,6 @@ class MarkdownTable(MarkdownElement):
             [isinstance(v, list) for v in content.values()]
         ), "content for Markdowntable must have lists as values"
         self.headings = sorted(content.keys(), key=lambda x: x.lower())
-        self.style = style
         num_rows = max([len(v) for v in content.values()])
         self.lines = [
             [None for _ in range(len(self.headings))] for _ in range(num_rows)

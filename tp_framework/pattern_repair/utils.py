@@ -26,7 +26,7 @@ def assert_pattern_valid(path_to_pattern: Path) -> None:
         e: PatternDoesNotExists error, when pattern does not exist.
     """
     if not Path(path_to_pattern).is_dir():
-        e = PatternDoesNotExists()
+        e = PatternDoesNotExists(path.basename(path_to_pattern))
         logger.error(get_exception_message(e))
         raise e
 
@@ -107,7 +107,6 @@ def get_template_pattern_json_path(tp_lib_path) -> str:
     template__pattern_json_path = path.join(
         get_template_dir_path(tp_lib_path), "ID_pattern_name.json"
     )
-    print(template__pattern_json_path)
     if not path.isfile(template__pattern_json_path):
         e = TemplateDoesNotExist(templateDirDoesNotExist(template__pattern_json_path))
         logger.error(get_exception_message(e))
@@ -180,10 +179,7 @@ def get_language_by_file_ending(filename: str) -> str:
 
 
 def list_directories(path_to_parent_directory: str):
-    return [
-        path.join(path_to_parent_directory, f)
-        for f in listdir(path_to_parent_directory)
-    ]
+    return list(filter(lambda x: path.isdir(x), [path.join(path_to_parent_directory, f) for f in listdir(path_to_parent_directory)]))
 
 
 def list_instances_jsons(path_to_pattern: str | Path):

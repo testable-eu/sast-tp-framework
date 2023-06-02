@@ -3,7 +3,11 @@ import logging
 
 from pattern_repair.instance_repair import InstanceRepair
 from pattern_repair.PHP.generate_opcode import PHPOpcodeGenerator
-from pattern_repair.utils import *
+from pattern_repair.utils import read_json, write_json, get_files_with_ending
+
+from core import loggermgr
+
+logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 
 class InstanceRepairPHP(InstanceRepair):
@@ -41,10 +45,7 @@ class InstanceRepairPHP(InstanceRepair):
         Returns:
             dict: Dict of instance
         """
-        if not instance_dict[keyword1][keyword2]:
-            logger.warning(f"Instance dict at {keyword1}:{keyword2} is not defined.")
-            return instance_dict
-        # get the expected path and check if it is represented
+        self._find_and_rename_file(file_ending)
         expected_path = f".{os.sep}{self.instance_name}.{file_ending}"
         abs_expected_path = os.path.abspath(
             os.path.join(self.instance_path, expected_path)
@@ -54,7 +55,7 @@ class InstanceRepairPHP(InstanceRepair):
         else:
             # check if the path inserted in the field is actually valid
             if os.path.isfile(
-                os.path.join(self.instance_path, instance_dict[keyword1][keyword2])
+                os.path.join(self.instance_path, instance_dict[keyword1][keyword2] if instance_dict[keyword1][keyword2] else '')
             ):
                 return instance_dict
             logger.warning(
@@ -80,17 +81,17 @@ class InstanceRepairPHP(InstanceRepair):
         abs_path_to_php_file = os.path.join(self.instance_path, path_to_php_file)
 
         if not path_to_php_file or not os.path.isfile(abs_path_to_php_file):
-            logging.warning(f'Could not verify "expectation" for {self.instance_name}')
+            logger.warning(f'Could not verify "expectation" for {self.instance_name}')
             return instance_dict
 
         if not os.path.isfile(abs_path_to_sink_file):
             abs_path_to_sink_file = abs_path_to_php_file
             path_to_sink_file = path_to_php_file
-            logging.info(f"Changing sink file path to {path_to_php_file}")
+            logger.info(f"Changing sink file path to {path_to_php_file}")
         if not os.path.isfile(abs_path_to_source_file):
             abs_path_to_source_file = abs_path_to_php_file
             path_to_source_file = path_to_php_file
-            logging.info(f"Changing source file path to {path_to_php_file}")
+            logger.info(f"Changing source file path to {path_to_php_file}")
         source0, sink0 = self._get_source_and_sink_for_file(abs_path_to_sink_file)
         source1, sink1 = self._get_source_and_sink_for_file(abs_path_to_source_file)
 
@@ -100,19 +101,23 @@ class InstanceRepairPHP(InstanceRepair):
         instance_dict["expectation"]["sink_file"] = path_to_sink_file
         instance_dict["expectation"]["sink_line"] = sink0 if sink0 else sink1
         if not (bool(source0) or bool(source1)):
-            logging.warning(f"Could not verify source files for {self.instance_name}")
+            logger.warning(f"Could not verify source files for {self.instance_name}")
         if not (bool(sink0) or bool(sink1)):
-            logging.warning(f"Could not verify sink files for {self.instance_name}")
+            logger.warning(f"Could not verify sink files for {self.instance_name}")
         return instance_dict
 
     def _repair_opcode(self):
         """Generates opcode and checks if it is empty."""
+        # remove old bash files first, before generating new ones
+        all_bash_files = get_files_with_ending(self.instance_path, ".bash", recursive=True)
+        for bash_file in all_bash_files:
+            os.remove(bash_file)
         bash_file_paths = PHPOpcodeGenerator(
             self.instance_path, self.path_to_testability_patterns
         ).generate_opcode_for_pattern_instance()
         for bash_file_path in bash_file_paths:
             if not bash_file_path or not os.stat(bash_file_path).st_size:
-                logging.warning(f"Bash file {bash_file_path} is empty")
+                logger.warning(f"Bash file {bash_file_path} is empty")
 
     def _repair_instance_json(self) -> None:
         """Repairs JSON of instance"""
@@ -140,12 +145,13 @@ class InstanceRepairPHP(InstanceRepair):
         all_bash_files = get_files_with_ending(self.instance_path, ".bash")
         all_php_files = get_files_with_ending(self.instance_path, ".php")
         if len(all_bash_files) != len(all_php_files):
-            logging.warning(
+            logger.warning(
                 f"Expected same number of .bash and .php files, but got {len(all_php_files)} PHP files and {len(all_bash_files)} BASH files"
             )
 
     def repair(self):
         super().repair_instance_json()
         super().repair()
+        self._find_and_rename_file("php")
         self._repair_opcode()
         self._repair_instance_json()

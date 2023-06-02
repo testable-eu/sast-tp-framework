@@ -8,6 +8,9 @@ import logging
 import time
 
 from pattern_repair.utils import get_files_with_ending, read_json, write_json
+from core import loggermgr
+
+logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 
 class PHPOpcodeGenerator:
@@ -27,7 +30,7 @@ class PHPOpcodeGenerator:
         """
         json_files_paths = get_files_with_ending(self.pattern_instance_path, ".json")
         if not len(json_files_paths) == 1:
-            logging.error(
+            logger.error(
                 f"Expected one JSON file for {self.pattern_instance_path} got {len(json_files_paths)}"
             )
             exit(1)
@@ -102,7 +105,7 @@ class PHPOpcodeGenerator:
             self.pattern_instance_path, ".php", recursive=True
         )
         if not php_files_paths:
-            logging.warning(
+            logger.warning(
                 f"Expected one PHP file for {self.pattern_instance_path}, found {len(php_files_paths)}"
             )
             return []

@@ -26,8 +26,8 @@ class READMEGenerator:
         language: str,
         tp_lib_path: str,
         instance_jsons: list[str],
-        discovery_rule_results: str = None,
-        measurement_results: str = None,
+        discovery_rule_results: str = "",
+        measurement_results: str = "",
         masking_file: str = "",
     ) -> None:
         check_lang_tp_lib_path(Path(path.join(tp_lib_path, language.upper())))
@@ -108,24 +108,14 @@ class READMEGenerator:
             pattern_id, instance_id = get_id_from_name(
                 path.basename(self.pattern_path)
             ), get_id_from_name(path.basename(instance_path))
-            discovery_rule_successfull += (
-                [
-                    self.discovery_rule_results[self.language][str(pattern_id)][
-                        str(instance_id)
-                    ]
-                ]
-                if self.discovery_rule_results
-                else [""]
-            )
-            if not self.discovery_rule_results:
-                logger.warning(
-                    f"{self.log_prefix}Could not find discovery rule result for {instance_name}."
-                )
-            if not discovery_rule_successfull[-1]:
-                logger.warning(
-                    f'{self.log_prefix}Could not find discovery rule result for {instance_name}. Assuming "error"'
-                )
-                discovery_rule_successfull[-1] = "error"
+            if self.discovery_rule_results:
+                discovery_rule_successfull += ([self.discovery_rule_results[self.language][str(pattern_id)][str(instance_id)]]
+                                                if self.discovery_rule_results
+                                                else [""]
+                                            )
+                if not discovery_rule_successfull[-1]:
+                    logger.warning(f'{self.log_prefix}Could not find discovery rule result for {instance_name}. Assuming "error"')
+                    discovery_rule_successfull[-1] = "error"
 
             discovery_method += [instance_dict["discovery"]["method"]]
 
@@ -135,6 +125,8 @@ class READMEGenerator:
             "2::discovery method": discovery_method,
             "3::rule successfull": discovery_rule_successfull,
         }
+        if not self.discovery_rule_results:
+            metadata_dict.pop("3::rule successfull")
 
         return [MarkdownHeading("Overview", 2), MarkdownTable(metadata_dict)]
 
@@ -148,14 +140,16 @@ class READMEGenerator:
             masking_file=self.masking_file,
         ).generate_md()
 
+    def _generate_README_elements(self) -> MarkdownDocument:
+        md_elements = []
+        for f in self.readme_structure:
+            md_elements += f()
+        return MarkdownDocument(md_elements)
+
     def generate_README(self) -> str:
         """Entrypoint for generating a README file for that pattern.
 
         Returns:
             str: The generated README file following `self.readme_structure`
         """
-        md_elements = []
-        for f in self.readme_structure:
-            md_elements += f()
-        final_md = MarkdownDocument(md_elements).to_markdown()
-        return final_md
+        return self._generate_README_elements().to_markdown()

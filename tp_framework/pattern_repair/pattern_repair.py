@@ -16,6 +16,7 @@ from pattern_repair.utils import (
     list_instances_jsons,
 )
 from pattern_repair.README_generator import READMEGenerator
+# This import is needed, because otherwise it would not be possible to get the instance repair class for a certain language
 from pattern_repair.PHP.instance_repair_php import InstanceRepairPHP
 
 from core.utils import check_lang_tp_lib_path, get_id_from_name
@@ -154,12 +155,8 @@ class PatternRepair:
     def _repair_pattern_README(self) -> None:
         """Repairs the README file of the pattern"""
         all_md_files = get_files_with_ending(self.pattern_path, ".md")
-        if not len(all_md_files) == 1:
-            logger.info(
-                f'There are multiple or no ".md" files in pattern {self.pattern_name}'
-            )
-            return
-        os.rename(all_md_files[0], os.path.join(self.pattern_path, "README.md"))
+        if len(all_md_files) == 1:
+            os.rename(all_md_files[0], os.path.join(self.pattern_path, "README.md"))
         pattern_measurement = os.path.join(
             self.all_measurement_results, self.pattern_name
         )
