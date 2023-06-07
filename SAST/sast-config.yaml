@@ -4,9 +4,9 @@
 tools:
   codeql:
     version:
-      #2.9.2:
-      #  config: "./codeql/codeql_v2_9_2/config.yaml"
-      #  deploy: true
+      2.9.2:
+       config: "./codeql/codeql_v2_9_2/config.yaml"
+       deploy: true
       2.13.1:
         config: "./codeql/codeql_v2_13_1/config.yaml"
         deploy: true
