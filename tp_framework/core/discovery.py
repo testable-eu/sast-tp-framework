@@ -205,8 +205,11 @@ def run_and_process_discovery_rule(cpg: Path, discovery_rule: Path,
             f"No discovery method has been specified. Likely you need to modify the discovery->method property in the JSON file of the pattern instance related to the discovery rule {discovery_rule}. We will continue with the default discovery method for Scala discovery rules (aka '{default_discovery_method}').")
         discovery_method = default_discovery_method
     if discovery_method == "joern":
-        cpg_file_name, query_name, raw_findings = run_joern_discovery_rule(cpg, discovery_rule)
-        findings = process_joern_discovery_rule_findings(discovery_rule, query_name, raw_findings)
+        try:
+            cpg_file_name, query_name, raw_findings = run_joern_discovery_rule(cpg, discovery_rule)
+            findings = process_joern_discovery_rule_findings(discovery_rule, query_name, raw_findings)
+        except:
+            findings =  None
         return findings
     else:
         e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
@@ -389,7 +392,12 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         for tpi_id in d_tpi_id_path:
             tpi_json_path = d_tpi_id_path[tpi_id]
             tpi_json_rel = os.path.relpath(tpi_json_path, start=tp_lib)
-            tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)  # get the instance
+            # get the instance
+            try:
+                tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)
+            except:
+                logger.exception(f"Failed to decode metadata `{tp_lib / tpi_json_rel}`")
+                continue
             d_tpi = {"instance": tpi_instance, "measurement": "ignored", "jsonpath": tpi_json_path,
                      "discovery": discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}
@@ -412,6 +420,11 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
     if not measurement_stop and tpi_instance.discovery_rule:
         # prepare and execute the discovery rule (if not done yet)
         dr = (tpi_json_path.parent / tpi_instance.discovery_rule).resolve()
+        if not dr.exists():
+            d_tpi_discovery["rule_path"] = str(dr)
+            logger.exception("Scala rule for {} does not exist".format(dr))
+            return d_tpi_discovery
+
         logger.info(
             f"{msgpre}prepare discovery rule {dr}...")
         d_tpi_discovery["rule_path"] = str(dr)
@@ -423,7 +436,6 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 f"{msgpre}running discovery rule...")
             # related to #42
             pdr = patch_PHP_discovery_rule(dr, tpi_instance.language, output_dir=disc_output_dir)
-            #
             try:
                 findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
                 d_tpi_discovery["results"] = findings
@@ -433,8 +445,8 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 already_executed[d_tpi_discovery["rule_hash"]] = None
                 logger.error(
                     f"{msgpre}Discovery rule failure for this instance: {e}")
-                ## JoernQueryError(e)
-            ## JoernQueryParsingResultError(e)
+                # JoernQueryError(e)
+                # JoernQueryParsingResultError(e)
             already_executed[d_tpi_discovery["rule_hash"]] = findings
             logger.info(
                 f"{msgpre} discovery rule executed.")

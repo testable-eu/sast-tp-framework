@@ -222,7 +222,10 @@ def load_instance_from_metadata(metadata: str, tp_lib: Path, language: str) -> I
         raise InstanceDoesNotExists(ref_metadata=metadata_path.name)
 
     with open(metadata_path) as file:
-        instance: Dict = json.load(file)
+        try:
+            instance: Dict = json.load(file)
+        except Exception as e:
+            raise e
 
     pattern_id = utils.get_id_from_name(metadata_path.parent.parent.name)
     pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, tp_lib)
