@@ -2,7 +2,10 @@ from pathlib import Path
 import yaml
 from typing import Dict
 import sys
-sys.path.append('/tp-framework/SAST')
+
+DIR: Path = Path(__file__).parent.resolve()
+SAST_DIR: Path = DIR.parent.parent.resolve()
+sys.path.append(str(SAST_DIR))
 
 from codeql.core.codeql import CodeQL
 
