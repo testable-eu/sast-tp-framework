@@ -244,7 +244,9 @@ def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     return tools
 
 
-def sast_tool_version_match(v1, v2, nv_max=3):
+def sast_tool_version_match(v1, v2, nv_max=3, ignore_saas=True):
+    if ignore_saas and (v1 == "saas" or v2 == "saas"):
+        return True
     sv1 = v1.split(".")
     sv2 = v2.split(".")
     nv = max(len(sv1), len(sv2))

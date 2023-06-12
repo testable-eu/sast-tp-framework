@@ -17,7 +17,7 @@ from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CP
     CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
-from core.instance import Instance, instance_from_dict, load_instance_from_metadata
+from core.instance import Instance, instance_from_dict, load_instance_from_json
 from core.pattern import get_pattern_by_pattern_id
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
@@ -389,7 +389,7 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         for tpi_id in d_tpi_id_path:
             tpi_json_path = d_tpi_id_path[tpi_id]
             tpi_json_rel = os.path.relpath(tpi_json_path, start=tp_lib)
-            tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)  # get the instance
+            tpi_instance = load_instance_from_json(tpi_json_rel, tp_lib, language)  # get the instance # TODO: this ingores the language
             d_tpi = {"instance": tpi_instance, "measurement": "ignored", "jsonpath": tpi_json_path,
                      "discovery": discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}

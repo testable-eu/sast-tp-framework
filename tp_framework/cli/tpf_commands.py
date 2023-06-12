@@ -331,7 +331,7 @@ class ManualDiscovery(Command):
         interface.manual_discovery(target_dir, args.discovery_method, args.discovery_rules, language, timeout, output_dir=output_dir)
 
 
-class Report(Command):
+class SASTReport(Command):
 
     # overriding abstract method
     def add_command_subparser(self, subparser):
