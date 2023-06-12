@@ -63,7 +63,8 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
 def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], language: str, itools: list[Dict],
                                    tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
                                    output_dir: Path = Path(config.RESULT_DIR).resolve(),
-                                   ignore: bool = False):
+                                   ignore: bool = False,
+                                   cpg: str = None):
     print("Discovery for patterns started...")
     # Set output directory and logger
     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
@@ -72,7 +73,7 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     #
     utils.check_tp_lib(tp_lib_path)
     d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
-                                disc_output_dir, ignore=ignore)
+                                disc_output_dir, ignore=ignore, cpg=cpg)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
