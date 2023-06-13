@@ -12,19 +12,21 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils
 from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
-from core.instance import Instance, load_instance_from_metadata
+from core.instance import Instance, load_instance_from_json
 
 
 class Measurement:
     def __init__(self,
                  date: datetime = None,
                  result: bool = None,
+                 expected_result: bool = None,
                  tool: str = None,
                  version: str = None,
                  instance: Instance = None
                  ):
         self.date = date
         self.result = result
+        self.expected_result = expected_result
         self.tool = tool
         self.version = version
         self.instance = instance
@@ -60,6 +62,7 @@ class Measurement:
             if found:
                 break # we found a matching finding
         self.result = (found == instance.expectation)
+        self.expected_result = instance.expectation
         self.tool = tool
         self.version = version
         self.instance = instance
@@ -87,10 +90,13 @@ def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Meas
         return []
     parsed_meas: list[Measurement] = []
     for m in meas:
-        instance = load_instance_from_metadata(m["instance"], tp_lib, language)
+        instance = load_instance_from_json(m["instance"], tp_lib, language)
+        # NOTE 06/2023: if not expectation in measurement, then we take it from instance (backword compatibility though it could introduce mistakes if the instance expectation was changed after the measurement)
+        expected_result = m["expected_result"] if "expected_result" in m.keys() else instance.expectation
         parsed_meas.append(Measurement(
             m["date"],
             m["result"],
+            expected_result,
             m["tool"],
             m["version"],
             instance,

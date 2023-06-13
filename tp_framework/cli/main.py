@@ -18,7 +18,7 @@ def main(args=None):
     measure_pattern_cmd = tpf_commands.MeasurePatterns()
     discovery_pattern_cmd = tpf_commands.DiscoveryPatterns()
     manual_discovery_cmd = tpf_commands.ManualDiscovery()
-    sastreport_cmd = tpf_commands.Report()
+    sastreport_cmd = tpf_commands.SASTReport()
     check_discovery_rules_cmd = tpf_commands.CheckDiscoveryRules()
     # Sub-parsers
     subparser = parser.add_subparsers(title="Commands", dest="command", metavar="")

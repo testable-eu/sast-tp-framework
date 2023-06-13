@@ -21,7 +21,8 @@ The following main commands are currently implemented:
 - discovery: discover patterns in project source code
   - [`discovery`](./How-to-run-discover-measured-patterns.md): discover measured patterns within a project source code
   - [`manual-discovery`](./How-to-run-manual-discovery.md): execute discovery rules (normally associated to patterns) within a project source code
-- reporting: create reports about SAST measurement and/or pattern discovery (**TODO**)
+- reporting: create reports about SAST measurement and/or pattern discovery (**CONTINUE**)
+  - [`sastreport`](./How-to-run-sastreport.md): fetch last SAST measurements for tools against patterns and aggregate in a common csv file 
 
 The following are under-investigation:
 

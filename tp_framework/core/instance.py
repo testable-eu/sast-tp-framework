@@ -216,8 +216,16 @@ def instance_from_dict(instance_dict: Dict, pattern: Pattern, language: str, ins
     )
 
 
-def load_instance_from_metadata(metadata: str, tp_lib: Path, language: str) -> Instance:
-    metadata_path: Path = tp_lib / metadata
+# TODO: refactoring needed here together with the instance and pattern concepts...
+#  at the moment you need to pass either the absolute path to the tpi json or a
+#  relative one starting from `tp_lib` (why is language ignored in this second option??)...
+#  `tp_lib` and `language` seems to be more necessary to get out the corresponding pattern
+#  information...maybe the instance should comprise the pattern info? otherwise while from
+#  patterns we have the instances metadata, from the instance we can only reconstruct the
+#  pattern info from the strong assumptions in the file system structuring...
+
+def load_instance_from_json(metadata: str, tp_lib: Path, language: str) -> Instance:
+    metadata_path: Path = tp_lib / metadata # TODO: language???
     if not metadata_path.exists():
         raise InstanceDoesNotExists(ref_metadata=metadata_path.name)
 
