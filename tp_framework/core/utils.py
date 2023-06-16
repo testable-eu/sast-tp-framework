@@ -67,7 +67,7 @@ def get_instance_dir_from_id(instance_id: int, pattern_dir: Path) -> Path:
 def get_instance_dir_from_list(instance_id: int, l_pattern_dir: list[Path]):
     instance_with_id = list(filter(lambda tpi_dir: get_id_from_name(tpi_dir.name) == instance_id, l_pattern_dir))
     if not instance_with_id:
-        raise InstanceDoesNotExists()
+        raise InstanceDoesNotExists(instance_id=instance_id)
     return instance_with_id[0]
 
 # def get_or_create_language_dir(language: str, tp_lib_dir: Path) -> Path:
