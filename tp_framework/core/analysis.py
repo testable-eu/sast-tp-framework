@@ -15,7 +15,7 @@ from core.sast import SAST
 from core.sast_job_runner import InQueue, OutQueue, SASTjob
 
 
-async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
+async def analyze_pattern_instance(instance: Instance,
                                    tools: list[Dict], language: str,
                                    date: datetime, output_dir: Path) -> list[SASTjob]:
     logger.debug(f"SAST measurement - prepare SAST jobs for pattern {instance.pattern_id} instance {instance.instance_id} with {len(tools)} tools: started...")
@@ -45,7 +45,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
 
             # TODO: what about using the sast_job object in the queue?
             InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
-                                  sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
+                                  sast.launcher(instance.instance_path, language, output_dir, lib_dir=lib_dir, measurement=True)))
             l_status_tpi.append(sast_job)
         except Exception as e:
             logger.warning(f"SAST measurement - failed for pattern {instance.pattern_id} instance {instance.instance_id} with tool {tool}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")

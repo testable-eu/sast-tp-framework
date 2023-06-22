@@ -18,7 +18,7 @@ class PatternRepair:
     def _log_prefix(self):
         return f"PatternRepair ({self.pattern_to_repair.pattern_id} - {self.pattern_to_repair.language}) "
 
-    def repair_pattern_json(self):
+    def repair_pattern_json_instances_paths(self):
         # make sure there is a pattern JSON file
         if not self.pattern_to_repair.pattern_json_path.is_file():
             self.pattern_json_path = utils.get_pattern_json()
@@ -28,4 +28,4 @@ class PatternRepair:
                 shutil.copy(self.pattern_json_template, expected_json_path)
         # make sure the instances are correct
         for instance in self.pattern_to_repair.instances:
-            instance.repair
+            instance.repair()

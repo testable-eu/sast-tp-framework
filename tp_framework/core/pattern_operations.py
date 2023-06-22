@@ -15,91 +15,40 @@ from core import errors
 from core import utils, analysis
 from core.exceptions import PatternValueError
 from core.instance import Instance #, PatternCategory, FeatureVsInternalApi # , instance_from_dict
-from core.pattern import Pattern, get_pattern_by_pattern_id
+from core.pattern import Pattern, list_tpi_paths_by_tp_id, get_pattern_by_pattern_id
 from core.sast_job_runner import SASTjob, job_list_to_dict
 from core.measurement import meas_list_to_tp_dict
-
-def add_testability_pattern_to_lib(language: str, pattern: Pattern, pattern_src_dir: Path | None,
-                                   pattern_lib_dest: Path) -> Path:
-    print(pattern)
-    exit(0)
-    pattern_instances_json_refs = pattern.instances
-    pattern.instances = []
-    pattern.add_pattern_to_tp_library(language, pattern_src_dir, pattern_lib_dest)
-
-    if pattern_src_dir:
-        for instance_json in pattern_instances_json_refs:
-            add_tp_instance_to_lib_from_json(
-                language, pattern.pattern_id, (pattern_src_dir / instance_json), pattern_src_dir, pattern_lib_dest
-            )
-    return pattern_lib_dest / language / utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
-
-
-def add_tp_instance_to_lib(language: str, pattern: Pattern, instance: Instance, inst_old_name: str,
-                           pattern_src_dir: Path, pattern_lib_dst: Path) -> Path:
-    inst_name = utils.get_instance_dir_name_from_pattern(pattern_src_dir.name, pattern.pattern_id, instance.instance_id)
-    pattern_name = utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
-
-    instance_src_dir: Path = pattern_src_dir / inst_old_name
-    instance_dst_dir: Path = pattern_lib_dst / language / pattern_name / inst_name
-
-    # TODO: refactoring here
-    # instance.add_instance_to_pattern_id(language, pattern_src_dir, pattern_lib_dst)
-    pattern.add_new_instance(instance)
-    pattern.add_new_instance_reference(language, pattern_lib_dst, f"./{inst_name}/{inst_name}.json")
-
-    for path in list(instance_src_dir.iterdir()):
-        if not path.suffix.endswith("json"):
-            dst_path = instance_dst_dir / path.name
-            if path.is_dir():
-                shutil.copytree(path, dst_path)
-            else:
-                shutil.copy(path, dst_path)
 
 
 def add_testability_pattern_to_lib_from_json(language: str, pattern_json: Path, pattern_src_dir: Path,
                                              pattern_lib_dest: Path) -> Path:
     # The pattern objects automatically initializes the instances as well
     pattern = Pattern.init_from_json_file_without_pattern_id(pattern_json, language, pattern_src_dir, pattern_lib_dest)
-    print(pattern)
     # dump the pattern to the tplib
-    return pattern.copy_to_tplib()
-    # return add_testability_pattern_to_lib(language, pattern, pattern_src_dir, pattern_lib_dest)
-
-
-def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_json: Path,
-                                     pattern_src_dir: Path, pattern_dest_dir: Path):
-    pattern = Pattern.init_from_id_and_language(pattern_id, language, pattern_dest_dir)
-    instance = Instance.init_from_json_path(instance_json, pattern)
-    return add_tp_instance_to_lib(
-        language, pattern, instance, instance_json.parent.name, pattern_src_dir, pattern_dest_dir
-    )
+    pattern.copy_to_tplib()
+    logger.info(f"The pattern has been copied to {pattern.pattern_path}, You might need to adjust relative path links.")
+    return pattern
 
 
 async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], tp_id: int, now,
                                             tp_lib_dir: Path, output_dir: Path) -> Dict:
     d_status_tp = {}
     try:
-        l_tpi_path: list[Path] = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib_dir)
-        target_pattern, p_dir = get_pattern_by_pattern_id(language, tp_id, tp_lib_dir)
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_dir)
     except Exception as e:
         logger.warning(
             f"SAST measurement - failed in fetching instances for pattern {tp_id}. Pattern will be ignored. Exception raised: {utils.get_exception_message(e)}")
         return d_status_tp
 
-    for path in l_tpi_path:
+    for instance in target_pattern.instances:
         try:
-            tpi_id = utils.get_id_from_name(path.name)
-            with open(path) as instance_json_file:
-                instance_json: Dict = json.load(instance_json_file)
-            target_instance: Instance = instance_from_dict(instance_json, target_pattern, language, tpi_id)
-            d_status_tp[tpi_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
-                target_instance, path.parent, sast_tools, language, now, output_dir
+            d_status_tp[target_pattern.pattern_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
+                instance, sast_tools, language, now, output_dir
             )
         except Exception as e:
-            d_status_tp[tpi_id] = []
+            d_status_tp[target_pattern.pattern_id] = []
             logger.warning(
-                f"SAST measurement - failed in preparing SAST jobs for instance at {path} of the pattern {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
+                f"SAST measurement - failed in preparing SAST jobs for instance at {instance.instance_path} of the pattern {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
             continue
     return d_status_tp
 

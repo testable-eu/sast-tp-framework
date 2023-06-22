@@ -17,7 +17,6 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core import pattern, instance
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
     DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists, \
     FileDoesNotExist, TemplateDoesNotExist, MeasurementResultsDoNotExist
@@ -36,14 +35,16 @@ def list_pattern_paths_for_language(language: str, tp_lib_dir: Path) -> list[Pat
     return list_dirs_only(all_pattern_dirs_by_lang)
 
 
-def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
-    try:
-        p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
-        return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
-    except:
-        ee = PatternDoesNotExists(pattern_id)
-        logger.exception(ee)
-        raise ee
+# TODO: reimplement
+# def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
+#     try:
+#         pattern = Pattern.
+#         p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
+#         return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
+#     except:
+#         ee = PatternDoesNotExists(pattern_id)
+#         logger.exception(ee)
+#         raise ee
 
 
 def get_tpi_id_from_jsonpath(jp: Path) -> int:
@@ -161,7 +162,7 @@ def zipdir(path, ziph):
 def get_path_or_none(p: str) -> Path | None:
     if p:
         return Path(p)
-    return p
+    return None
 
 
 def get_enum_value_or_none(enum) -> str | None:
@@ -276,7 +277,9 @@ def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     return tools
 
 
-def sast_tool_version_match(v1, v2, nv_max=3):
+def sast_tool_version_match(v1, v2, nv_max=3, ignore_saas=True):
+    if ignore_saas and (v1 == "saas" or v2 == "saas"):
+        return True
     sv1 = v1.split(".")
     sv2 = v2.split(".")
     nv = max(len(sv1), len(sv2))

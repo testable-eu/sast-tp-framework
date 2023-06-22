@@ -328,6 +328,7 @@ class TestPatternOperations:
             Measurement(
                 date=date_time_str,
                 result=True,
+                expected_result=True,
                 tool="dummyTool",
                 version="1",
                 instance=exp_instance1,

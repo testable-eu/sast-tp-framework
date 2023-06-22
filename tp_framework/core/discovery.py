@@ -13,12 +13,13 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, measurement
+from core.pattern import Pattern
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
     CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
 from core.instance import Instance #, instance_from_dict, load_instance_from_metadata
-from core.pattern import get_pattern_by_pattern_id
+from core.pattern import get_pattern_by_pattern_id, Pattern
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 mand_finding_joern_keys = ["filename", "lineNumber"]
@@ -312,10 +313,11 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
             }
             # l_not_measured_tp_id.append(tp_id)
             continue
-        l_tpi_jsonpath = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib)  # TODO: do we need this later?
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib)
+        l_tpi_jsonpath = [instance.instance_json_path for instance in target_pattern.instances]
         d_tpi_id_path = {}
-        for jp in l_tpi_jsonpath:
-            d_tpi_id_path[utils.get_tpi_id_from_jsonpath(jp)] = jp
+        for instance in target_pattern.instances:
+            d_tpi_id_path[instance.instance_id] = instance.instance_json_path
         l_meas_tpi_path = utils.list_dirs_only(meas_tp_path)
         # computing not supported tp instances (tpi) to be discovered
         d_res_tpi = {}
@@ -398,12 +400,7 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         for tpi_id in d_tpi_id_path:
             tpi_json_path = d_tpi_id_path[tpi_id]
             tpi_json_rel = os.path.relpath(tpi_json_path, start=tp_lib)
-            # get the instance
-            try:
-                tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)
-            except:
-                logger.exception(f"Failed to decode metadata `{tp_lib / tpi_json_rel}`")
-                continue
+            tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)  # get the instance
             d_tpi = {"instance": tpi_instance, "measurement": "ignored", "jsonpath": tpi_json_path,
                      "discovery": discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}

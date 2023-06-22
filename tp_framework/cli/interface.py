@@ -8,8 +8,8 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core import utils, pattern_operations, measurement, discovery, measure, errors
-from core.exceptions import PatternValueError
+from core import utils, pattern_operations, discovery, measure, errors, report_for_sast
+from core.exceptions import PatternValueError, PatternInvalid
 from core.pattern import Pattern
 
 
@@ -32,18 +32,14 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
     tp_lib_path.mkdir(exist_ok=True, parents=True)
 
     try:
-        created_pattern_path: Path = pattern_operations.add_testability_pattern_to_lib_from_json(
+        created_pattern: Pattern = pattern_operations.add_testability_pattern_to_lib_from_json(
             language,
             pattern_json_path,
             pattern_dir_path,
             tp_lib_path
         )
-        created_pattern_id: int = utils.get_id_from_name(created_pattern_path.name)
-    except PatternValueError as e:
+    except PatternInvalid as e:
         print(e)
-        raise
-    except json.JSONDecodeError as e:
-        print(errors.patternJSONDecodeError())
         raise
     except Exception as e:
         logger.exception(e)
@@ -51,7 +47,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
         raise
 
     if measure:
-        asyncio.run(measure_list_patterns([created_pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
+        asyncio.run(measure_list_patterns([created_pattern.pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
 
 
 # Discovery
@@ -141,35 +137,10 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, p
                                              only_last_measurement: bool = True):
     # TODO: add implementation for only_last_measurement=False
     print("Reporting for SAST measurement results started...")
-    output_dir.mkdir(exist_ok=True, parents=True)
-    utils.add_loggers(output_dir)
-    results = []
-    for pattern_id in pattern_ids:
-        instance_dir_list_for_pattern: list[Path] = utils.list_tpi_paths_by_tp_id(
-            language, pattern_id, tp_lib_path
-        )
-        instance_ids: list[int] = list(map(lambda p: utils.get_id_from_name(p.name), instance_dir_list_for_pattern))
-
-        for instance_id in instance_ids:
-            for tool in tools:
-                meas: measurement.Measurement = measurement.load_last_measurement_for_tool(
-                    tool, language, tp_lib_path, pattern_id, instance_id
-                )
-                if not meas:
-                    continue
-                else:
-                    row = {
-                        "pattern_id": meas.instance.pattern_id,
-                        "instance_id": meas.instance.instance_id,
-                        "pattern_name": meas.instance.name,
-                        "language": language,
-                        "tool": f"{meas.tool}:{meas.version}",
-                        "results": "YES" if meas.result else "NO",
-                        "negative_test_case": "YES" if meas.instance.properties_negative_test_case else "NO"
-                    }
-                    results.append(row)
-    header = ["pattern_id", "instance_id", "pattern_name", "language", "tool", "results", "negative_test_case"]
-    utils.report_results(results, output_dir, header, export_file=export_file)
+    report_for_sast.report_sast_measurement_for_pattern_list(tools, language, pattern_ids,
+                                                             tp_lib_path=tp_lib_path, export_file=export_file,
+                                                             output_dir=output_dir,
+                                                             only_last_measurement=only_last_measurement)
     print("")
     print("Reporting for SAST measurement results completed.")
     print(f"- results available here: {output_dir}")
