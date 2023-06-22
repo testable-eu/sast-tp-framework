@@ -8,11 +8,29 @@ class PatternDoesNotExists(Exception):
         super().__init__(self.message)
 
 
+class PatternInvalid(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = errors.patternInvalidError(message)
+        super().__init__(self.message)
+
+
+class PatternRepairError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(self.message)
+
+
 class InstanceDoesNotExists(Exception):
     def __init__(self, instance_id: int = None, ref_metadata: str = None):
         self.instance_id = instance_id
         self.ref_metadata = ref_metadata
         self.message = errors.instanceDoesNotExists(instance_id, ref_metadata)
+        super().__init__(self.message)
+
+
+class InstanceInvalid(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = errors.instanceInvalidError(message)
         super().__init__(self.message)
 
 
@@ -85,7 +103,7 @@ class DiscoveryMethodNotSupported(Exception):
         super().__init__(self.message)
 
 
-class PatternValueError(Exception):
+class PatternValueError(Exception): # TODO: can we get rid of this?
     def __init__(self, message=None):
         if message:
             self.message = message
@@ -122,3 +140,23 @@ class DiscoveryRuleParsingResultError(Exception):
         else:
             self.message = errors.discoveryRuleParsingResultError()
         super().__init__(self.message)
+
+# Pattern Repair
+
+class MeasurementResultsDoNotExist(Exception):
+    def __init__(self, message=errors.measurementResultsDirDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class FileDoesNotExist(Exception):
+    def __init__(self, message=errors.fileDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class TemplateDoesNotExist(Exception):
+    def __init__(self, message=errors.templateDirDoesNotExist('template')) -> None:
+        self.message = message
+        super().__init__(self.message)
+

@@ -10,26 +10,19 @@ import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
-import core.instance
+# import core.instance
 from core import errors
 from core import utils, analysis
 from core.exceptions import PatternValueError
-from core.instance import Instance, PatternCategory, FeatureVsInternalApi, instance_from_dict
+from core.instance import Instance #, PatternCategory, FeatureVsInternalApi # , instance_from_dict
 from core.pattern import Pattern, get_pattern_by_pattern_id
 from core.sast_job_runner import SASTjob, job_list_to_dict
 from core.measurement import meas_list_to_tp_dict
 
-def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_src_dir: Path | None,
+def add_testability_pattern_to_lib(language: str, pattern: Pattern, pattern_src_dir: Path | None,
                                    pattern_lib_dest: Path) -> Path:
-    try:
-        pattern: Pattern = Pattern(pattern_dict["name"], language,
-                                   [pattern_src_dir / instance_relative_path for instance_relative_path in
-                                    pattern_dict["instances"] if
-                                    pattern_src_dir], pattern_dict["family"], pattern_dict["description"],
-                                   pattern_dict["tags"], pattern_dir=pattern_lib_dest)
-    except KeyError as e:
-        raise PatternValueError(message=errors.patternKeyError(e))
-
+    print(pattern)
+    exit(0)
     pattern_instances_json_refs = pattern.instances
     pattern.instances = []
     pattern.add_pattern_to_tp_library(language, pattern_src_dir, pattern_lib_dest)
@@ -42,49 +35,17 @@ def add_testability_pattern_to_lib(language: str, pattern_dict: Dict, pattern_sr
     return pattern_lib_dest / language / utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
 
 
-def add_tp_instance_to_lib(language: str, pattern: Pattern, instance_dict: Dict, inst_old_name: str,
+def add_tp_instance_to_lib(language: str, pattern: Pattern, instance: Instance, inst_old_name: str,
                            pattern_src_dir: Path, pattern_lib_dst: Path) -> Path:
-    instance: Instance = Instance(
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "code", "path")),  # code_path: Path,
-        utils.get_from_dict(instance_dict, "code", "injection_skeleton_broken"),  # code_injection_skeleton_broken: bool,
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "compile", "dependencies")),  # compile_dependencies: Path, # added 092022
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "compile", "binary")),  # compile_binary: Path,
-        utils.get_from_dict(instance_dict, "compile", "instruction"),  # compile_instruction: str,  # added 092022
-        utils.get_from_dict(instance_dict, "remediation", "transformation"),  # remediation_transformation: str, # added 092022
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "remediation", "modeling_rule")),  # remediation_modeling_rule: Path, # added 092022
-        utils.get_from_dict(instance_dict, "remediation", "notes"),  # remediation_notes: str, # added 092022
-        core.instance.get_pattern_category_or_none(utils.get_from_dict(instance_dict, "properties", "category")),
-        utils.get_from_dict(instance_dict, "properties", "negative_test_case"),
-        utils.get_from_dict(instance_dict, "properties", "source_and_sink"),
-        utils.get_from_dict(instance_dict, "properties", "input_sanitizer"),
-        core.instance.get_feature_vs_internal_api_or_none(utils.get_from_dict(instance_dict, "properties", "feature_vs_internal_api")),
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "discovery", "rule")),
-        utils.get_from_dict(instance_dict, "discovery", "method"),
-        utils.get_from_dict(instance_dict, "discovery", "rule_accuracy"),
-        utils.get_from_dict(instance_dict, "discovery", "notes"),
-        utils.get_from_dict(instance_dict, "expectation", "expectation"),
-        utils.get_from_dict(instance_dict, "expectation", "type"),
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "expectation", "sink_file")),
-        utils.get_from_dict(instance_dict, "expectation", "sink_line"),
-        utils.get_path_or_none(utils.get_from_dict(instance_dict, "expectation", "source_file")),
-        utils.get_from_dict(instance_dict, "expectation", "source_line"),
-        pattern.name,
-        pattern.description,
-        pattern.family,
-        pattern.tags,
-        pattern.instances,
-        language,
-        pattern.pattern_id,
-        pattern_dir=pattern_lib_dst
-    )
-
     inst_name = utils.get_instance_dir_name_from_pattern(pattern_src_dir.name, pattern.pattern_id, instance.instance_id)
     pattern_name = utils.get_pattern_dir_name_from_name(pattern_src_dir.name, pattern.pattern_id)
 
     instance_src_dir: Path = pattern_src_dir / inst_old_name
     instance_dst_dir: Path = pattern_lib_dst / language / pattern_name / inst_name
 
-    instance.add_instance_to_pattern_id(language, pattern_src_dir, pattern_lib_dst)
+    # TODO: refactoring here
+    # instance.add_instance_to_pattern_id(language, pattern_src_dir, pattern_lib_dst)
+    pattern.add_new_instance(instance)
     pattern.add_new_instance_reference(language, pattern_lib_dst, f"./{inst_name}/{inst_name}.json")
 
     for path in list(instance_src_dir.iterdir()):
@@ -98,26 +59,18 @@ def add_tp_instance_to_lib(language: str, pattern: Pattern, instance_dict: Dict,
 
 def add_testability_pattern_to_lib_from_json(language: str, pattern_json: Path, pattern_src_dir: Path,
                                              pattern_lib_dest: Path) -> Path:
-    with open(pattern_json) as json_file:
-        try:
-            pattern: Dict = json.load(json_file)
-        except JSONDecodeError as e:
-            raise e
-    try:
-        return add_testability_pattern_to_lib(language, pattern, pattern_src_dir, pattern_lib_dest)
-    except PatternValueError as e:
-        raise e
+    # The pattern objects automatically initializes the instances as well
+    pattern = Pattern.init_from_json_file_without_pattern_id(pattern_json, language, pattern_src_dir, pattern_lib_dest)
+    print(pattern)
+    # dump the pattern to the tplib
+    return pattern.copy_to_tplib()
+    # return add_testability_pattern_to_lib(language, pattern, pattern_src_dir, pattern_lib_dest)
 
 
 def add_tp_instance_to_lib_from_json(language: str, pattern_id: int, instance_json: Path,
                                      pattern_src_dir: Path, pattern_dest_dir: Path):
-    pattern, p_dir = get_pattern_by_pattern_id(language, pattern_id, pattern_dest_dir)
-
-    with open(instance_json) as json_file:
-        try:
-            instance: Dict = json.load(json_file)
-        except JSONDecodeError as e:
-            raise e
+    pattern = Pattern.init_from_id_and_language(pattern_id, language, pattern_dest_dir)
+    instance = Instance.init_from_json_path(instance_json, pattern)
     return add_tp_instance_to_lib(
         language, pattern, instance, instance_json.parent.name, pattern_src_dir, pattern_dest_dir
     )

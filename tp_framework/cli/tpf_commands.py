@@ -9,6 +9,7 @@ from core import utils
 
 from core.exceptions import InvalidSastTools
 from core.errors import invalidSastTools
+from core.pattern import Pattern
 
 class Command(ABC):
 
@@ -514,6 +515,93 @@ class CheckDiscoveryRules(Command):
                                         export_file=args.export, output_dir=output_dir)
 
 
+class PatternRepair(Command):
+
+    # overriding abstract method
+    def add_command_subparser(self, subparser):
+        pattern_repair_parser = subparser.add_parser("patternrepair",
+                                             help="Repair patterns in your catalogue, helps you keeping the structure of all patterns the same")
+        pattern_repair_parser_pattern_selection_mode = pattern_repair_parser.add_mutually_exclusive_group(required=True)
+        pattern_repair_parser.add_argument(
+            "-l", "--language",
+            metavar="LANGUAGE",
+            dest="language",
+            required=True,
+            help="Programming language targeted"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "-p", "--patterns",
+            metavar="PATTERN_ID",
+            dest="patterns",
+            nargs="+",
+            type=int,
+            help="Specify pattern(s) ID(s) to test for discovery"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "--pattern-range",
+            metavar="RANGE_START-RANGE_END",
+            dest="pattern_range",
+            type=str,
+            help="Specify pattern ID range separated by`-` (ex. 10-50)"
+        )
+        pattern_repair_parser_pattern_selection_mode.add_argument(
+            "-a", "--all-patterns",
+            dest="all_patterns",
+            action="store_true",
+            help="Test discovery for all available patterns"
+        )
+        pattern_repair_parser.add_argument(
+            "--tp-lib",
+            metavar="TP_LIB_DIR",
+            dest="tp_lib",
+            help=f"Absolute path to alternative pattern library, default resolves to `./{config.TP_LIB_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--output-dir",
+            metavar="OUTPUT_DIR",
+            dest="output_dir",
+            help=f"Absolute path to the folder where outcomes (e.g., log file, export file if any) will be stored, default resolves to `./{config.RESULT_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--masking-file",
+            metavar="MASKING_FILE",
+            dest="masking_file",
+            help=f"Absolute path to a json file, that contains a mapping, if the name for some measurement tools should be kept secret, default is None"
+        )
+        pattern_repair_parser.add_argument(
+            "--measurement-results",
+            metavar="MEASUREMENT_DIR",
+            dest="measurement_dir",
+            help=f"Absolute path to the folder where measurement results are stored, default resolves to `./{config.MEASUREMENT_REL_DIR}`"
+        )
+        pattern_repair_parser.add_argument(
+            "--checkdiscoveryrules-results",
+            metavar="CHECKDISCOVERYRULES_FILE",
+            dest="checkdiscoveryrules_file",
+            help=f"Absolute path to the csv file, where the results of the `checkdiscoveryrules` command are stored, default resolves to `./checkdiscoveryrules.csv`"
+        )
+        pattern_repair_parser.add_argument(
+            "--skip-readme",
+            dest="skip_readme",
+            action="store_true",
+            help="If set, the README generation is skipped."
+        )
+    # overriding abstract method
+    def execute_command(self, args):
+        language: str = args.language.upper()
+        tp_lib_path: str = parse_tp_lib(args.tp_lib)
+        l_pattern_id = sorted(parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
+                                      tp_lib_path,
+                                      language))
+        output_dir: Path = parse_dir_or_file(args.output_dir)
+        measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
+        checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
+        masking_file: Path or None = parse_dir_or_file(args.masking_file) if args.masking_file else None
+        interface.repair_patterns(language=language, pattern_ids=l_pattern_id,
+                                     masking_file=masking_file, include_README=args.skip_readme,
+                                     measurement_results=measurement_results, checkdiscoveryrule_results=checkdiscoveryrules_results,
+                                     output_dir=output_dir, tp_lib_path=tp_lib_path)
+
 # class Template(Command):
 #
 #     # overriding abstract method
@@ -561,28 +649,48 @@ def parse_tool_list(tools: list[str]):
 
 
 def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path: Path, language: str):
+    # is this necessary? Should be ensured by `.add_mutually_exclusive_group(required=True)` in the parser
     try:
         assert sum(bool(e) for e in [all_patterns, pattern_range, patterns]) == 1 # these elements are in mutual exclusion
     except Exception as e:
         print("The following parameters are in mutual exclusion: `--all-patterns`, `--pattern-range`, and `--patterns`")
         exit(1)
+    id_list: list[int] = []
     if all_patterns:
         lang_tp_lib_path: Path = tp_lib_path / language
         utils.check_lang_tp_lib_path(lang_tp_lib_path)
         try:
             id_list: list[int] = list(map(lambda d: utils.get_id_from_name(d.name),
                                           utils.list_dirs_only(lang_tp_lib_path)))
-            return id_list
         except Exception as e:
             print("Some patterns could not be properly fetched from the pattern library.")
+            print(e)
             exit(1)
-    if pattern_range:
+    elif pattern_range:
         try:
             spattern_range: str = pattern_range.split("-")
-            pattern_id_list: list[int] = list(range(int(spattern_range[0]), int(spattern_range[1]) + 1))
-            return pattern_id_list
+            id_list: list[int] = list(range(int(spattern_range[0]), int(spattern_range[1]) + 1))
         except Exception as e:
-            print("Pattern range could not be properly parsed. ")
+            print("Pattern range could not be properly parsed.")
+            print(e)
             exit(1)
-    if patterns and len(patterns) > 0:
-        return patterns
+    elif patterns and len(patterns) > 0:
+        id_list = patterns
+    # init a Pattern to make sure, all the patterns that should be used for the task are valid.
+    # return only the pattern_id, to be compatible with current implementation
+    # TODO: refactor to use the Pattern instances instead of the ids
+    return sorted([Pattern.init_from_id_and_language(idx, language, tp_lib_path).pattern_id \
+                        for idx in id_list])
+
+
+def parse_dir_or_file(path_to_file_or_dir: str, 
+                      default_path: str = config.RESULT_DIR, 
+                      name: str = "Output directory") -> Path:
+    if not path_to_file_or_dir:
+        path_to_file_or_dir: str = str(default_path)
+    try:
+        path_to_file_or_dir_as_path: Path = Path(path_to_file_or_dir).resolve()
+        return path_to_file_or_dir_as_path
+    except Exception as e:
+        print(f"{name} is wrong: {path_to_file_or_dir}")
+        exit(1)

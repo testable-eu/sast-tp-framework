@@ -12,7 +12,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils
 from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
-from core.instance import Instance, load_instance_from_metadata
+from core.instance import Instance #, load_instance_from_metadata
 
 
 class Measurement:

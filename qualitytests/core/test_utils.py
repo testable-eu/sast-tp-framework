@@ -5,6 +5,7 @@ import pytest
 import config
 from core import utils
 from core.exceptions import PatternDoesNotExists, TPLibDoesNotExist, LanguageTPLibDoesNotExist, DiscoveryMethodNotSupported
+from unittest.mock import patch
 import qualitytests.qualitytests_utils as qualitytests_utils
 
 def setup_three_pattern(tmp_path: Path):
@@ -210,3 +211,16 @@ class TestUtils:
         jp = qualitytests_utils.join_resources_path(
             "sample_patlib") / "PHP" / "3_global_array" / "2_instance_3_global_array" / "111_instance_3_global_array.json"
         assert utils.get_tpi_id_from_jsonpath(jp) == 2
+
+    next_free_pattern_id_test_cases = [
+        ([Path('1_instance_test_pattern'), Path('2_instance_test_pattern')], 3, 1),
+        ([Path('1_instance_test_pattern'), Path('3_instance_test_pattern')], 2, 1),
+        ([Path('1_instance_test_pattern'), Path('3_instance_test_pattern')], 2, 2),
+    ]
+
+    @pytest.mark.parametrize("list_dir_ret_value, expected_value, proposed_id", next_free_pattern_id_test_cases)
+    def test_get_next_free_pattern_id_for_language(self, list_dir_ret_value: list, expected_value: int, proposed_id: int):
+        tp_lib_path = qualitytests_utils.join_resources_path("sample_patlib")
+        with patch("core.utils.list_dirs_only") as list_dir_mock:
+            list_dir_mock.return_value = list_dir_ret_value
+            assert expected_value == utils.get_next_free_pattern_id_for_language("PHP", tp_lib_path)

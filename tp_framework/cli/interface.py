@@ -10,6 +10,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils, pattern_operations, measurement, discovery, measure, errors
 from core.exceptions import PatternValueError
+from core.pattern import Pattern
 
 
 # CRUD patterns
@@ -23,17 +24,11 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
         print(errors.patternFolderNotFound(pattern_dir_path))
         return
 
-    if not pattern_json:
-        # TODO - add_pattern: we could automatically find the json file
-        default_pattern_json = f"{pattern_dir_path.name}.json"
-        pattern_json_path: Path = pattern_dir_path / default_pattern_json
-        if not pattern_json_path.exists():
-            print(errors.patternDefaultJSONNotFound(default_pattern_json))
-            return
-    else:
-        # TODO - add_pattern: handle for both branches the case in which the json file does not exist?
-        pattern_json_path: Path = Path(pattern_json).resolve()
-
+    pattern_json_path = Path(pattern_json) if pattern_json else utils.get_pattern_json(pattern_dir_path)
+    if not pattern_json_path:
+        print(errors.patternDefaultJSONNotFound(pattern_dir))
+        return
+    
     tp_lib_path.mkdir(exist_ok=True, parents=True)
 
     try:
@@ -209,3 +204,32 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     if export_file:
         print(f"- csv file available here: {output_dir / export_file}")
     print(f"- log file available here: {output_dir / config.logfile}")
+
+
+def repair_patterns(language: str, pattern_ids: list,
+                    masking_file: Path, include_README: bool,
+                    measurement_results: Path, checkdiscoveryrule_results: Path,
+                    output_dir: Path, tp_lib_path: Path):
+    print("Pattern Repair started...")
+    should_include_readme = not include_README
+    utils.check_tp_lib(tp_lib_path)
+    if should_include_readme:
+        utils.check_file_exist(checkdiscoveryrule_results)
+        utils.check_file_exist(masking_file, ".json") if masking_file else None
+        utils.check_measurement_results_exist(measurement_results)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    utils.add_loggers(output_dir)
+
+    # for pattern_id in pattern_ids:
+    #     pattern =  Pattern.init_from_id_and_language(pat) # (pattern_id, language, tp_lib_path)
+    #     print(pattern)
+    #     # pattern_path = get_pattern_path_by_pattern_id(language, pattern_id, tp_lib_path)
+    #     # PatternRepair(
+    #     #     pattern_path,
+    #     #     language,
+    #     #     tp_lib_path,
+    #     #     checkdiscoveryrule_results,
+    #     #     masking_file,
+    #     #     measurement_results,
+    #     # ).repair(should_include_readme)
+    #     pass

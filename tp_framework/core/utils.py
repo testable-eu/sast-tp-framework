@@ -1,7 +1,9 @@
 import csv
 import os
+import json
 from datetime import datetime
 from platform import system
+import shutil
 
 from importlib import import_module
 from pathlib import Path
@@ -17,7 +19,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import pattern, instance
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists, \
+    FileDoesNotExist, TemplateDoesNotExist, MeasurementResultsDoNotExist
 
 from core import errors
 
@@ -46,15 +49,30 @@ def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) ->
 def get_tpi_id_from_jsonpath(jp: Path) -> int:
     return get_id_from_name(jp.parent.name)
 
-def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path:
+
+def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path: # needed
     tp_lib_dir_lang_dir: Path = tp_lib_dir / language
     if tp_lib_dir_lang_dir.is_dir():
         pattern_with_id = list(filter(lambda p: get_id_from_name(p.name) == pattern_id, list_dirs_only(tp_lib_dir_lang_dir)))
         if pattern_with_id:
-            return pattern_with_id[0]
+            return Path(pattern_with_id[0])
         raise PatternDoesNotExists(pattern_id)
     else:
         raise PatternDoesNotExists(pattern_id)
+
+
+def get_next_free_pattern_id_for_language(language: str, tp_lib_dir: Path, proposed_id = None):
+    lang_tp_lib_path = tp_lib_dir / language
+    check_lang_tp_lib_path(lang_tp_lib_path)
+    all_patterns = list_dirs_only(lang_tp_lib_path)
+    taken_ids = []
+    for pattern in all_patterns:
+        taken_ids += [get_id_from_name(pattern.name)]
+    id_range = list(range(1, max(taken_ids)+1))
+    free_ids = sorted(list(set(id_range) - set(taken_ids)))
+    if proposed_id in free_ids:
+        return proposed_id
+    return free_ids[0] if free_ids else max(taken_ids) + 1
 
 
 def get_instance_dir_from_id(instance_id: int, pattern_dir: Path) -> Path:
@@ -199,6 +217,20 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
 ################################################################################
 # Others
 #
+
+def check_measurement_results_exist(measurement_dir: Path):
+    if not measurement_dir.is_dir():
+        e = MeasurementResultsDoNotExist()
+        logger.error(get_exception_message(e))
+        raise e
+
+
+def check_file_exist(file_path: Path, file_suffix = ".csv"):
+    if not file_path.is_file() or not file_path.suffix == file_suffix:
+        e = FileDoesNotExist(file_path)
+        logger.error(get_exception_message(e))
+        raise e
+
 
 def build_timestamp_language_name(name: Path | None, language: str, now: datetime, extra: str = None) -> str:
     res = language
@@ -352,3 +384,58 @@ def get_file_hash(fpath, bigfile=False):
             while chunk := f.read(8192):
                 hash.update(chunk)
     return hash.hexdigest()
+
+
+
+########################### New utils
+
+def list_files(path_to_parent_dir: Path, suffix: str):
+    assert suffix[0] == ".", "Suffix has to start with '.'"
+    return list(filter(lambda file_name: file_name.suffix == suffix, [path_to_parent_dir / f for f in os.listdir(path_to_parent_dir)]))
+
+
+def get_pattern_json(path_to_pattern: Path) -> Path:
+    json_files_in_pattern_dir = list_files(path_to_pattern, ".json")
+    if len(json_files_in_pattern_dir) == 1:
+        return json_files_in_pattern_dir[0]
+    elif not json_files_in_pattern_dir:
+        logger.warning(f"Could not find a pattern JSON file in {path_to_pattern.name}")
+        return None
+    else:
+        logger.warning(f"Found multiple '.json' files for {path_to_pattern.name}")
+        if path_to_pattern / f"{path_to_pattern.name}.json" in json_files_in_pattern_dir:
+            return path_to_pattern / f"{path_to_pattern.name}.json"
+        logger.warning("Could not determine the right pattern JSON file. Please name it <pattern_id>_<pattern_name>.json")
+        return None
+
+
+def read_json(path_to_json_file: Path):
+    if not path_to_json_file.is_file():
+        return {}
+    result = {}
+    
+    try:
+        with open(path_to_json_file, "r") as json_file:
+            result = json.load(json_file)
+    except json.JSONDecodeError as err:
+        raise Exception(f"JSON is corrupt, please check {path_to_json_file}") from err
+    
+    if not result:
+        logger.error(f"JSON file is empty")
+    return result
+
+
+def copy_dir_content(path_to_src_dir: Path, path_to_dst_dir: Path):
+    for element in os.listdir(path_to_src_dir):
+        src_path = path_to_src_dir / element
+        dest_path = path_to_dst_dir / element
+        if dest_path.exists():
+            continue
+        if src_path.is_file():
+            shutil.copy2(src_path, dest_path)
+        else:
+            shutil.copytree(src_path, dest_path)
+
+
+if __name__ == "__main__":
+    print(get_pattern_json(Path('./testability_patterns/PHP/85_test_pattern')))
