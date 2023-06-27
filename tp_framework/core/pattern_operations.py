@@ -39,10 +39,10 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
         logger.warning(
             f"SAST measurement - failed in fetching instances for pattern {tp_id}. Pattern will be ignored. Exception raised: {utils.get_exception_message(e)}")
         return d_status_tp
-
+    
     for instance in target_pattern.instances:
         try:
-            d_status_tp[target_pattern.pattern_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
+            d_status_tp[instance.instance_id]: list[SASTjob] = await analysis.analyze_pattern_instance(
                 instance, sast_tools, language, now, output_dir
             )
         except Exception as e:
@@ -62,12 +62,12 @@ async def save_measurement_for_patterns(language: str, now: datetime,
     d_tp_meas = meas_list_to_tp_dict(l_meas)
 
     for tp_id in d_tp_meas:
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_dir)
         for tpi_id in d_tp_meas[tp_id]:
             l_tpi_meas = []
             for meas in d_tp_meas[tp_id][tpi_id]:
-                # meas.instance
-                tp_rel_dir = utils.get_pattern_dir_name_from_name(meas.instance.name, meas.instance.pattern_id)
-                tpi_rel_dir = utils.get_instance_dir_name_from_pattern(meas.instance.name, meas.instance.pattern_id, meas.instance.instance_id)
+                tp_rel_dir = target_pattern.pattern_path.name
+                tpi_rel_dir = meas.instance.instance_path.name
                 meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
                 meas_dir.mkdir(parents=True, exist_ok=True)
                 d_tpi_meas_ext: Dict = meas.__dict__

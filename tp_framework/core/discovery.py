@@ -314,25 +314,20 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
             # l_not_measured_tp_id.append(tp_id)
             continue
         target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib)
-        l_tpi_jsonpath = [instance.instance_json_path for instance in target_pattern.instances]
-        d_tpi_id_path = {}
-        for instance in target_pattern.instances:
-            d_tpi_id_path[instance.instance_id] = instance.instance_json_path
         l_meas_tpi_path = utils.list_dirs_only(meas_tp_path)
         # computing not supported tp instances (tpi) to be discovered
         d_res_tpi = {}
         d_dr_executed = {}
-        for tpi_id in d_tpi_id_path:
-            msgpre = f"pattern {tp_id} instance {tpi_id} - "
-            tpi_json_path = d_tpi_id_path[tpi_id]
+        for tpi in target_pattern.instances:
+            msgpre = f"pattern {tp_id} instance {tpi.instance_id} - "
             try:
-                meas_tpi_path = utils.get_instance_dir_from_list(tpi_id, l_meas_tpi_path)
+                meas_tpi_path = utils.get_instance_dir_from_list(tpi.instance_id, l_meas_tpi_path)
             except:
                 logger.warning(
                     f"{msgpre}No measurements for this instance. {msgpost}")
-                d_res_tpi[tpi_id] = {
+                d_res_tpi[tpi.instance_id] = {
                     "measurement": "not_found",
-                    "jsonpath": tpi_json_path
+                    "jsonpath": tpi.instance_json_path
                 }
                 continue
             l_last_meas = measurement.load_measurements(utils.get_last_measurement_for_pattern_instance(meas_tpi_path),
@@ -342,16 +337,16 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
             if not meas_tpi_by_tools:
                 logger.warning(
                     f"{msgpre}No measurements of the tools specified ({[t['name'] + ':' + t['version'] for t in tools]}) for the instance. {msgpost}")
-                d_res_tpi[tpi_id] = {
+                d_res_tpi[tpi.instance_id] = {
                     "measurement": "not_found",
-                    "jsonpath": tpi_json_path
+                    "jsonpath": tpi.instance_json_path
                 }
                 continue
             tpi_instance = meas_tpi_by_tools[0].instance
             d_tpi = {
                 "instance": tpi_instance,
                 "measurement": "supported",
-                "jsonpath": tpi_json_path,
+                "jsonpath": tpi.instance_json_path,
                 "discovery": {}
             }
             # discovery continue iff at least one tool not supporting the tpi
@@ -368,9 +363,9 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     d_tpi["measurement"] = "not_supported"
             # discovery per tpi
             measurement_stop: bool = d_tpi["measurement"] not in ["ignore", "not_supported"]
-            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
+            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi.instance_json_path, cpg, disc_output_dir,
                                                    measurement_stop=measurement_stop, already_executed=d_dr_executed)
-            d_res_tpi[tpi_id] = d_tpi
+            d_res_tpi[tpi.instance_id] = d_tpi
         d_res[tp_id]["instances"] = d_res_tpi
 
     # post-process results and export them
@@ -390,21 +385,16 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
     # loop over testability patterns (tp) to be discovered
     for tp_id in l_tp_id:
         d_res[tp_id] = {"measurement_found": None}
-        l_tpi_jsonpath = utils.list_tpi_paths_by_tp_id(language, tp_id, tp_lib)  # TODO: do we need this later?
-        d_tpi_id_path = {}
-        for jp in l_tpi_jsonpath:
-            d_tpi_id_path[utils.get_tpi_id_from_jsonpath(jp)] = jp
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib)
         # loop over tp instances (tpi) to be discovered
         d_res_tpi = {}
         d_dr_executed = {}
-        for tpi_id in d_tpi_id_path:
-            tpi_json_path = d_tpi_id_path[tpi_id]
-            tpi_json_rel = os.path.relpath(tpi_json_path, start=tp_lib)
-            tpi_instance = load_instance_from_metadata(tpi_json_rel, tp_lib, language)  # get the instance
-            d_tpi = {"instance": tpi_instance, "measurement": "ignored", "jsonpath": tpi_json_path,
-                     "discovery": discovery_for_tpi(tpi_instance, tpi_json_path, cpg, disc_output_dir,
+        for instance in target_pattern.instances:
+            tpi_json_path = instance.instance_json_path
+            d_tpi = {"instance": instance, "measurement": "ignored", "jsonpath": tpi_json_path,
+                     "discovery": discovery_for_tpi(instance, tpi_json_path, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}
-            d_res_tpi[tpi_id] = d_tpi
+            d_res_tpi[instance.instance_id] = d_tpi
         d_res[tp_id]["instances"] = d_res_tpi
 
     # post-process results and export them
@@ -705,16 +695,14 @@ def get_check_discovery_rule_result_header():
     ]
 
 
-def get_check_discovery_rule_result(pattern_id, language,
-                                    instance_id=None, instance_path=None, pattern_name=None,
-                                    discovery_rule=None, successful="error") -> Dict:
+def get_check_discovery_rule_result(pattern: Pattern, instance: Instance | None= None, successful="error") -> Dict:
     return {
-        "pattern_id": pattern_id,
-        "instance_id": instance_id,
-        "instance_path": instance_path,
-        "pattern_name": pattern_name,
-        "language": language,
-        "discovery_rule": discovery_rule,
+        "pattern_id": pattern.pattern_id,
+        "instance_id": instance.instance_id if instance else None,
+        "instance_path": instance.instance_path if instance else None,
+        "pattern_name": pattern.name,
+        "language": pattern.language,
+        "discovery_rule": instance.discovery_rule if instance else None,
         "successful": successful
     }
 
@@ -730,85 +718,79 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
     unsuccess = 0
     missing = 0
     err = 0
+    num_patterns = len(l_tp_id)
     for i, tp_id in enumerate(l_tp_id):
         logger.info(utils.get_tp_op_status_string(
-            (i + 1, len(l_tp_id), tp_id)  # tp_info
+            (i + 1, num_patterns, tp_id)  # tp_info
         ))
         try:
-            target_tp, _ = get_pattern_by_pattern_id(language, tp_id, tp_lib_path)
-            l_tpi_dir: list[Path] = utils.list_tpi_paths_by_tp_id(
-                language, tp_id, tp_lib_path
-            )
+            target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+            num_instances = len(target_pattern.instances)
         except Exception as e:
+            # should not happen at all! And should be removed and a list of patterns should be parsed to that function
             logger.warning(
                 f"Either pattern id {tp_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
-            res = get_check_discovery_rule_result(tp_id, language)
+            res = get_check_discovery_rule_result(pattern=target_pattern)
             results.append(res)
             err += 1
             continue
-        for j, instance_path in enumerate(l_tpi_dir):
+        instance: Instance
+        for j, instance in enumerate(target_pattern.instances):
             try:
-                target_src = instance_path.parent
-                target_instance: Instance = Instance.init_from_json_path(instance_path, target_tp)
-
-                tpi_id = utils.get_id_from_name(instance_path.name)
+                tpi_id = instance.instance_id
                 logger.info(utils.get_tpi_op_status_string(
-                    (i + 1, len(l_tp_id), tp_id),
-                    t_tpi_info=(j + 1, len(l_tpi_dir), tpi_id)
+                    (i + 1, num_patterns, tp_id),
+                    t_tpi_info=(j + 1, num_instances, tpi_id)
                 ))
 
-                if target_instance.discovery_rule:
-                    dr_path = target_src / target_instance.discovery_rule
+                if instance.discovery_rule:
+                    dr_path = instance.discovery_rule
                     if not dr_path.is_file():
                         logger.warning(
                             f"Instance {tpi_id} of pattern {tp_id}: the discovery rule {dr_path} does not exist")
-                        res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
-                                                              instance_path=instance_path, discovery_rule=dr_path)
+                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
                         results.append(res)
                         err += 1
                         continue
 
+                    target_src = instance.instance_path
+
                     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
                         "check_discovery_rules", target_src, language, output_dir)
-                    d_results = manual_discovery(target_src, target_instance.discovery_method, [dr_path], language,
+                    d_results = manual_discovery(target_src, instance.discovery_method, [dr_path], language,
                                                  build_name, disc_output_dir, timeout_sec=timeout_sec)
                     # Inspect the d_results
                     if d_results["findings"] and any(
                             f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
-                        res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
-                                                              instance_path=instance_path, pattern_name=target_tp.name,
-                                                              discovery_rule=dr_path, successful="yes")
+                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="yes")
                         success += 1
                     else:
-                        res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
-                                                              instance_path=instance_path, pattern_name=target_tp.name,
-                                                              discovery_rule=dr_path, successful="no")
+                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="no")
                         unsuccess += 1
                     results.append(res)
                 else:
                     logger.info(
                         f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
-                    res = get_check_discovery_rule_result(tp_id, language, instance_id=tpi_id,
-                                                          instance_path=instance_path, successful="missing")
+                    res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="missing")
                     results.append(res)
                     missing += 1
                 logger.info(utils.get_tpi_op_status_string(
-                    (i + 1, len(l_tp_id), tp_id),
-                    t_tpi_info=(j + 1, len(l_tpi_dir), tpi_id),
+                    (i + 1, num_patterns, tp_id),
+                    t_tpi_info=(j + 1, num_instances, tpi_id),
                     status="done."
                 ))
             except Exception as e:
                 logger.warning(
-                    f"Something went wrong for the instance at {instance_path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
-                res = get_check_discovery_rule_result(tp_id, language, pattern_name=target_tp.name, instance_path=instance_path)
+                    f"Something went wrong for the instance at {instance.instance_path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
+                res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
                 results.append(res)
                 err += 1
                 continue
         logger.info(utils.get_tp_op_status_string(
-            (i + 1, len(l_tp_id), tp_id),  # tp_info
+            (i + 1, num_patterns, tp_id),  # tp_info
             status="done."
         ))
-    logger.info(f"Check/Test discovery rules for {len(l_tp_id)} patterns: done")
+    logger.info(f"Check/Test discovery rules for {num_patterns} patterns: done")
     d_res = {
         "results": results,
         "counters": {

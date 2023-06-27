@@ -3,7 +3,7 @@ import shutil
 from os import listdir
 from pathlib import Path
 
-from core.exceptions import PatternInvalid, PatternDoesNotExists
+from core.exceptions import PatternInvalid, PatternDoesNotExists, InstanceDoesNotExists
 from core.instance import Instance
 from core.pattern_repair import PatternRepair
 from core import utils
@@ -68,11 +68,10 @@ class Pattern:
     def _init_instances(self, instance_paths_from_json: list):
         instances = []
         for instance_json in instance_paths_from_json:
-            print('\033[93m', instance_json, '\033[0m')
             abs_path = Path(self.pattern_path / Path(instance_json))
             if not abs_path.is_file():
                 raise PatternInvalid(f"{self._log_prefix()}The instance path '{instance_json}' is not valid.")
-            instances += [Instance.init_from_json_path(abs_path, self.pattern_id)]
+            instances += [Instance.init_from_json_path(abs_path, self.pattern_id, self.language)]
         instances = sorted(instances, key=lambda instance: instance.instance_id)
         return instances
     
@@ -119,6 +118,12 @@ class Pattern:
         for instance in self.instances:
             instance.copy_to_tplib(new_pattern_path)
         utils.copy_dir_content(self.pattern_path, new_pattern_path)
+    
+    def get_instance_by_id(self, tpi_id: int) -> Instance:
+        try:
+            return list(filter(lambda tpi: tpi.instance_id == tpi_id, self.instances))[0]
+        except KeyError:
+            raise InstanceDoesNotExists(tpi_id, )
     
     def validate_for_measurement(self):
         pass

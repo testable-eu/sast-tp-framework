@@ -6,8 +6,10 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core import utils, measurement, instance
+from core import utils, measurement
 from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
+from core.pattern import Pattern
+from core.instance import Instance
 
 
 def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, l_tp_id: list[int],
@@ -19,11 +21,10 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, l
     utils.add_loggers(output_dir)
     results = []
     for tp_id in l_tp_id:
-        l_tpi_path: list[Path] = utils.list_tpi_paths_by_tp_id(
-            language, tp_id, tp_lib_path
-        )
-        for tpi_path in l_tpi_path:
-            tpi_id = utils.get_id_from_name(tpi_path.name)
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+        instance: Instance
+        for instance in target_pattern.instances:
+            tpi_id = instance.instance_id
             msgpre = f"{language} pattern {tp_id} instance {tpi_id} - "
             logger.info(f"{msgpre}Fetching last measurements...")
             for tool in tools:
@@ -40,17 +41,15 @@ def report_sast_measurement_for_pattern_list(tools: list[Dict], language: str, l
                 }
                 try:
                     meas: measurement.Measurement = measurement.load_last_measurement_for_tool(
-                        tool, language, tp_lib_path, tp_id, tpi_id
+                        tool, language, tp_lib_path, target_pattern, instance
                         )
                 except InstanceDoesNotExists:
                     row["results"] = "PATTERN_INSTANCE_DOES_NOT_EXIST"
                 except MeasurementNotFound:
-                    tpi: instance.Instance = instance.load_instance_from_json(tpi_path, tp_lib_path, language)
-                    row["pattern_name"] = tpi.name
+                    row["pattern_name"] = instance.name
                     row["results"] = "NOT_FOUND"
-                    row["negative_test_case"] = "YES" if tpi.properties_negative_test_case else "NO"
-                    row["expectation"] = tpi.expectation
-                    pass
+                    row["negative_test_case"] = "YES" if instance.properties_negative_test_case else "NO"
+                    row["expectation"] = instance.expectation_expectation
                 if meas:
                     row["pattern_name"] = meas.instance.name
                     row["tool"] = f"{meas.tool}:{meas.version}" # rewrite `saas` occurrences with precise versions
