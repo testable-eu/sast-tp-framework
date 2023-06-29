@@ -172,7 +172,7 @@ def check_file_exist(file_path: Path, file_suffix = ".csv"):
         logger.error(get_exception_message(e))
         raise e
 
-# TODO: TESTGIN
+
 def get_relative_paths(file_path: Path, base_path: Path):
     if not file_path:
         return None
@@ -200,11 +200,10 @@ def zipdir(path, ziph):
                                        os.path.join(path, '..')))
 
 
-# TODO: TESTING
 def get_id_from_name(name: str) -> int:
     return int(name.split("_")[0])
 
-# TODO: TESTING
+
 def get_class_from_str(class_str: str) -> object:
     try:
         module_path, class_name = class_str.rsplit('.', 1)
@@ -215,18 +214,19 @@ def get_class_from_str(class_str: str) -> object:
 
 
 # TODO (LC): are these related to pattern instance ?
-# TODO: TESTING
 def get_path_or_none(p: str) -> Path | None:
     if p:
         return Path(p)
     return None
 
-# TODO: TESTING
+
 def get_from_dict(d: dict, k1: str, k2: str):
-    return d.get(k1, {}).get(k2, None)
+    try:
+        return d.get(k1, {}).get(k2, None)
+    except AttributeError:
+        return None
 
 
-# TODO: TESTING
 def build_timestamp_language_name(name: Path | None, language: str, now: datetime, extra: str = None) -> str:
     res = language
     if name:
@@ -245,14 +245,14 @@ def check_tp_lib(tp_lib_path: Path):
         logger.error(get_exception_message(e))
         raise e
 
-# TODO: TESTING
+
 def check_lang_tp_lib_path(lang_tp_lib_path: Path):
     if not lang_tp_lib_path.is_dir():
         e = LanguageTPLibDoesNotExist()
         logger.error(get_exception_message(e))
         raise e
 
-# TODO: TESTING
+
 def check_target_dir(target_dir: Path):
     if not target_dir.is_dir():
         e = TargetDirDoesNotExist()
@@ -342,7 +342,7 @@ def get_tpi_op_status_string(t_tp_info, t_tpi_info=None, status="started...", op
         op_str = f"{op} - "
     return f"{i}/{tot} -{tpi_count_str} {op_str}pattern id {tp_id}{tpi_id_str}: {status}"
 
-# TODO: TESTING
+
 def list_dirs_only(dir: Path):
     return [e for e in dir.iterdir() if e.is_dir()]
 
@@ -357,7 +357,7 @@ def get_file_hash(fpath, bigfile=False):
                 hash.update(chunk)
     return hash.hexdigest()
 
-# TODO: TESTING
+
 def list_files(path_to_parent_dir: Path, suffix: str, recursive: bool = False):
     assert suffix[0] == ".", "Suffix has to start with '.'"
     if recursive:
@@ -369,7 +369,7 @@ def list_files(path_to_parent_dir: Path, suffix: str, recursive: bool = False):
     else:
         return list(filter(lambda file_name: file_name.suffix == suffix, [path_to_parent_dir / f for f in path_to_parent_dir.iterdir()]))
 
-# TODO: TESTING
+
 def list_directories(parent_dir: Path):
     return list(filter(lambda name: name.is_dir(), [parent_dir / d for d in parent_dir.iterdir()]))
 
@@ -412,7 +412,7 @@ def write_json(path_to_json_file: Path, result_dict: dict):
     with open(path_to_json_file, "w") as json_file:
         json.dump(result_dict, json_file, indent=4)
 
-# TODO: TESTING
+
 def copy_dir_content(path_to_src_dir: Path, path_to_dst_dir: Path):
     for element in os.listdir(path_to_src_dir):
         src_path = path_to_src_dir / element

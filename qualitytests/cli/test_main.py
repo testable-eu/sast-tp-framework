@@ -11,6 +11,7 @@ from cli import main
 class TestMain:
     testdir = Path(__file__).parent.parent.resolve()
     tpf = testdir.parent / "tp_framework/cli/main.py"
+    sample_tp_lib = str(join_resources_path("sample_patlib"))
 
 
     def test_cli_help_1(self):
@@ -122,7 +123,7 @@ class TestMain:
             main.main(['measure',
                        '-p', self.tp1, self.tp2,
                        '--tools', self.tool1, 'whatever', '-l', self.test_lang,
-                       '--tp-lib', str(tmp_path)])
+                       '--tp-lib', TestMain.sample_tp_lib])
 
 
     def test_cli_measure_5(self, tmp_path, mocker):
@@ -131,7 +132,7 @@ class TestMain:
         main.main(['measure',
                    '-p', self.tp1, self.tp2,
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path)])
+                   '--tp-lib', TestMain.sample_tp_lib])
 
 
     def _init_cli_report(self, mocker):
@@ -156,7 +157,7 @@ class TestMain:
                    '--print',
                    '-p', self.tp1, self.tp2,
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path)])
+                   '--tp-lib', TestMain.sample_tp_lib])
 
 
     def test_cli_report_3(self, tmp_path, mocker):

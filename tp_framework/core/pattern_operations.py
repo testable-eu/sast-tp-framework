@@ -32,6 +32,7 @@ def add_testability_pattern_to_lib_from_json(language: str, pattern_json: Path, 
 
 async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict], tp_id: int, now,
                                             tp_lib_dir: Path, output_dir: Path) -> Dict:
+
     d_status_tp = {}
     try:
         target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_dir)

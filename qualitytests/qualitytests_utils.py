@@ -113,8 +113,9 @@ def init_test(init, language="PHP"):
     init["tp_lib_path"] = join_resources_path(temp_meas).resolve()
     try:
         shutil.copytree(join_resources_path("sample_patlib"), init["tp_lib_path"])
-    except:
+    except Exception as e:
         pass
+        # assert False, f"stop your tests will fail {e}"
     init["patterns"] = [1,2,3]
 
 

@@ -33,7 +33,7 @@ async def analyze_pattern_instance(instance: Instance,
             tool_name: str = tool["name"]
             tool_version: str = tool["version"]
 
-            sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
+            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
             sast_interface_class: str = sast_config["tool_interface"]
             sast_class = utils.get_class_from_str(sast_interface_class)
 
@@ -72,7 +72,7 @@ async def inspect_analysis_results(d_job: Dict, language) -> list[Measurement]:
 
         # if not csv_res, then the SAST job would have failed and no measurement in that case
         if csv_res:
-            sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
+            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
             sast_interface_class: str = sast_config["tool_interface"]
             sast_class = utils.get_class_from_str(sast_interface_class)
 

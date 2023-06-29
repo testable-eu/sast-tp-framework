@@ -16,7 +16,6 @@ from qualitytests.qualitytests_utils import join_resources_path, create_mock_cpg
     init_sastreport_test, init_test
 
 
-@pytest.mark.asyncio
 class TestInterface:
 
 

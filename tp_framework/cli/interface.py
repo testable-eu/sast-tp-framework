@@ -198,15 +198,3 @@ def repair_patterns(language: str, pattern_ids: list,
             print(f"Failed to init pattern: {tp_id} due to {e}")
             continue
         pattern.repair()
-    #     print(pattern)
-
-    #     # pattern_path = get_pattern_path_by_pattern_id(language, pattern_id, tp_lib_path)
-    #     # PatternRepair(
-    #     #     pattern_path,
-    #     #     language,
-    #     #     tp_lib_path,
-    #     #     checkdiscoveryrule_results,
-    #     #     masking_file,
-    #     #     measurement_results,
-    #     # ).repair(should_include_readme)
-    #     pass

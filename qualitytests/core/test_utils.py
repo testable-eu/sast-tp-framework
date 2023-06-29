@@ -33,41 +33,6 @@ class TestUtils:
         utils.check_tp_lib(tmp_path)
 
 
-    # TODO: to be fixed, misses the json file
-    @pytest.mark.skip()
-    def test_list_pattern_instances_by_pattern_id(self, tmp_path):
-        language, tmp_tp_path, p1, p2, p3 = setup_three_pattern(tmp_path)
-
-        pi1 = p2 / ("1_instance_" + p2.name)
-        pi2 = p2 / ("2_instance_" + p2.name)
-        pi3 = p2 / ("3_instance_" + p2.name)
-        pi1.mkdir()
-        pi2.mkdir()
-        pi3.mkdir()
-
-        path_list_expected = [pi1, pi2, pi3]
-        path_list = utils.list_tpi_paths_by_tp_id(language, 2, tmp_path)
-        assert sorted(path_list) == sorted(path_list_expected)
-
-
-    def test_list_pattern_instances_by_pattern_id_with_non_existing_pattern(self, tmp_path):
-        language: str = "PHP"
-        tmp_tp_path: Path = tmp_path / language
-        tmp_tp_path.mkdir()
-
-        with pytest.raises(PatternDoesNotExists):
-            utils.list_tpi_paths_by_tp_id(language, 5, tmp_path)
-
-
-    # TODO: to be fixed
-    @pytest.mark.skip()
-    def test_get_or_create_tp_lib_for_lang_existing_folder(self, tmp_path):
-        language: str = "PHP"
-        path_tp_language_exp = tmp_path / language
-        path_tp_language_exp.mkdir()
-        path_tp_language_act = utils.get_or_create_language_dir(language, tmp_path)
-        assert path_tp_language_exp.is_dir() == path_tp_language_act.is_dir()
-
     def test_get_last_measurement_for_pattern_instance(self, tmp_path):
         m1: Path = tmp_path / "measurement-2022-03-24_10-28-00.json"
         m2: Path = tmp_path / "measurement-2022-04-10_12-25-00.json"
@@ -164,3 +129,58 @@ class TestUtils:
         with patch("core.utils.list_dirs_only") as list_dir_mock:
             list_dir_mock.return_value = list_dir_ret_value
             assert expected_value == utils.get_next_free_pattern_id_for_language("PHP", tp_lib_path)
+    
+    get_relative_paths_testcases = [
+        (Path("/tp_framework/file.sc"), Path("/tp_framework"), "./file.sc"),
+        (Path("/tp_framework/file.sc"), Path("/tp_framework"), "./file.sc"),
+        (Path("/file.sc"), Path("/tp_framework/PHP"), Path("/file.sc")),
+    ]
+
+    @pytest.mark.parametrize("file_path, base_path, expected", get_relative_paths_testcases)
+    def test_get_relative_paths_testcases(self, file_path, base_path, expected):
+        assert expected == utils.get_relative_paths(file_path, base_path)
+
+    def test_get_id_from_name_error(self):
+        with pytest.raises(ValueError):
+            utils.get_id_from_name("name")
+
+        assert 1 == utils.get_id_from_name("1_instance_85_test_pattern")
+        assert 42 == utils.get_id_from_name("42_test_pattern")
+
+    def test_get_path_or_none(self):
+        assert utils.get_path_or_none("") is None
+        assert utils.get_path_or_none(None) is None
+        assert Path("file") == utils.get_path_or_none("file")
+    
+    def test_get_from_dict(self):
+        assert utils.get_from_dict({}, "key1", "key2") is None
+        assert utils.get_from_dict({"key1": 3}, "key1", "key2") is None
+        assert utils.get_from_dict({"key1": {"key3": 3}}, "key1", "key2") is None
+        assert 3 == utils.get_from_dict({"key1": {"key2": 3}}, "key1", "key2")
+
+    get_json_file_testcases = [
+        # special shortcut case to avoid warnings
+        (Path("./docs"), None, None, None),
+        # works as expected, only one possible JSON file
+        (Path("./1_instance"), Path("instance.json"), [Path("instance.json")], None),
+        # No JSON file at all
+        (Path("./1_instance"), None, [], "Could not find a JSON file in 1_instance"),
+        # multiple JSON files, none of them named as wanted
+        (Path("./1_instance"), None, ["instance.json", "insteresting.json"], "Could not determine the right pattern JSON file. Please name it <pattern_id>_<pattern_name>.json"),     
+        # multiple JSON files, but one is named correctly
+        (Path("./1_instance"), Path("./1_instance/1_instance.json"), [Path("./1_instance/1_instance.json"), Path("./1_instance/interesting.json")], "Found multiple '.json' files for 1_instance"),     
+    ]
+
+    @pytest.mark.parametrize("path, expected, list_file_return, warn", get_json_file_testcases)
+    def test_get_json_file(self, path, expected, list_file_return, warn):
+        with patch("core.utils.logger.warning") as warn_logger, \
+            patch("core.utils.list_files") as list_file_mock:
+            list_file_mock.return_value = list_file_return
+
+            actual = utils.get_json_file(path)
+        
+        assert expected == actual
+        if warn:
+            warn_logger.assert_called_with(warn)
+        else:
+            warn_logger.assert_not_called()

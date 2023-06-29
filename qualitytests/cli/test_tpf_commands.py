@@ -51,9 +51,9 @@ class TestTPFCommands:
         tp_ids = tpf_commands.parse_patterns(False, tp_range, [], test_tp_lib_path, test_lang)
         assert tp_ids == [2, 3]
         # one and only one mutual exclusion params: pattern ids
-        itp_ids = [1,2,5,10]
+        itp_ids = [1,3]
         tp_ids = tpf_commands.parse_patterns(False, "", itp_ids, test_tp_lib_path, test_lang)
         assert tp_ids == itp_ids
         # one and only one mutual exclusion params: all
         tp_ids = tpf_commands.parse_patterns(True, "", [], test_tp_lib_path, test_lang)
-        assert tp_ids == [1,2,3]
+        assert tp_ids == [1,2,3,4]
