@@ -591,8 +591,7 @@ class PatternRepair(Command):
         language: str = args.language.upper()
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         l_pattern_id = sorted(parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
-                                      tp_lib_path,
-                                      language))
+                                      tp_lib_path, language, init_patterns=False))
         output_dir: Path = parse_dir_or_file(args.output_dir)
         measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
         checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
@@ -648,7 +647,7 @@ def parse_tool_list(tools: list[str]):
             exit(1)
 
 
-def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path: Path, language: str):
+def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path: Path, language: str, init_patterns: bool = True):
     # is this necessary? Should be ensured by `.add_mutually_exclusive_group(required=True)` in the parser
     try:
         assert sum(bool(e) for e in [all_patterns, pattern_range, patterns]) == 1 # these elements are in mutual exclusion
@@ -680,7 +679,7 @@ def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path
     # return only the pattern_id, to be compatible with current implementation
     # TODO: refactor to use the Pattern instances instead of the ids
     return sorted([Pattern.init_from_id_and_language(idx, language, tp_lib_path).pattern_id \
-                        for idx in id_list])
+                        for idx in id_list]) if init_patterns else id_list
 
 
 def parse_dir_or_file(path_to_file_or_dir: str, 

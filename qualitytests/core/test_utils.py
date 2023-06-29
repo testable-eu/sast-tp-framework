@@ -33,31 +33,6 @@ class TestUtils:
         utils.check_tp_lib(tmp_path)
 
 
-    def test_list_pattern_paths_for_language(self, tmp_path):
-        language, tmp_tp_path, p1, p2, p3 = setup_three_pattern(tmp_path)
-        path_list_expected = [p1, p2, p3]
-
-        path_list = utils.list_pattern_paths_for_language(language, tmp_path)
-        assert sorted(path_list) == sorted(path_list_expected)
-
-
-    def test_list_pattern_paths_for_language_void_dir(self, tmp_path):
-        language: str = "PHP"
-        tmp_tp_path: Path = tmp_path / language
-        tmp_tp_path.mkdir()
-
-        path_list_expected = []
-
-        path_list = utils.list_pattern_paths_for_language(language, tmp_path)
-        assert sorted(path_list) == sorted(path_list_expected)
-
-
-    def test_list_pattern_paths_for_non_existing_language(self, tmp_path):
-        language: str = "PHP"
-        with pytest.raises(LanguageTPLibDoesNotExist):
-            utils.list_pattern_paths_for_language(language, tmp_path)
-
-
     # TODO: to be fixed, misses the json file
     @pytest.mark.skip()
     def test_list_pattern_instances_by_pattern_id(self, tmp_path):
@@ -92,22 +67,6 @@ class TestUtils:
         path_tp_language_exp.mkdir()
         path_tp_language_act = utils.get_or_create_language_dir(language, tmp_path)
         assert path_tp_language_exp.is_dir() == path_tp_language_act.is_dir()
-
-
-    def test_get_or_create_pattern_dir_existing_lang_dir(self, tmp_path):
-        language, tmp_tp_path, p1, p2, p3 = setup_three_pattern(tmp_path)
-        path_pattern_exp = tmp_tp_path / "4_pattern_four"
-        path_pattern_act = utils.get_or_create_pattern_dir(language, 4, "Pattern Four", tmp_path)
-        assert path_pattern_exp.is_dir() == path_pattern_act.is_dir()
-
-
-    def test_get_or_create_pattern_dir_non_existing_lang_dir(self, tmp_path):
-        language: str = "PHP"
-        tmp_tp_path: Path = tmp_path / language
-        path_pattern_exp = tmp_tp_path / "1_pattern_one"
-        path_pattern_act = utils.get_or_create_pattern_dir(language, 1, "Pattern One", tmp_path)
-        assert path_pattern_exp.is_dir() == path_pattern_act.is_dir()
-
 
     def test_get_last_measurement_for_pattern_instance(self, tmp_path):
         m1: Path = tmp_path / "measurement-2022-03-24_10-28-00.json"
@@ -192,25 +151,6 @@ class TestUtils:
         with pytest.raises(Exception):
             utils.get_pattern_dir_from_id(99, "PHP", tp_lib)
 
-
-    def test_get_instance_dir_from_id(self):
-        tp_path = qualitytests_utils.join_resources_path("sample_patlib") / "PHP" / "3_global_array"
-        assert utils.get_instance_dir_from_id(1, tp_path).name == "1_instance_3_global_array"
-        assert utils.get_instance_dir_from_id(2, tp_path).name == "2_instance_3_global_array"
-        with pytest.raises(Exception):
-            utils.get_instance_dir_from_id(3, tp_path)
-
-
-    def test_get_tpi_id_from_jsonpath(self):
-        jp = qualitytests_utils.join_resources_path(
-            "sample_patlib") / "PHP" / "3_global_array" / "1_instance_3_global_array" / "1_instance_3_global_array.json"
-        assert utils.get_tpi_id_from_jsonpath(jp) == 1
-        jp = qualitytests_utils.join_resources_path(
-            "sample_patlib") / "PHP" / "3_global_array" / "1_instance_3_global_array" / "111_instance_3_global_array.json"
-        assert utils.get_tpi_id_from_jsonpath(jp) == 1
-        jp = qualitytests_utils.join_resources_path(
-            "sample_patlib") / "PHP" / "3_global_array" / "2_instance_3_global_array" / "111_instance_3_global_array.json"
-        assert utils.get_tpi_id_from_jsonpath(jp) == 2
 
     next_free_pattern_id_test_cases = [
         ([Path('1_instance_test_pattern'), Path('2_instance_test_pattern')], 3, 1),

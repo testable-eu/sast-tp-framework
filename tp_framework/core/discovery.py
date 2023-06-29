@@ -19,7 +19,7 @@ from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CP
 from core.measurement import Measurement
 
 from core.instance import Instance #, instance_from_dict, load_instance_from_metadata
-from core.pattern import get_pattern_by_pattern_id, Pattern
+from core.pattern import Pattern
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 mand_finding_joern_keys = ["filename", "lineNumber"]
@@ -327,7 +327,7 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     f"{msgpre}No measurements for this instance. {msgpost}")
                 d_res_tpi[tpi.instance_id] = {
                     "measurement": "not_found",
-                    "jsonpath": tpi.instance_json_path
+                    "jsonpath": tpi.json_path
                 }
                 continue
             l_last_meas = measurement.load_measurements(utils.get_last_measurement_for_pattern_instance(meas_tpi_path),
@@ -339,14 +339,14 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     f"{msgpre}No measurements of the tools specified ({[t['name'] + ':' + t['version'] for t in tools]}) for the instance. {msgpost}")
                 d_res_tpi[tpi.instance_id] = {
                     "measurement": "not_found",
-                    "jsonpath": tpi.instance_json_path
+                    "jsonpath": tpi.json_path
                 }
                 continue
             tpi_instance = meas_tpi_by_tools[0].instance
             d_tpi = {
                 "instance": tpi_instance,
                 "measurement": "supported",
-                "jsonpath": tpi.instance_json_path,
+                "jsonpath": tpi.json_path,
                 "discovery": {}
             }
             # discovery continue iff at least one tool not supporting the tpi
@@ -363,7 +363,7 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     d_tpi["measurement"] = "not_supported"
             # discovery per tpi
             measurement_stop: bool = d_tpi["measurement"] not in ["ignore", "not_supported"]
-            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi.instance_json_path, cpg, disc_output_dir,
+            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi.json_path, cpg, disc_output_dir,
                                                    measurement_stop=measurement_stop, already_executed=d_dr_executed)
             d_res_tpi[tpi.instance_id] = d_tpi
         d_res[tp_id]["instances"] = d_res_tpi
@@ -390,7 +390,7 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         d_res_tpi = {}
         d_dr_executed = {}
         for instance in target_pattern.instances:
-            tpi_json_path = instance.instance_json_path
+            tpi_json_path = instance.json_path
             d_tpi = {"instance": instance, "measurement": "ignored", "jsonpath": tpi_json_path,
                      "discovery": discovery_for_tpi(instance, tpi_json_path, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}
@@ -699,7 +699,7 @@ def get_check_discovery_rule_result(pattern: Pattern, instance: Instance | None=
     return {
         "pattern_id": pattern.pattern_id,
         "instance_id": instance.instance_id if instance else None,
-        "instance_path": instance.instance_path if instance else None,
+        "instance_path": instance.path if instance else None,
         "pattern_name": pattern.name,
         "language": pattern.language,
         "discovery_rule": instance.discovery_rule if instance else None,
@@ -753,7 +753,7 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                         err += 1
                         continue
 
-                    target_src = instance.instance_path
+                    target_src = instance.path
 
                     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
                         "check_discovery_rules", target_src, language, output_dir)
@@ -781,7 +781,7 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                 ))
             except Exception as e:
                 logger.warning(
-                    f"Something went wrong for the instance at {instance.instance_path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
+                    f"Something went wrong for the instance at {instance.path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
                 res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
                 results.append(res)
                 err += 1

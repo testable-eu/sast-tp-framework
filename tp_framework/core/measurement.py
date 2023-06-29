@@ -92,7 +92,7 @@ def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Meas
     parsed_meas: list[Measurement] = []
     for m in meas:
         instance_json_path = tp_lib / Path(m["instance"])
-        instance = Instance.init_from_json_path(instance_json_path, None, language)
+        instance = Instance.init_from_json_path(instance_json_path, None, language, tp_lib)
         # NOTE 06/2023: if not expectation in measurement, then we take it from instance (backword compatibility though it could introduce mistakes if the instance expectation was changed after the measurement)
         expected_result = m["expected_result"] if "expected_result" in m.keys() else instance.expectation_expectation
         parsed_meas.append(Measurement(
@@ -112,8 +112,8 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, patt
     #       patterns and pattern instances. Make sure to factorize in function what needs to
     #       and to generalize the approach as much as we can to rely the least possible on
     #       the strict notation
-    pattern_dir_name: str = pattern.pattern_path.name
-    instance_dir_name: str = instance.instance_path.name
+    pattern_dir_name: str = pattern.path.name
+    instance_dir_name: str = instance.path.name
     # TODO: continue here
     # instance_dir: Path = pattern_dir / instance_dir_name
     # if not instance_dir.is_dir():

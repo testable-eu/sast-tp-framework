@@ -24,31 +24,9 @@ from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPL
 from core import errors
 
 
-def is_windows():
-    return system() == "Windows"
-
-
-def list_pattern_paths_for_language(language: str, tp_lib_dir: Path) -> list[Path]:
-    all_pattern_dirs_by_lang: Path = tp_lib_dir / language
-    if not all_pattern_dirs_by_lang.is_dir():
-        raise LanguageTPLibDoesNotExist
-    return list_dirs_only(all_pattern_dirs_by_lang)
-
-
-# TODO: reimplement
-# def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
-#     try:
-#         pattern = Pattern.
-#         p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
-#         return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
-#     except:
-#         ee = PatternDoesNotExists(pattern_id)
-#         logger.exception(ee)
-#         raise ee
-
-
-def get_tpi_id_from_jsonpath(jp: Path) -> int:
-    return get_id_from_name(jp.parent.name)
+################################################################################
+# PATTERNS
+#
 
 
 def get_pattern_dir_from_id(pattern_id: int, language: str, tp_lib_dir: Path) -> Path: # needed
@@ -76,60 +54,30 @@ def get_next_free_pattern_id_for_language(language: str, tp_lib_dir: Path, propo
     return free_ids[0] if free_ids else max(taken_ids) + 1
 
 
-def get_instance_dir_from_id(instance_id: int, pattern_dir: Path) -> Path:
-    if pattern_dir.is_dir():
-        return get_instance_dir_from_list(instance_id, list_dirs_only(pattern_dir))
-    else:
-        raise PatternFolderNotFound()
+################################################################################
+# INSTANCES
+#
 
 
+# TODO: TESTING
 def get_instance_dir_from_list(instance_id: int, l_pattern_dir: list[Path]):
     instance_with_id = list(filter(lambda tpi_dir: get_id_from_name(tpi_dir.name) == instance_id, l_pattern_dir))
     if not instance_with_id:
         raise InstanceDoesNotExists()
     return instance_with_id[0]
 
-# def get_or_create_language_dir(language: str, tp_lib_dir: Path) -> Path:
-#     tp_lib_for_lang: Path = tp_lib_dir / language
-#     tp_lib_for_lang.mkdir(parents=True, exist_ok=True)
-#     return tp_lib_for_lang
 
 
-def get_or_create_pattern_dir(language: str, pattern_id: int, pattern_name: str, tp_lib_dir: Path) -> Path:
-    pattern_dir = tp_lib_dir / language / get_pattern_dir_name_from_name(pattern_name, pattern_id)
-    pattern_dir.mkdir(parents=True, exist_ok=True)
-    return pattern_dir
-
-
-def get_pattern_dir_name_from_name(name: str, pattern_id: int) -> str:
-    return f"{pattern_id}_{name.lower().replace(' ', '_')}"
-
-
-def get_instance_dir_name_from_pattern(name: str, pattern_id: int, instance_id: int) -> str:
-    return f"{instance_id}_instance_{get_pattern_dir_name_from_name(name, pattern_id)}"
-
-
-def get_id_from_name(name: str) -> int:
-    return int(name.split("_")[0])
-
-
-def get_class_from_str(class_str: str) -> object:
-    try:
-        module_path, class_name = class_str.rsplit('.', 1)
-        module = import_module(module_path)
-        return getattr(module, class_name)
-    except (ImportError, AttributeError) as e:
-        raise ImportError(class_str)
-
-
-def get_tp_dir_for_language(tp_lib_dir: Path, language: str):
-    return Path(tp_lib_dir / language)
+################################################################################
+# MEASUREMENT
+#
 
 
 def get_measurement_dir_for_language(tp_lib_dir: Path, language: str):
     return Path(tp_lib_dir / config.MEASUREMENT_REL_DIR / language)
 
 
+# TODO: TESTING
 def get_measurement_file(date: datetime):
     date_time_str = date.strftime("%Y-%m-%d_%H-%M-%S")
     return f"measurement-{date_time_str}.json"
@@ -147,43 +95,15 @@ def get_last_measurement_for_pattern_instance(meas_inst_dir: Path) -> Path:
     return sorted_meas[-1][1]
 
 
-# Useful for some SAST tools that accepts a zip file of the source code to scan
-def zipdir(path, ziph):
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            ziph.write(os.path.join(root, file),
-                       os.path.relpath(os.path.join(root, file),
-                                       os.path.join(path, '..')))
+def check_measurement_results_exist(measurement_dir: Path):
+    if not measurement_dir.is_dir():
+        e = MeasurementResultsDoNotExist()
+        logger.error(get_exception_message(e))
+        raise e
 
 
 ################################################################################
-# TODO (LC): are these related to pattern instance ?
-#
-def get_path_or_none(p: str) -> Path | None:
-    if p:
-        return Path(p)
-    return None
-
-
-def get_enum_value_or_none(enum) -> str | None:
-    try:
-        return enum.value
-    except AttributeError:
-        return None
-
-
-def get_relative_path_str_or_none(path) -> str | None:
-    if path:
-        return f"./{path}"
-    return None
-
-
-def get_from_dict(d, k1, k2):
-    return d.get(k1, {}).get(k2, None)
-
-
-################################################################################
-# Discovery
+# DISCOVERY
 #
 
 def get_discovery_rule_ext(discovery_method: str):
@@ -214,16 +134,36 @@ def get_discovery_rules(discovery_rule_list: list[str], discovery_rule_ext: str)
             logger.warning(errors.wrongDiscoveryRule(discovery_rule)+ " The script will try to continue ignoring this discovery rule.")
     return list(discovery_rules_to_run)
 
-
 ################################################################################
-# Others
+# SAST
 #
 
-def check_measurement_results_exist(measurement_dir: Path):
-    if not measurement_dir.is_dir():
-        e = MeasurementResultsDoNotExist()
-        logger.error(get_exception_message(e))
+def sast_tool_version_match(v1, v2, nv_max=3, ignore_saas=True):
+    if ignore_saas and (v1 == "saas" or v2 == "saas"):
+        return True
+    sv1 = v1.split(".")
+    sv2 = v2.split(".")
+    nv = max(len(sv1), len(sv2))
+    for i in range(0, min(nv, nv_max)):
+        try:
+            if sv1[i] != sv2[i]:
+                return False
+        except IndexError:
+            return False
+    return True
+
+
+def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
+    try:
+        tool_config_path: Path = config.ROOT_SAST_DIR / load_yaml(config.SAST_CONFIG_FILE)["tools"][tool_name]["version"][tool_version]["config"]
+    except KeyError:
+        e = InvalidSastTool(f"{tool_name}:{tool_version}")
         raise e
+    return load_yaml(tool_config_path)
+
+################################################################################
+# PATTERN REPAIR
+#
 
 
 def check_file_exist(file_path: Path, file_suffix = ".csv"):
@@ -232,7 +172,61 @@ def check_file_exist(file_path: Path, file_suffix = ".csv"):
         logger.error(get_exception_message(e))
         raise e
 
+# TODO: TESTGIN
+def get_relative_paths(file_path: Path, base_path: Path):
+    if not file_path:
+        return None
+    try:
+        return f"./{file_path.relative_to(base_path)}"
+    except ValueError:
+        try:
+            return f"../{file_path.relative_to(base_path.parent)}"
+        except ValueError as e:
+            logger.warning(f"Could not parse filepath {file_path} to a relative path.")
+            return file_path
 
+################################################################################
+# OTHER
+# TODO: Could be sorted alphabetically?
+
+
+# Useful for some SAST tools that accepts a zip file of the source code to scan
+# Where is it used in the code?
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
+                                       os.path.join(path, '..')))
+
+
+# TODO: TESTING
+def get_id_from_name(name: str) -> int:
+    return int(name.split("_")[0])
+
+# TODO: TESTING
+def get_class_from_str(class_str: str) -> object:
+    try:
+        module_path, class_name = class_str.rsplit('.', 1)
+        module = import_module(module_path)
+        return getattr(module, class_name)
+    except (ImportError, AttributeError) as e:
+        raise ImportError(class_str)
+
+
+# TODO (LC): are these related to pattern instance ?
+# TODO: TESTING
+def get_path_or_none(p: str) -> Path | None:
+    if p:
+        return Path(p)
+    return None
+
+# TODO: TESTING
+def get_from_dict(d: dict, k1: str, k2: str):
+    return d.get(k1, {}).get(k2, None)
+
+
+# TODO: TESTING
 def build_timestamp_language_name(name: Path | None, language: str, now: datetime, extra: str = None) -> str:
     res = language
     if name:
@@ -251,21 +245,21 @@ def check_tp_lib(tp_lib_path: Path):
         logger.error(get_exception_message(e))
         raise e
 
-
+# TODO: TESTING
 def check_lang_tp_lib_path(lang_tp_lib_path: Path):
     if not lang_tp_lib_path.is_dir():
         e = LanguageTPLibDoesNotExist()
         logger.error(get_exception_message(e))
         raise e
 
-
+# TODO: TESTING
 def check_target_dir(target_dir: Path):
     if not target_dir.is_dir():
         e = TargetDirDoesNotExist()
         logger.error(get_exception_message(e))
         raise e
 
-
+# TODO: TESTING
 def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     for t in itools:
         t["supported_languages"] = load_sast_specific_config(t["name"], t["version"])["supported_languages"]
@@ -277,34 +271,10 @@ def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
     return tools
 
 
-def sast_tool_version_match(v1, v2, nv_max=3, ignore_saas=True):
-    if ignore_saas and (v1 == "saas" or v2 == "saas"):
-        return True
-    sv1 = v1.split(".")
-    sv2 = v2.split(".")
-    nv = max(len(sv1), len(sv2))
-    for i in range(0, min(nv, nv_max)):
-        try:
-            if sv1[i] != sv2[i]:
-                return False
-        except IndexError:
-            return False
-    return True
-
-
 def load_yaml(fpath):
     with open(fpath) as f:
         fdict: Dict = yaml.load(f, Loader=yaml.Loader)
     return fdict
-
-
-def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
-    try:
-        tool_config_path: Path = config.ROOT_SAST_DIR / load_yaml(config.SAST_CONFIG_FILE)["tools"][tool_name]["version"][tool_version]["config"]
-    except KeyError:
-        e = InvalidSastTool(f"{tool_name}:{tool_version}")
-        raise e
-    return load_yaml(tool_config_path)
 
 
 def write_csv_file(ofile: Path, header: list[str], data: list[dict]):
@@ -324,7 +294,6 @@ def add_loggers(output_dir_path: Path, filename: str=None, console=True):
         loggermgr.add_logger(output_dir_path / logfilename)
     if console:
         loggermgr.add_console_logger()
-
 
 
 def get_operation_build_name_and_dir(op: str, src_dir: Path | None, language: str, output_dir: Path):
@@ -373,7 +342,7 @@ def get_tpi_op_status_string(t_tp_info, t_tpi_info=None, status="started...", op
         op_str = f"{op} - "
     return f"{i}/{tot} -{tpi_count_str} {op_str}pattern id {tp_id}{tpi_id_str}: {status}"
 
-
+# TODO: TESTING
 def list_dirs_only(dir: Path):
     return [e for e in dir.iterdir() if e.is_dir()]
 
@@ -388,26 +357,36 @@ def get_file_hash(fpath, bigfile=False):
                 hash.update(chunk)
     return hash.hexdigest()
 
-
-
-########################### New utils
-
-def list_files(path_to_parent_dir: Path, suffix: str):
+# TODO: TESTING
+def list_files(path_to_parent_dir: Path, suffix: str, recursive: bool = False):
     assert suffix[0] == ".", "Suffix has to start with '.'"
-    return list(filter(lambda file_name: file_name.suffix == suffix, [path_to_parent_dir / f for f in os.listdir(path_to_parent_dir)]))
+    if recursive:
+        matches = []
+        for root, _, filenames in os.walk(path_to_parent_dir):
+            for filename in filter(lambda f: Path(f).suffix == suffix, filenames):
+                matches += [Path(root)  / filename]
+        return matches
+    else:
+        return list(filter(lambda file_name: file_name.suffix == suffix, [path_to_parent_dir / f for f in path_to_parent_dir.iterdir()]))
 
+# TODO: TESTING
+def list_directories(parent_dir: Path):
+    return list(filter(lambda name: name.is_dir(), [parent_dir / d for d in parent_dir.iterdir()]))
 
-def get_pattern_json(path_to_pattern: Path) -> Path:
-    json_files_in_pattern_dir = list_files(path_to_pattern, ".json")
-    if len(json_files_in_pattern_dir) == 1:
-        return json_files_in_pattern_dir[0]
-    elif not json_files_in_pattern_dir:
-        logger.warning(f"Could not find a pattern JSON file in {path_to_pattern.name}")
+# TODO: TESTING
+def get_json_file(path_to_pattern_or_instance: Path) -> Path:
+    if path_to_pattern_or_instance.name == 'docs':
+        return None
+    json_files_in_dir = list_files(path_to_pattern_or_instance, ".json")
+    if len(json_files_in_dir) == 1:
+        return json_files_in_dir[0]
+    elif not json_files_in_dir:
+        logger.warning(f"Could not find a JSON file in {path_to_pattern_or_instance.name}")
         return None
     else:
-        logger.warning(f"Found multiple '.json' files for {path_to_pattern.name}")
-        if path_to_pattern / f"{path_to_pattern.name}.json" in json_files_in_pattern_dir:
-            return path_to_pattern / f"{path_to_pattern.name}.json"
+        logger.warning(f"Found multiple '.json' files for {path_to_pattern_or_instance.name}")
+        if path_to_pattern_or_instance / f"{path_to_pattern_or_instance.name}.json" in json_files_in_dir:
+            return path_to_pattern_or_instance / f"{path_to_pattern_or_instance.name}.json"
         logger.warning("Could not determine the right pattern JSON file. Please name it <pattern_id>_<pattern_name>.json")
         return None
 
@@ -428,6 +407,12 @@ def read_json(path_to_json_file: Path):
     return result
 
 
+def write_json(path_to_json_file: Path, result_dict: dict):
+    path_to_json_file.parent.mkdir(exist_ok=True, parents=True)
+    with open(path_to_json_file, "w") as json_file:
+        json.dump(result_dict, json_file, indent=4)
+
+# TODO: TESTING
 def copy_dir_content(path_to_src_dir: Path, path_to_dst_dir: Path):
     for element in os.listdir(path_to_src_dir):
         src_path = path_to_src_dir / element
@@ -438,7 +423,3 @@ def copy_dir_content(path_to_src_dir: Path, path_to_dst_dir: Path):
             shutil.copy2(src_path, dest_path)
         else:
             shutil.copytree(src_path, dest_path)
-
-
-if __name__ == "__main__":
-    print(get_pattern_json(Path('./testability_patterns/PHP/85_test_pattern')))

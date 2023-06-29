@@ -7,7 +7,6 @@ import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
-import core.utils
 from core import utils
 from core.instance import Instance
 from core.measurement import Measurement
@@ -45,7 +44,7 @@ async def analyze_pattern_instance(instance: Instance,
 
             # TODO: what about using the sast_job object in the queue?
             InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
-                                  sast.launcher(instance.instance_path, language, output_dir, lib_dir=lib_dir, measurement=True)))
+                                  sast.launcher(instance.path, language, output_dir, lib_dir=lib_dir, measurement=True)))
             l_status_tpi.append(sast_job)
         except Exception as e:
             logger.warning(f"SAST measurement - failed for pattern {instance.pattern_id} instance {instance.instance_id} with tool {tool}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")

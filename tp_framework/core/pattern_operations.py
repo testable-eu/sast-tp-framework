@@ -15,7 +15,7 @@ from core import errors
 from core import utils, analysis
 from core.exceptions import PatternValueError
 from core.instance import Instance #, PatternCategory, FeatureVsInternalApi # , instance_from_dict
-from core.pattern import Pattern, list_tpi_paths_by_tp_id, get_pattern_by_pattern_id
+from core.pattern import Pattern
 from core.sast_job_runner import SASTjob, job_list_to_dict
 from core.measurement import meas_list_to_tp_dict
 
@@ -26,7 +26,7 @@ def add_testability_pattern_to_lib_from_json(language: str, pattern_json: Path, 
     pattern = Pattern.init_from_json_file_without_pattern_id(pattern_json, language, pattern_src_dir, pattern_lib_dest)
     # dump the pattern to the tplib
     pattern.copy_to_tplib()
-    logger.info(f"The pattern has been copied to {pattern.pattern_path}, You might need to adjust relative path links.")
+    logger.info(f"The pattern has been copied to {pattern.path}, You might need to adjust relative path links.")
     return pattern
 
 
@@ -48,7 +48,7 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
         except Exception as e:
             d_status_tp[target_pattern.pattern_id] = []
             logger.warning(
-                f"SAST measurement - failed in preparing SAST jobs for instance at {instance.instance_path} of the pattern {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
+                f"SAST measurement - failed in preparing SAST jobs for instance at {instance.path} of the pattern {tp_id}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
             continue
     return d_status_tp
 
@@ -66,8 +66,8 @@ async def save_measurement_for_patterns(language: str, now: datetime,
         for tpi_id in d_tp_meas[tp_id]:
             l_tpi_meas = []
             for meas in d_tp_meas[tp_id][tpi_id]:
-                tp_rel_dir = target_pattern.pattern_path.name
-                tpi_rel_dir = meas.instance.instance_path.name
+                tp_rel_dir = target_pattern.path.name
+                tpi_rel_dir = meas.instance.path.name
                 meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
                 meas_dir.mkdir(parents=True, exist_ok=True)
                 d_tpi_meas_ext: Dict = meas.__dict__

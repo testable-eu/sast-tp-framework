@@ -31,8 +31,8 @@ class Pattern:
         self.language = None # TODO: needed?
         self.tp_lib_path = None # TODO needed?
         self.language = None
-        self.pattern_path = None
-        self.pattern_json_path = None
+        self.path = None
+        self.json_path = None
 
         # json fields
         self.name = None
@@ -41,17 +41,17 @@ class Pattern:
         self.tags = None
         self.version = None
         self.instances = []
-
-        # repairing tools
-        self.pattern_repair = None
+    
+    def __str__(self) -> str:
+        return f"{self.language} - p{self.pattern_id}"
     
     def _assert_pattern(self):
         try:
             assert int(self.pattern_id)
             assert self.language
             assert self.tp_lib_path.is_dir()
-            assert self.pattern_path.is_dir()
-            assert self.pattern_json_path.is_file()
+            assert self.path.is_dir()
+            assert self.json_path.is_file()
             assert self.instances and all([isinstance(instance, Instance) for instance in self.instances])
         except Exception as e:
             raise PatternInvalid(f"{self._log_prefix()}Instance Variables are not properly set. '{e}'")
@@ -60,24 +60,28 @@ class Pattern:
         self.pattern_id = id
         self.language = language.upper()
         self.tp_lib_path = tp_lib_path
-        self.pattern_path = utils.get_pattern_dir_from_id(id, language, tp_lib_path)
-        self._init_from_json_file(utils.get_pattern_json(self.pattern_path))
+        self.path = utils.get_pattern_dir_from_id(id, language, tp_lib_path)
+        self._init_from_json_file(utils.get_json_file(self.path))
         self._assert_pattern()
         return self
     
     def _init_instances(self, instance_paths_from_json: list):
         instances = []
         for instance_json in instance_paths_from_json:
-            abs_path = Path(self.pattern_path / Path(instance_json))
+            abs_path = Path(self.path / Path(instance_json))
             if not abs_path.is_file():
                 raise PatternInvalid(f"{self._log_prefix()}The instance path '{instance_json}' is not valid.")
-            instances += [Instance.init_from_json_path(abs_path, self.pattern_id, self.language)]
-        instances = sorted(instances, key=lambda instance: instance.instance_id)
+            try:
+                instances += [Instance.init_from_json_path(abs_path, self.pattern_id, self.language, self.tp_lib_path)]
+            except Exception as e:
+                raise PatternInvalid(f"{self._log_prefix()}Could not instantiate instance, due to '{e}'")
         return instances
     
     def _init_from_json_file(self, json_file_path: Path):
-        self.pattern_json_path = json_file_path
-        pattern_properties = utils.read_json(self.pattern_json_path)
+        if not json_file_path:
+            raise PatternInvalid(f"The provided JSON Path is not valid '{json_file_path}'")
+        self.json_path = json_file_path
+        pattern_properties = utils.read_json(self.json_path)
         if not pattern_properties:
             raise PatternInvalid("The pattern needs a valid JSON file.")
         self.name = pattern_properties["name"] if "name" in pattern_properties.keys()  else None
@@ -87,6 +91,7 @@ class Pattern:
         self.version = pattern_properties["version"] if "version" in pattern_properties.keys() else None
         if "instances" in pattern_properties.keys() and pattern_properties["instances"]:
             self.instances = self._init_instances(pattern_properties["instances"])
+            self._sort_instances()
         else:
             # Raise exception
             raise PatternInvalid(f"{self._log_prefix()}Pattern JSON file needs an 'instances' key with valid relative links.")
@@ -94,11 +99,11 @@ class Pattern:
     
     def _init_from_json_without_id(self, json_file_path: Path, language: str, pattern_path: Path, tp_lib_path: Path):
         self.language = language.upper()
-        self.pattern_path = pattern_path
+        self.path = pattern_path
         self.tp_lib_path = tp_lib_path
         self._init_from_json_file(json_file_path)
         try:
-            given_id = utils.get_id_from_name(self.pattern_path.name)
+            given_id = utils.get_id_from_name(self.path.name)
         except Exception:
             given_id = None
         free_id = utils.get_next_free_pattern_id_for_language(self.language, self.tp_lib_path, given_id)
@@ -109,49 +114,47 @@ class Pattern:
     def _log_prefix(self):
         return f"Pattern {self.pattern_id} ({self.language}) - "
     
-    def __str__(self) -> str:
-        return str(vars(self))
+    def _sort_instances(self):
+        self.instances = sorted(self.instances, key=lambda instance: instance.instance_id)
     
     def copy_to_tplib(self):
         # copies the pattern and all its instances into the tp_lib
-        new_pattern_path = self.tp_lib_path / self.language / f'{self.pattern_id}_{self.pattern_path.name}'
+        # try to get the id from the name:
+        given_id = None
+        try:
+            given_id = utils.get_id_from_name(self.path.name)
+        except (KeyError, ValueError):
+            pass
+        # if the given id is not the id, the algorithm identified, give it a new id
+        pattern_name = f'{self.pattern_id}_{self.path.name}' if given_id != self.pattern_id else self.path.name
+        new_pattern_path = self.tp_lib_path / self.language / pattern_name
         for instance in self.instances:
             instance.copy_to_tplib(new_pattern_path)
-        utils.copy_dir_content(self.pattern_path, new_pattern_path)
+        utils.copy_dir_content(self.path, new_pattern_path)
+        self.path = new_pattern_path
     
     def get_instance_by_id(self, tpi_id: int) -> Instance:
         try:
             return list(filter(lambda tpi: tpi.instance_id == tpi_id, self.instances))[0]
-        except KeyError:
-            raise InstanceDoesNotExists(tpi_id, )
+        except IndexError:
+            raise InstanceDoesNotExists(tpi_id, "")
+
+    def get_description(self) -> Tuple[bool, str]:
+        if self.description and Path(self.path / self.description).resolve().is_file():
+            with open(Path(self.path / self.description).resolve(), "r") as desc_file:
+                return True, "".join(desc_file.readlines()).strip()
+        else:
+            return False, self.description.strip()
+
+    def repair(self):
+        PatternRepair(self).repair(self)
     
-    def validate_for_measurement(self):
-        pass
-
-    def repair(self, soft: bool = False):
-        # soft repair enforces the instances structure (and names) and updates relative instance links in pattern JSON
-        self.pattern_repair = PatternRepair(self)
-        self.pattern_repair.repair_pattern_json()
-        if not soft:
-            pass
-
-
-# TODO: These functions could be obsolete, if Pattern will be used in measure, discover etc.
-def get_pattern_by_pattern_id(language: str, pattern_id: int, tp_lib_dir: Path) -> Tuple[Pattern, Path]:
-    pattern = Pattern.init_from_id_and_language(pattern_id, language, tp_lib_dir)
-    return pattern, pattern.pattern_path
-
-
-def list_tpi_paths_by_tp_id(language: str, pattern_id: int, tp_lib_dir: Path) -> list[Path]:
-    try:
-        pattern = Pattern.init_from_id_and_language(pattern_id, language, tp_lib_dir)
-        return [instance.instance_json_path for instance in pattern.instances]
-    except Exception as e:
-        logger.exception(e)
-        raise e
-#     try:
-#         pattern = Pattern.
-#         p, p_dir = pattern.get_pattern_by_pattern_id(language, pattern_id, tp_lib_dir)
-#         return list(map(lambda i: (tp_lib_dir / language / p_dir / i).resolve(), p.instances))
-#     except:
-#        
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "family": self.family,
+            "tags": self.tags,
+            "instances": [utils.get_relative_paths(i.json_path, self.path) for i in self.instances],
+            "version": self.version
+        }

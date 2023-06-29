@@ -24,7 +24,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
         print(errors.patternFolderNotFound(pattern_dir_path))
         return
 
-    pattern_json_path = Path(pattern_json) if pattern_json else utils.get_pattern_json(pattern_dir_path)
+    pattern_json_path = Path(pattern_json) if pattern_json else utils.get_json_file(pattern_dir_path)
     if not pattern_json_path:
         print(errors.patternDefaultJSONNotFound(pattern_dir))
         return
@@ -191,9 +191,15 @@ def repair_patterns(language: str, pattern_ids: list,
     output_dir.mkdir(exist_ok=True, parents=True)
     utils.add_loggers(output_dir)
 
-    # for pattern_id in pattern_ids:
-    #     pattern =  Pattern.init_from_id_and_language(pat) # (pattern_id, language, tp_lib_path)
+    for tp_id in pattern_ids:
+        try:
+            pattern =  Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+        except PatternInvalid as e:
+            print(f"Failed to init pattern: {tp_id} due to {e}")
+            continue
+        pattern.repair()
     #     print(pattern)
+
     #     # pattern_path = get_pattern_path_by_pattern_id(language, pattern_id, tp_lib_path)
     #     # PatternRepair(
     #     #     pattern_path,
