@@ -1,16 +1,16 @@
 import csv
-import os
+import hashlib
 import json
-from datetime import datetime
-from platform import system
 import shutil
+import os
+import yaml
 
+from collections import defaultdict
+from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from typing import Tuple, Dict
-import yaml
 
-import hashlib
 
 import logging
 from core import loggermgr
@@ -184,6 +184,53 @@ def get_relative_paths(file_path: Path, base_path: Path):
         except ValueError as e:
             logger.warning(f"Could not parse filepath {file_path} to a relative path.")
             return file_path
+
+
+def read_csv_to_dict(path_to_file: str) -> dict:
+    # Reads a csv file into a dictionary, the csv file must contain the columns 'pattern_id', 'instance_id', 'language', 'successful'
+    # The dict will have the form: {<language>: {<pattern_id>: {<instance_id>: <successful>}}}
+    res = []
+    with open(path_to_file, "r") as csvfile:
+        r = csv.reader(csvfile, delimiter=",")
+        headings = next(r)
+        wanted_columns = ["pattern_id", "instance_id", "language", "successful"]
+        wanted_idx = [headings.index(w) for w in wanted_columns]
+        assert len(wanted_idx) == len(wanted_columns), f"Could not find wanted column names in csv {path_to_file}"
+        sanitized_lines =filter(lambda x: bool(x[0].strip()), r)
+        res = [[line[i].strip() for i in wanted_idx] for line in sanitized_lines]
+    
+    ret = {}
+    for line in res:
+        if line[2] not in ret.keys():
+            ret[line[2]] = {}
+        if line[0] not in ret[line[2]].keys():
+            ret[line[2]][line[0]] = {}
+        if line[1] not in ret[line[2]][line[0]].keys():
+            ret[line[2]][line[0]][line[1]] = {}
+        ret[line[2]][line[0]][line[1]] = line[3]
+    return ret
+
+
+def translate_bool(bool_to_translate: bool):
+    return "YES" if bool_to_translate else "NO"
+
+# TODO TESTING
+def get_language_by_file_ending(filename: str) -> str:
+    if not filename:
+        return ""
+    if Path(filename).suffix == ".py":
+        return "python"
+    if Path(filename).suffix == ".php":
+        return "php"
+    if Path(filename).suffix == ".js":
+        return "javascript"
+    if Path(filename).suffix == ".java":
+        return "java"
+    if Path(filename).suffix == ".sc":
+        return "scala"
+    if Path(filename).suffix == ".bash":
+        return "bash"
+    return ""
 
 ################################################################################
 # OTHER

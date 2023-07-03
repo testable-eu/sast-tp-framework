@@ -61,7 +61,6 @@ class RepairTool:
         expected_json_name = f"{self.to_repair.path.name}.json"
         actual_name = self.to_repair.json_path.name
 
-        logger.error(f"{expected_json_name}, {actual_name}")
         if expected_json_name != actual_name:
             new_path = self.to_repair.path / expected_json_name
             shutil.move(self.to_repair.json_path, new_path)

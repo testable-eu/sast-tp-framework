@@ -112,7 +112,7 @@ class TestInstance:
     
     def test_get_description_from_file(self):
         test_pattern = create_instance()
-        test_pattern.description = "not None"
+        test_pattern.description = "file.md"
         expected_description = "Some description in a file\nTest description.\n\n"
         with patch("builtins.open", mock_open(read_data=expected_description), create=True), \
             patch("pathlib.Path.is_file") as isfile_mock:
@@ -133,3 +133,25 @@ class TestInstance:
             is_file, actual = test_pattern.get_description()
         assert not is_file
         assert expected_description.strip() == actual
+    
+    path_properties_testcases = [
+        (Path("/test")), Path("../tplib"), Path("/tpframework/tplib")
+    ]
+
+    @pytest.mark.parametrize("new_path", path_properties_testcases)
+    def test_path_properties_are_relative_and_resolve_to_path_when_called(self, new_path: Path):
+        test_instance = create_instance()
+        test_instance.json_path = Path("./my_awesome_json.json")
+        test_instance.code_path = Path("./awesome_js_code.js")
+        test_instance.expectation_sink_file = Path("./awesome_js_code.js")
+        test_instance.expectation_source_file = Path("./awesome_js_code.js")
+        test_instance.compile_binary = None
+        test_instance.discovery_rule = Path("../test_scala.sc")
+
+        test_instance.path = new_path
+        assert Path(new_path / "my_awesome_json.json").resolve() == test_instance.json_path
+        assert Path(new_path / "awesome_js_code.js").resolve() == test_instance.code_path
+        assert Path(new_path / "awesome_js_code.js").resolve() == test_instance.expectation_sink_file
+        assert Path(new_path / "awesome_js_code.js").resolve() == test_instance.expectation_source_file
+        assert test_instance.compile_binary is None
+        assert Path(new_path / "../test_scala.sc").resolve() == test_instance.discovery_rule

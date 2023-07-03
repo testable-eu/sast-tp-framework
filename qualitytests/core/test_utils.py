@@ -5,7 +5,7 @@ import pytest
 import config
 from core import utils
 from core.exceptions import PatternDoesNotExists, TPLibDoesNotExist, LanguageTPLibDoesNotExist, DiscoveryMethodNotSupported
-from unittest.mock import patch
+from unittest.mock import patch, mock_open
 import qualitytests.qualitytests_utils as qualitytests_utils
 
 def setup_three_pattern(tmp_path: Path):
@@ -184,3 +184,29 @@ class TestUtils:
             warn_logger.assert_called_with(warn)
         else:
             warn_logger.assert_not_called()
+
+    def test_read_csv_to_dict(self):
+        csv_data = """pattern_id,instance_id,instance_path,pattern_name,language,discovery_rule,successful
+            1,1,<path>,<name>,JS,<discovery_rule>,no
+            1,2,/some/path,Test Pattern,PHP,discovery_rule.sc,yes
+            """
+        expected = {
+            "JS": {
+                "1": {"1": "no"}
+            },
+            "PHP": {
+                "1": {"2": "yes"}
+            }
+        }
+        with patch("builtins.open", mock_open(read_data=csv_data), create=True):
+            actual = utils.read_csv_to_dict(Path("some_path"))
+        
+        assert expected == actual
+        with pytest.raises(Exception):
+            actual["NOT_EXISTING_LANG"]
+            actual["PHP"]["5"]
+            actual["PHP"]["1"]["3"]
+    
+    def test_translate_bool(self):
+        assert "YES" == utils.translate_bool(True)
+        assert "NO" == utils.translate_bool(False)

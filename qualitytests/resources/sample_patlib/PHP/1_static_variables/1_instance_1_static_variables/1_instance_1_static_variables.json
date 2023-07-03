@@ -10,7 +10,7 @@
         "notes": "The `BIND_STATIC` opcode is only for static variables that are normally used inside code blocks. The SAST tools may not able to keep the proper values for these static variables. As such the discovery rule should be accurate as it is"
     },
     "remediation": {
-        "notes": "./docs/remediation_notes.md",
+        "notes": null,
         "transformation": null,
         "modeling_rule": null
     },

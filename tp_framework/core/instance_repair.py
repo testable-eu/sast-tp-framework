@@ -102,7 +102,8 @@ class InstanceRepair(RepairTool):
         if self.to_repair.expectation_expectation == self.to_repair.properties_negative_test_case:
             logger.warning(f"{self._log_prefix()}Changing properites_negative_test_case, it has to be `not` expectation_expectation")
             self.to_repair.properties_negative_test_case = not self.to_repair.expectation_expectation
-
+        # check other JSON fields
+        # TODO: check if 
         self.to_json()
 
 

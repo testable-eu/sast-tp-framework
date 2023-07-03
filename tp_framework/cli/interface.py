@@ -9,7 +9,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, pattern_operations, discovery, measure, errors, report_for_sast
-from core.exceptions import PatternValueError, PatternInvalid
+from core.exceptions import PatternValueError, PatternInvalid, AddPatternError
 from core.pattern import Pattern
 
 
@@ -38,7 +38,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
             pattern_dir_path,
             tp_lib_path
         )
-    except PatternInvalid as e:
+    except (PatternInvalid, AddPatternError) as e:
         print(e)
         raise
     except Exception as e:
@@ -197,4 +197,4 @@ def repair_patterns(language: str, pattern_ids: list,
         except PatternInvalid as e:
             print(f"Failed to init pattern: {tp_id} due to {e}")
             continue
-        pattern.repair()
+        pattern.repair(should_include_readme)

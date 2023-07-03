@@ -11,9 +11,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils
-from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
-from core.instance import Instance #, load_instance_from_metadata
-from core.pattern import Pattern
+from core.exceptions import MeasurementNotFound, MeasurementInvalid
+from core.instance import Instance
 
 
 class Measurement:
@@ -31,7 +30,21 @@ class Measurement:
         self.tool = tool
         self.version = version
         self.instance = instance
+    
+    #TODO: TESTING
+    @classmethod
+    def init_from_measurement_dict(cls, meas_dict):
+        return cls()._init_from_dict(meas_dict)
 
+    def _init_from_dict(self, dict_to_init_from: dict):
+        try:
+            self.date = dict_to_init_from["date"]
+            self.result = dict_to_init_from["result"]
+            self.tool = dict_to_init_from["tool"]
+            self.version = dict_to_init_from["version"]
+        except KeyError as e:
+            raise MeasurementInvalid(e)
+        return self
 
     def define_verdict(self, date: datetime, instance: Instance, findings: list[Dict], tool: str, version: str,
                        sink_line_strict : bool = False,
@@ -106,7 +119,7 @@ def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Meas
     return parsed_meas
 
 
-def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, pattern: Pattern, 
+def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, pattern, 
                                    instance: Instance) -> Measurement:
     # TODO - load last measurement: the code hereafter strongly depends on the folder notation in place for
     #       patterns and pattern instances. Make sure to factorize in function what needs to

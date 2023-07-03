@@ -3,9 +3,10 @@ import shutil
 from os import listdir
 from pathlib import Path
 
-from core.exceptions import PatternInvalid, PatternDoesNotExists, InstanceDoesNotExists
+from core.exceptions import PatternInvalid, AddPatternError, InstanceDoesNotExists
 from core.instance import Instance
 from core.pattern_repair import PatternRepair
+from tp_framework.core.readme_generator import READMEGenerator
 from core import utils
 # from core.exceptions import LanguageTPLibDoesNotExist, PatternDoesNotExists, PatternValueError
 from typing import Tuple
@@ -124,13 +125,17 @@ class Pattern:
         try:
             given_id = utils.get_id_from_name(self.path.name)
         except (KeyError, ValueError):
+            # if we can't get an id from the name, we don't care, we just set a new id
             pass
         # if the given id is not the id, the algorithm identified, give it a new id
         pattern_name = f'{self.pattern_id}_{self.path.name}' if given_id != self.pattern_id else self.path.name
         new_pattern_path = self.tp_lib_path / self.language / pattern_name
         for instance in self.instances:
             instance.copy_to_tplib(new_pattern_path)
-        utils.copy_dir_content(self.path, new_pattern_path)
+        try:
+            utils.copy_dir_content(self.path, new_pattern_path)
+        except Exception as e:
+            raise AddPatternError(e)
         self.path = new_pattern_path
     
     def get_instance_by_id(self, tpi_id: int) -> Instance:
@@ -140,14 +145,20 @@ class Pattern:
             raise InstanceDoesNotExists(tpi_id, "")
 
     def get_description(self) -> Tuple[bool, str]:
-        if self.description and Path(self.path / self.description).resolve().is_file():
+        if self.description and " " not in self.description and Path(self.path / self.description).resolve().is_file():
             with open(Path(self.path / self.description).resolve(), "r") as desc_file:
                 return True, "".join(desc_file.readlines()).strip()
         else:
-            return False, self.description.strip()
+            return False, self.description.strip() if self.description else ""
 
-    def repair(self):
+    def repair(self, should_include_readme: bool, 
+               discovery_rule_results: Path = None,
+               measurement_results: Path = None,
+               masking_file: Path = None,):
         PatternRepair(self).repair(self)
+        if should_include_readme:
+            # TODO: build README
+            READMEGenerator().generate_README()
     
     def to_dict(self):
         return {

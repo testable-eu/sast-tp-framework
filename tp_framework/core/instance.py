@@ -1,10 +1,22 @@
 import shutil
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple#, Enum
 
 from core import utils
 from core.exceptions import InstanceInvalid
 from core.instance_repair import InstanceRepair
+
+# class PatternCategory(str, Enum):
+#     S0 = "S0"
+#     D1 = "D1"
+#     D2 = "D2"
+#     D3 = "D3"
+#     D4 = "D4"
+
+
+# class FeatureVsInternalApi(str, Enum):
+#     FEATURE = "FEATURE"
+#     INTERNAL_API = "INTERNAL_API"
 
 class Instance:
     @classmethod
@@ -123,11 +135,11 @@ class Instance:
     
     # same function as in Pattern, could use some interface for that, or move to utils?
     def get_description(self) -> Tuple[bool, str]:
-        if self.description and Path(self.path / self.description).resolve().is_file():
+        if self.description and " " not in self.description and Path(self.path / self.description).resolve().is_file():
             with open(Path(self.path / self.description).resolve(), "r") as desc_file:
                 return True, "".join(desc_file.readlines()).strip()
         else:
-            return False, self.description.strip()
+            return False, self.description.strip() if self.description else ""
 
     def set_new_instance_path(self, new_path):
         old_path = self.path

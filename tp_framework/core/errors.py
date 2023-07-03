@@ -104,3 +104,5 @@ def templateDirDoesNotExist(not_exisitng_dir_or_file):
     return f"Your tplib does not have {not_exisitng_dir_or_file}."
 
 
+def addPatternFailed(exception: str):
+    return f"Adding the pattern to the tplib failed {exception}"

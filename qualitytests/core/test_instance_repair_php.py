@@ -104,5 +104,3 @@ class TestInstanceRepairPHP:
 
         assert exp_source == test_instance_php_repair.instance.expectation_source_line
         assert exp_sink == test_instance_php_repair.instance.expectation_sink_line
-
-

@@ -7,7 +7,7 @@ import config
 from cli import interface
 from core import utils
 
-from core.exceptions import InvalidSastTools
+from core.exceptions import InvalidSastTools, PatternInvalid
 from core.errors import invalidSastTools
 from core.pattern import Pattern
 

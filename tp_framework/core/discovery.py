@@ -429,6 +429,7 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 f"{msgpre}running discovery rule...")
             # related to #42
             pdr = patch_PHP_discovery_rule(dr, tpi_instance.language, output_dir=disc_output_dir)
+            findings = []
             try:
                 findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
                 d_tpi_discovery["results"] = findings

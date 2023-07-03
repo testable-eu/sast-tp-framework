@@ -7,7 +7,7 @@ from core.pattern import Pattern
 from core.exceptions import PatternDoesNotExists, PatternInvalid, InstanceDoesNotExists
 from qualitytests.qualitytests_utils import join_resources_path, create_pattern, example_pattern_dict
 
-class TestPatternR:
+class TestPattern:
     sample_tp_lib: Path = join_resources_path("sample_patlib")
 
     example_pattern_dict = {
@@ -39,7 +39,7 @@ class TestPatternR:
     @pytest.mark.parametrize("pattern_id, language", not_existing_patterns)
     def test_not_exising_pattern_init_from_id_and_language(self, pattern_id: int, language: str):
         with pytest.raises(PatternDoesNotExists) as e_info:
-            Pattern.init_from_id_and_language(pattern_id, language, TestPatternR.sample_tp_lib)
+            Pattern.init_from_id_and_language(pattern_id, language, TestPattern.sample_tp_lib)
         assert f"Specified Pattern `{pattern_id}` does not exists." == str(e_info.value)
 
     @pytest.mark.parametrize("pattern_id, language, read_json_return, expected_assertion_error", invalid_patterns)
@@ -51,7 +51,7 @@ class TestPatternR:
             pytest.raises(PatternInvalid) as e_info:
             
             read_json_mock.return_value = read_json_return
-            Pattern.init_from_id_and_language(pattern_id, language, TestPatternR.sample_tp_lib)
+            Pattern.init_from_id_and_language(pattern_id, language, TestPattern.sample_tp_lib)
             
         read_json_mock.assert_called_once()
         assert f"{expected_assertion_error} Pattern is invalid." == str(e_info.value)
@@ -67,8 +67,8 @@ class TestPatternR:
             is_dir_mock.return_value = True
             is_file_mock.return_value = True
             isinstance_mock.return_value = True
-            read_json_mock.return_value = TestPatternR.example_pattern_dict
-            pattern = Pattern.init_from_json_file_without_pattern_id(path_to_json, language, pattern_path, TestPatternR.sample_tp_lib)
+            read_json_mock.return_value = TestPattern.example_pattern_dict
+            pattern = Pattern.init_from_json_file_without_pattern_id(path_to_json, language, pattern_path, TestPattern.sample_tp_lib)
         read_json_mock.assert_called_once()
         is_file_mock.assert_called()
         is_dir_mock.assert_called()
@@ -93,7 +93,7 @@ class TestPatternR:
             is_file_mock.return_value = True
             isinstance_mock.return_value = True
             read_json_mock.return_value = read_json_return
-            test_pattern = Pattern.init_from_id_and_language(pattern_id, language, TestPatternR.sample_tp_lib)
+            test_pattern = Pattern.init_from_id_and_language(pattern_id, language, TestPattern.sample_tp_lib)
         
         read_json_mock.assert_called_once()
         is_file_mock.assert_called()
@@ -141,27 +141,22 @@ class TestPatternR:
             test_pattern.get_instance_by_id(2)
         assert "Specified Pattern Instance `2` does not exists." in str(e_info)
     
-    def test_get_description_from_file(self):
+    get_description_testcases = [
+        ("Some description\n", None, "Some description", False),
+        ("file.md", "Some description inside a file\nTest description.   ", "Some description inside a file\nTest description.", True),
+        (None, None, "", False)
+    ]
+
+
+    @pytest.mark.parametrize("file_path, description, expected_desc, is_file", get_description_testcases)
+    def test_get_description_from_file(self, file_path, description, expected_desc, is_file):
         test_pattern = create_pattern()
-        expected_description = "Some description in a file\nTest description.\n\n"
-        with patch("builtins.open", mock_open(read_data=expected_description), create=True), \
+        test_pattern.description = file_path
+        with patch("builtins.open", mock_open(read_data=description), create=True), \
             patch("pathlib.Path.is_file") as isfile_mock:
 
-            isfile_mock.return_value = True
+            isfile_mock.return_value = is_file
 
-            is_file, actual = test_pattern.get_description()
-        assert is_file
-        assert expected_description.strip() == actual
-
-    def test_get_description_(self):
-        test_pattern = create_pattern()
-        expected_description = "Some description in a file\nTest description."
-        test_pattern.description = expected_description
-        with patch("pathlib.Path.is_file") as isfile_mock:
-            isfile_mock.return_value = False
-
-            is_file, actual = test_pattern.get_description()
-        assert not is_file
-        assert expected_description.strip() == actual
-
-
+            actual_is_file, actual = test_pattern.get_description()
+        assert is_file == actual_is_file
+        assert expected_desc == actual

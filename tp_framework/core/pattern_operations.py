@@ -1,20 +1,13 @@
 import json
-import shutil
-import uuid
 from datetime import datetime
-from json import JSONDecodeError
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
 import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
-# import core.instance
-from core import errors
 from core import utils, analysis
-from core.exceptions import PatternValueError
-from core.instance import Instance #, PatternCategory, FeatureVsInternalApi # , instance_from_dict
 from core.pattern import Pattern
 from core.sast_job_runner import SASTjob, job_list_to_dict
 from core.measurement import meas_list_to_tp_dict
@@ -57,7 +50,6 @@ async def start_add_measurement_for_pattern(language: str, sast_tools: list[Dict
 async def save_measurement_for_patterns(language: str, now: datetime,
                                         l_job: list[SASTjob],
                                         tp_lib_dir: Path):
-
     d_job = job_list_to_dict(l_job)
     l_meas = await analysis.inspect_analysis_results(d_job, language)
     d_tp_meas = meas_list_to_tp_dict(l_meas)
@@ -71,7 +63,7 @@ async def save_measurement_for_patterns(language: str, now: datetime,
                 tpi_rel_dir = meas.instance.path.name
                 meas_dir = utils.get_measurement_dir_for_language(tp_lib_dir, language) / tp_rel_dir / tpi_rel_dir
                 meas_dir.mkdir(parents=True, exist_ok=True)
-                d_tpi_meas_ext: Dict = meas.__dict__
+                d_tpi_meas_ext: Dict = meas.__dict__ # Could use vars(meas) here?
                 # TODO: rather than extending here we should extend the Measurement class
                 d_tpi_meas_ext["pattern_id"] = meas.instance.pattern_id
                 d_tpi_meas_ext["instance_id"] = meas.instance.instance_id

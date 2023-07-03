@@ -1,6 +1,11 @@
 from core import errors
 
 
+class AddPatternError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = errors.addPatternFailed(message)
+        super().__init__()
+
 class PatternDoesNotExists(Exception):
     def __init__(self, pattern_id):
         self.pattern_id = pattern_id
@@ -145,6 +150,12 @@ class DiscoveryRuleParsingResultError(Exception):
 
 class MeasurementResultsDoNotExist(Exception):
     def __init__(self, message=errors.measurementResultsDirDoesNotExist()):
+        self.message = message
+        super().__init__(self.message)
+
+
+class MeasurementInvalid(Exception):
+    def __init__(self, message) -> None:
         self.message = message
         super().__init__(self.message)
 
