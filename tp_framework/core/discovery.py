@@ -449,13 +449,13 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
                 d_tpi_discovery["results"] = findings
                 d_tpi_discovery["rule_already_executed"] = False
+                already_executed[d_tpi_discovery["rule_hash"]] = findings
             except Exception as e:
                 d_tpi_discovery["results"] = None
                 already_executed[d_tpi_discovery["rule_hash"]] = None
                 logger.error(
                     f"{msgpre}Discovery rule failure for this instance: {e}")
             # except DiscoveryMethodNotSupported, JoernQueryError(e), JoernQueryParsingResultError(e):
-            already_executed[d_tpi_discovery["rule_hash"]] = findings
             logger.info(
                 f"{msgpre} discovery rule executed.")
 
