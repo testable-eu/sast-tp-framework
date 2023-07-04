@@ -181,7 +181,6 @@ def repair_patterns(language: str, pattern_ids: list,
                     measurement_results: Path, checkdiscoveryrule_results: Path,
                     output_dir: Path, tp_lib_path: Path):
     print("Pattern Repair started...")
-    print(measurement_results)
     should_include_readme = not include_README
     utils.check_tp_lib(tp_lib_path)
     if should_include_readme:

@@ -1,6 +1,8 @@
 import shutil
 from pathlib import Path
 from copy import deepcopy
+from jsonschema import validate
+
 from core.exceptions import PatternRepairError
 from core import utils
 
@@ -10,17 +12,24 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 class RepairTool:
-    def __init__(self, to_repair, template_json_file: Path) -> None:
+    def __init__(self, to_repair, template_json_file: Path, schema_file: Path) -> None:
         self.to_repair = to_repair
-        self.json_template = template_json_file# to_repair.tp_lib_path / "pattern_template" / "ID_pattern_name" / "ID_pattern_name.json"
+        self.json_template = template_json_file
+        self.schema_dict = schema_file
         if not self.json_template.is_file():
-            raise PatternRepairError(f"{self._log_prefix()} No template JSON found in {self.json_template}")
+            raise PatternRepairError(f"{self._log_prefix()}No template JSON found in {self.json_template}")
+        if not schema_file.is_file():
+            raise PatternRepairError(f"{self._log_prefix()}No schema JSON found in {schema_file}")
         try:
             self.template_dict = utils.read_json(self.json_template)
         except Exception:
-            raise PatternRepairError(f"{self._log_prefix()} The template JSON file {self.json_template} is corrupt, please check")
+            raise PatternRepairError(f"{self._log_prefix()}The template JSON file {self.json_template} is corrupt, please check")
         if not self.template_dict:
-            raise PatternRepairError(f"{self._log_prefix()} The template JSON {self.json_template} is empty")
+            raise PatternRepairError(f"{self._log_prefix()}The template JSON {self.json_template} is empty")
+        try:
+            self.schema_dict = utils.read_json(schema_file)
+        except Exception:
+            raise PatternRepairError(f"{self._log_prefix()}The schema JSON file {schema_file} is corrupt, please check")
 
     def _log_prefix(self):
         return f"PatternRepair ({self.to_repair}) "
@@ -74,13 +83,20 @@ class RepairTool:
                     logger.warning(f"{self._log_prefix()}Could not find path {v}")
                     setattr(self.to_repair, k, None)
 
-
+    def _validate_against_schema(self):
+        repaired_dict = self.to_repair.to_dict()
+        try:
+            validate(instance=repaired_dict, schema=self.schema_dict)
+        except Exception as e:
+            msg = utils.get_exception_message(e)
+            logger.error(f"{self._log_prefix()}Validating against schema failed: {msg}")
 
     def repair(self):
         raise NotImplementedError()
 
     def to_json(self):
         repaired_dict = self.to_repair.to_dict()
+
         original_dict = utils.read_json(self.to_repair.json_path)
         if repaired_dict != original_dict:
             utils.write_json(self.to_repair.json_path, repaired_dict)

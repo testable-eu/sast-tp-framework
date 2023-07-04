@@ -16,7 +16,8 @@ class InstanceRepair(RepairTool):
     def __init__(self, instance, pattern: Path) -> None:
         self.pattern = pattern
         template = instance.tp_lib_path / "pattern_template" / "ID_pattern_name" / "IID_instance_ID_pattern_name" / "IID_instance_ID_pattern_name.json"
-        super().__init__(instance, template)
+        schema = instance.tp_lib_path / "pattern_template" / "schema" / "instance.schema.json"
+        super().__init__(instance, template, schema)
         try:
             self.instance_repair_class = globals()[f"InstanceRepair{self.to_repair.language}"]
         except KeyError:
@@ -101,8 +102,8 @@ class InstanceRepair(RepairTool):
         if self.to_repair.expectation_expectation == self.to_repair.properties_negative_test_case:
             logger.warning(f"{self._log_prefix()}Changing properites_negative_test_case, it has to be `not` expectation_expectation")
             self.to_repair.properties_negative_test_case = not self.to_repair.expectation_expectation
-        # check other JSON fields
-        # TODO: check if 
+        # validate the instance json against the scheme
+        self._validate_against_schema()
         self.to_json()
 
 

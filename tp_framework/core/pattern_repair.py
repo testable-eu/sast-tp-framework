@@ -10,7 +10,8 @@ from core import utils
 class PatternRepair(RepairTool):
     def __init__(self, pattern) -> None:
         json_template = pattern.tp_lib_path / "pattern_template" / "ID_pattern_name" / "ID_pattern_name.json"
-        super().__init__(pattern, json_template)
+        schema = pattern.tp_lib_path / "pattern_template" / "schema" / "pattern.schema.json"
+        super().__init__(pattern, json_template, schema)
 
     def _complete_instances(self):
         # list pattern directory and try to find all instances
@@ -86,5 +87,6 @@ class PatternRepair(RepairTool):
         self._repair_description()
         self._repair_tags()
 
+        self._validate_against_schema()
         # write to json
         self.to_json()
