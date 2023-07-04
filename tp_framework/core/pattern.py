@@ -1,20 +1,14 @@
-# import json
-import shutil
-from os import listdir
 from pathlib import Path
+from typing import Tuple
 
 from core.exceptions import PatternInvalid, AddPatternError, InstanceDoesNotExists
 from core.instance import Instance
-from core.pattern_repair import PatternRepair
-from tp_framework.core.readme_generator import READMEGenerator
-from core import utils
-# from core.exceptions import LanguageTPLibDoesNotExist, PatternDoesNotExists, PatternValueError
-from typing import Tuple
 
+from core import utils
+from core.pattern_repair import PatternRepair
 import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
-
 
 
 class Pattern:
@@ -29,8 +23,8 @@ class Pattern:
     def __init__(self) -> None:
         # metadata
         self.pattern_id = None
-        self.language = None # TODO: needed?
-        self.tp_lib_path = None # TODO needed?
+        self.language = None
+        self.tp_lib_path = None
         self.language = None
         self.path = None
         self.json_path = None
@@ -157,8 +151,13 @@ class Pattern:
                masking_file: Path = None,):
         PatternRepair(self).repair(self)
         if should_include_readme:
-            # TODO: build README
-            READMEGenerator().generate_README()
+            from core.readme_generator import READMEGenerator
+            readme = READMEGenerator(pattern=self, discovery_rule_results=discovery_rule_results, 
+                            measurement_results=measurement_results,
+                            masking_file=masking_file).generate_README()
+            path_to_readme = self.path  / "README.md"
+            with open(path_to_readme, "w") as readme_file:
+                readme_file.write(readme)
     
     def to_dict(self):
         return {

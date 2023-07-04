@@ -39,12 +39,6 @@ class InstanceInvalid(Exception):
         super().__init__(self.message)
 
 
-class PatternFolderNotFound(Exception):
-    def __init__(self):
-        self.message = errors.patternFolderNotFound()
-        super().__init__(self.message)
-
-
 class MeasurementNotFound(Exception):
     def __init__(self, pattern_id):
         self.pattern_id = pattern_id
@@ -108,15 +102,6 @@ class DiscoveryMethodNotSupported(Exception):
         super().__init__(self.message)
 
 
-class PatternValueError(Exception): # TODO: can we get rid of this?
-    def __init__(self, message=None):
-        if message:
-            self.message = message
-        else:
-            self.message = errors.patternValueError()
-        super().__init__(self.message)
-
-
 class CPGGenerationError(Exception):
     def __init__(self, message=errors.cpgGenerationError()):
         self.message = message
@@ -156,12 +141,6 @@ class MeasurementResultsDoNotExist(Exception):
 
 class MeasurementInvalid(Exception):
     def __init__(self, message) -> None:
-        self.message = message
-        super().__init__(self.message)
-
-
-class FileDoesNotExist(Exception):
-    def __init__(self, message=errors.fileDoesNotExist()):
         self.message = message
         super().__init__(self.message)
 

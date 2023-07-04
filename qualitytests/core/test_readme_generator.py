@@ -166,16 +166,20 @@ class TestREADMEGenerator:
 
         with patch("core.utils.list_files") as list_files_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.measurement.Measurement.init_from_measurement_dict") as measurement_mock:
+            patch("core.measurement.Measurement.init_from_measurement_dict") as measurement_mock, \
+            patch("pathlib.Path.exists") as path_exist_mock:
             list_files_mock.return_value = ["file1.md", "file2.md"]
+            path_exist_mock.return_value = True
             measurement_mock.side_effect = [measurement1, measurement2, measurement3, measurement4]
             read_json_mock.return_value = [{}, {}]
 
             actual = readme_generator.generate_README()
 
+        path_exist_mock.assert_called_once()
         path_to_expected_readme = sample_tp_lib / "PHP" / "1_static_variables" / "README.md"
         with open(path_to_expected_readme, "r") as fp:
             expected = fp.read()
+        with open("tmp.md", "w") as f:
+            f.write(actual)
 
         assert expected == actual
-

@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict
+from unittest.mock import patch, call
 import json
 import sys
 
@@ -13,7 +14,7 @@ from core.exceptions import DiscoveryRuleParsingResultError
 
 from qualitytests.qualitytests_utils import join_resources_path, create_mock_cpg, \
     get_result_output_dir, get_logfile_path, in_logfile, init_measure_test, \
-    init_sastreport_test, init_test
+    init_sastreport_test, init_test, create_pattern
 
 
 class TestInterface:
@@ -252,3 +253,45 @@ class TestInterface:
         logfile = get_logfile_path(captured_out_lines)
         assert logfile and logfile.is_file()
 
+
+    def test_repair_patterns_not_including_readme(self):
+        sample_tp_lib = join_resources_path("sample_patlib")
+        test_pattern = create_pattern()
+        with patch("core.pattern.Pattern.init_from_id_and_language") as init_pattern_mock, \
+            patch("core.pattern.Pattern.repair") as patternrepair_mock, \
+            patch("core.utils.check_file_exist") as check_file_exists_mock, \
+            patch("core.utils.check_measurement_results_exist") as measurement_result_exist_mock, \
+            patch("pathlib.Path.mkdir") as mkdir_mock:
+            init_pattern_mock.return_value = test_pattern
+            interface.repair_patterns("JS", [1,2,3], None, True, Path("measurements"), Path("dr_results.csv"), Path("out"), sample_tp_lib)
+        
+        patternrepair_mock.assert_called_with(False, 
+                                              discovery_rule_results=Path("dr_results.csv"), 
+                                              measurement_results=Path("measurements"), 
+                                              masking_file=None)
+        expected_calls = [call(1, "JS", sample_tp_lib), call(2, "JS", sample_tp_lib), call(3, "JS", sample_tp_lib)]
+        init_pattern_mock.assert_has_calls(expected_calls)
+        check_file_exists_mock.assert_not_called()
+        measurement_result_exist_mock.assert_not_called()
+        mkdir_mock.assert_called()
+    
+    def test_repair_patterns_not_including_readme(self):
+        sample_tp_lib = join_resources_path("sample_patlib")
+        test_pattern = create_pattern()
+        with patch("core.pattern.Pattern.init_from_id_and_language") as init_pattern_mock, \
+            patch("core.pattern.Pattern.repair") as patternrepair_mock, \
+            patch("core.utils.check_file_exist") as check_file_exists_mock, \
+            patch("core.utils.check_measurement_results_exist") as measurement_result_exist_mock, \
+            patch("pathlib.Path.mkdir") as mkdir_mock:
+            init_pattern_mock.return_value = test_pattern
+            interface.repair_patterns("JS", [1,2,3], None, False, Path("measurements"), Path("dr_results.csv"), Path("out"), sample_tp_lib)
+        
+        patternrepair_mock.assert_called_with(True, 
+                                              discovery_rule_results=Path("dr_results.csv"), 
+                                              measurement_results=Path("measurements"), 
+                                              masking_file=None)
+        expected_calls = [call(1, "JS", sample_tp_lib), call(2, "JS", sample_tp_lib), call(3, "JS", sample_tp_lib)]
+        init_pattern_mock.assert_has_calls(expected_calls)
+        check_file_exists_mock.assert_called()
+        measurement_result_exist_mock.assert_called_once()
+        mkdir_mock.assert_called()

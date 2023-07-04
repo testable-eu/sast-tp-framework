@@ -127,12 +127,6 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, patt
     #       the strict notation
     pattern_dir_name: str = pattern.path.name
     instance_dir_name: str = instance.path.name
-    # TODO: continue here
-    # instance_dir: Path = pattern_dir / instance_dir_name
-    # if not instance_dir.is_dir():
-    #     ee = InstanceDoesNotExists(instance_id=pi_id)
-    #     logger.exception(ee)
-    #     raise ee
     measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib, language) / pattern_dir_name / instance_dir_name
     if not measurement_dir_for_pattern_instance.is_dir():
         ee = MeasurementNotFound(pattern.pattern_id)

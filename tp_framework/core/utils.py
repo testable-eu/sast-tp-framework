@@ -5,7 +5,6 @@ import shutil
 import os
 import yaml
 
-from collections import defaultdict
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
@@ -18,8 +17,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, PatternFolderNotFound, InstanceDoesNotExists, \
-    FileDoesNotExist, TemplateDoesNotExist, MeasurementResultsDoNotExist
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, InstanceDoesNotExists, \
+    MeasurementResultsDoNotExist
 
 from core import errors
 
@@ -168,7 +167,7 @@ def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
 
 def check_file_exist(file_path: Path, file_suffix = ".csv"):
     if not file_path.is_file() or not file_path.suffix == file_suffix:
-        e = FileDoesNotExist(file_path)
+        e = FileNotFoundError(file_path)
         logger.error(get_exception_message(e))
         raise e
 
@@ -212,7 +211,7 @@ def read_csv_to_dict(path_to_file: str) -> dict:
 
 
 def translate_bool(bool_to_translate: bool):
-    return "YES" if bool_to_translate else "NO"
+    return "yes" if bool_to_translate else "no"
 
 # TODO TESTING
 def get_language_by_file_ending(filename: str) -> str:

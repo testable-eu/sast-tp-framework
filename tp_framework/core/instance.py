@@ -1,10 +1,11 @@
 import shutil
 from pathlib import Path
-from typing import Tuple#, Enum
+from typing import Tuple
 
 from core import utils
 from core.exceptions import InstanceInvalid
 from core.instance_repair import InstanceRepair
+
 
 # class PatternCategory(str, Enum):
 #     S0 = "S0"

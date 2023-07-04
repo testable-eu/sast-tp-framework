@@ -7,8 +7,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 import config
-from core import utils, discovery, instance, pattern
-from core.exceptions import MeasurementNotFound, CPGGenerationError
+from core import utils, discovery
+from core.exceptions import CPGGenerationError
 from qualitytests.qualitytests_utils import join_resources_path, create_instance
 
 

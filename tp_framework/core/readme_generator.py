@@ -5,9 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from core.exceptions import MeasurementInvalid
-# from core.instance import Instance
 from core.measurement import Measurement
-# from core.pattern import Pattern
 from core.readme_markdown_elements import *
 
 from core import utils
@@ -253,6 +251,9 @@ class InstanceREADMEGenerator:
         if not self.measurements:
             return []
         instance_measurements = self.measurements / self.pattern.path.name / self.current_instance.name
+        if not instance_measurements.exists():
+            logger.error(f"{self.log_prefix}Could not find `measurement` for {self.current_instance}")
+            return []
         measurement_table = {}
         has_measurement = False
         dates = []
@@ -326,8 +327,11 @@ class InstanceREADMEGenerator:
         return []
 
     def _get_file_content_if_exists(self, path_to_file: Path) -> str:
-        if path_to_file and Path(path_to_file).is_file():
-            with open(path_to_file, "r") as in_file:
+        if not path_to_file:
+            return ""
+        potential_file_path = Path(self.current_instance.path / path_to_file).resolve()
+        if " " not in str(path_to_file) and potential_file_path.is_file():
+            with open(potential_file_path, "r") as in_file:
                 return "".join(in_file.readlines()).strip()
         return path_to_file if path_to_file else ""
 

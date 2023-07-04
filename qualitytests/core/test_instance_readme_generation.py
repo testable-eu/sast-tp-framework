@@ -217,7 +217,9 @@ class TestInstanceREADMEGenerator:
         instance_readme_gen.measurements = Path("/")
         instance_readme_gen.mask_dict = mask
         with patch("core.utils.list_files") as list_files_mock, \
-            patch("core.utils.read_json") as read_json_mock:
+            patch("core.utils.read_json") as read_json_mock, \
+            patch("pathlib.Path.exists") as exist_mock:
+            exist_mock.return_value = True
             list_files_mock.return_value = ["file1.json"]
             read_json_mock.return_value = meas_results
 

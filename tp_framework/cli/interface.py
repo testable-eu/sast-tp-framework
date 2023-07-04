@@ -9,7 +9,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, pattern_operations, discovery, measure, errors, report_for_sast
-from core.exceptions import PatternValueError, PatternInvalid, AddPatternError
+from core.exceptions import PatternInvalid, AddPatternError
 from core.pattern import Pattern
 
 
@@ -54,8 +54,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
 def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], language: str, itools: list[Dict],
                                    tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve(),
                                    output_dir: Path = Path(config.RESULT_DIR).resolve(),
-                                   ignore: bool = False,
-                                   cpg: str = None):
+                                   ignore: bool = False):
     print("Discovery for patterns started...")
     # Set output directory and logger
     build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
@@ -64,7 +63,7 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     #
     utils.check_tp_lib(tp_lib_path)
     d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
-                                disc_output_dir, ignore=ignore, cpg=cpg)
+                                disc_output_dir, ignore=ignore)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
@@ -182,6 +181,7 @@ def repair_patterns(language: str, pattern_ids: list,
                     measurement_results: Path, checkdiscoveryrule_results: Path,
                     output_dir: Path, tp_lib_path: Path):
     print("Pattern Repair started...")
+    print(measurement_results)
     should_include_readme = not include_README
     utils.check_tp_lib(tp_lib_path)
     if should_include_readme:
@@ -197,4 +197,7 @@ def repair_patterns(language: str, pattern_ids: list,
         except PatternInvalid as e:
             print(f"Failed to init pattern: {tp_id} due to {e}")
             continue
-        pattern.repair(should_include_readme)
+        pattern.repair(should_include_readme, 
+                       discovery_rule_results=checkdiscoveryrule_results,
+                       measurement_results=measurement_results,
+                       masking_file=masking_file)

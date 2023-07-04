@@ -7,7 +7,7 @@ import config
 from cli import interface
 from core import utils
 
-from core.exceptions import InvalidSastTools, PatternInvalid
+from core.exceptions import InvalidSastTools
 from core.errors import invalidSastTools
 from core.pattern import Pattern
 
@@ -215,12 +215,6 @@ class DiscoveryPatterns(Command):
             help="Path to discovery target folder"
         )
         discovery_parser.add_argument(
-            "-c", "--cpg",
-            dest="cpg_existing",
-            type=str,
-            help="Specify an already existing CPG in TARGET_DIR instead of letting the framework generate a new one."
-        )
-        discovery_parser.add_argument(
             "-i", "--ignore-measurements",
             action="store_true",
             default=False,
@@ -261,7 +255,6 @@ class DiscoveryPatterns(Command):
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         target_dir = Path(args.target_discovery)
         utils.check_target_dir(target_dir)
-        cpg_name: str = args.cpg_existing
         output_dir: str = parse_output_dir(args.output_dir)
         tool_parsed: list[Dict] = parse_tool_list(args.tools)
         l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
@@ -269,7 +262,7 @@ class DiscoveryPatterns(Command):
                                       language)
         try:
             interface.run_discovery_for_pattern_list(target_dir, l_pattern_id, language, tool_parsed, tp_lib_path,
-                                                     output_dir=output_dir, ignore=args.ignore, cpg=cpg_name)
+                                                     output_dir=output_dir, ignore=args.ignore)
         except InvalidSastTools:
             print(invalidSastTools())
             exit(1)
@@ -594,12 +587,14 @@ class PatternRepair(Command):
                                       tp_lib_path, language, init_patterns=False))
         output_dir: Path = parse_dir_or_file(args.output_dir)
         measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
+        print('\033[92m', measurement_results, '\033[0m')
         checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
         masking_file: Path or None = parse_dir_or_file(args.masking_file) if args.masking_file else None
         interface.repair_patterns(language=language, pattern_ids=l_pattern_id,
                                      masking_file=masking_file, include_README=args.skip_readme,
                                      measurement_results=measurement_results, checkdiscoveryrule_results=checkdiscoveryrules_results,
                                      output_dir=output_dir, tp_lib_path=tp_lib_path)
+
 
 # class Template(Command):
 #

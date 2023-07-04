@@ -1,12 +1,8 @@
-from pathlib import Path
-from copy import deepcopy
-
 import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 
-from core.exceptions import InstanceInvalid
 from core.instance import Instance
 from core.repair_tool import RepairTool
 from core import utils

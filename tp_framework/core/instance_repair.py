@@ -46,7 +46,6 @@ class InstanceRepair(RepairTool):
         # determine the name for the rule in scala file
         # if there is more than one instance, it should be <pattern_name>_i<instance_number>
         # if this rule is for multiple patterns, it should be <pattern_name>_iall
-        #assert False, f"{len(self.pattern.instances)}\n{dr_path.parent}\n{self.pattern.path}"
         rule_name = (
             f'{self.pattern.path.name}_i{self.to_repair.instance_id}'
             if len(self.pattern.instances) > 1 and dr_path.parent != self.pattern.path

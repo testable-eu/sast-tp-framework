@@ -12,9 +12,9 @@ class TestInstance:
     sample_tp_lib: Path = join_resources_path("sample_patlib")
 
     invalid_instances = [
-        # (Path("./test_instance.json"), False, {}, "The provided instance path 'test_instance.json' does not exist."),
+        (Path("./test_instance.json"), False, {}, "The provided instance path 'test_instance.json' does not exist."),
         (Path("./1_instance_test_pattern.json"), True, {}, "Could not get id from ''."),
-        # (Path("./1_instance_test_pattern/1_instance_test_pattern.json"), True, {}, "Pattern 1 - Instance 1 - Please check ")
+        (Path("./1_instance_test_pattern/1_instance_test_pattern.json"), True, {}, "Pattern 1 - Instance 1 - Please check ")
     ]
 
     @pytest.mark.parametrize("json_file_path, is_file_return, read_json_return, expected_error", invalid_instances)

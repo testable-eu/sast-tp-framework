@@ -63,9 +63,6 @@ class SASTjob:
 
     def set_measurement(self, meas: Measurement):
         self.measurement = meas
-    
-    def __str__(self) -> str:
-        return f'{self.tp_id} - {self.tpi_id}'
 
 
 def job_list_to_dict(l: list[SASTjob]) -> Dict:

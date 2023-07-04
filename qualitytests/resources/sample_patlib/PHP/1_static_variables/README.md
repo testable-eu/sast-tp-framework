@@ -14,7 +14,7 @@ This pattern targets `static` variables. When a function terminates, its local v
 
 | Instances                 | has discovery rule   | discovery method   | rule successfull   |
 |---------------------------|----------------------|--------------------|--------------------|
-| [1 Instance](#1-instance) | YES                  | joern              | yes                |
+| [1 Instance](#1-instance) | yes                  | joern              | yes                |
 
 ## 1 Instance
 
@@ -38,7 +38,7 @@ F('abc'); // print value of $_GET["p1"]
 
 | category   | feature_vs_internal_api   | input_sanitizer   | negative_test_case   | source_and_sink   |
 |------------|---------------------------|-------------------|----------------------|-------------------|
-| S0         | FEATURE                   | NO                | NO                   | NO                |
+| S0         | FEATURE                   | no                | no                   | no                |
 
 <details markdown="1">
 <summary>
@@ -114,8 +114,19 @@ val start_line = (name, "1_static_variables_iall", cpg.call(".*BIND_STATIC.*").l
 
 | Tool        | masked_tool   | tool2   | Ground Truth   |
 |-------------|---------------|---------|----------------|
-| 01 Jan 1970 | NO            | NO      | YES            |
-| 01 Jan 2023 | YES           | YES     | YES            |
+| 01 Jan 1970 | no            | no      | yes            |
+| 01 Jan 2023 | yes           | yes     | yes            |
+
+</details>
+
+<details markdown="1">
+<summary>
+
+### Remediation
+
+</summary>
+
+Likely this tarpit should be solved at the SAST tool side. Transforming a static variable into a non-static one is unfeasible. It is unclear how to create a modeling rule for the static keyword.
 
 </details>
 

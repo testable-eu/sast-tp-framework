@@ -6,8 +6,6 @@ __pycache__/
 .pytest_cache
 venv
 tp_framework.egg-info/
-tp_framework/.metals/
-tp_framework/.vscode/
 coverage_html/
 .coverage
 htmlcov

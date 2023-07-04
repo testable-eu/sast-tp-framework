@@ -208,5 +208,5 @@ class TestUtils:
             actual["PHP"]["1"]["3"]
     
     def test_translate_bool(self):
-        assert "YES" == utils.translate_bool(True)
-        assert "NO" == utils.translate_bool(False)
+        assert "yes" == utils.translate_bool(True)
+        assert "no" == utils.translate_bool(False)

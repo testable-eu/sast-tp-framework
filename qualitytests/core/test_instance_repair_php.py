@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch, mock_open
 
 from core.instance_repair import InstanceRepairPHP
-from qualitytests.qualitytests_utils import create_instance, create_pattern, create_instance_php, join_resources_path
+from qualitytests.qualitytests_utils import create_instance_php, join_resources_path
 
 class TestInstanceRepairPHP:       
 

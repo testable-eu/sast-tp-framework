@@ -18,7 +18,7 @@ from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CP
     CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
 
-from core.instance import Instance #, instance_from_dict, load_instance_from_metadata
+from core.instance import Instance
 from core.pattern import Pattern
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
@@ -206,11 +206,8 @@ def run_and_process_discovery_rule(cpg: Path, discovery_rule: Path,
             f"No discovery method has been specified. Likely you need to modify the discovery->method property in the JSON file of the pattern instance related to the discovery rule {discovery_rule}. We will continue with the default discovery method for Scala discovery rules (aka '{default_discovery_method}').")
         discovery_method = default_discovery_method
     if discovery_method == "joern":
-        try:
-            cpg_file_name, query_name, raw_findings = run_joern_discovery_rule(cpg, discovery_rule)
-            findings = process_joern_discovery_rule_findings(discovery_rule, query_name, raw_findings)
-        except:
-            findings =  None
+        cpg_file_name, query_name, raw_findings = run_joern_discovery_rule(cpg, discovery_rule)
+        findings = process_joern_discovery_rule_findings(discovery_rule, query_name, raw_findings)
         return findings
     else:
         e = DiscoveryMethodNotSupported(discovery_method=discovery_method)
@@ -249,19 +246,14 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               build_name: str,
               disc_output_dir: Path,
               timeout_sec: int = 0,
-              ignore=False,
-              cpg: str = None) -> Dict:
+              ignore=False) -> Dict:
     logger.info("Discovery for patterns started...")
     # TODO: to support multiple discovery methods the following would need major refactoring.
     # - CPG is specific to Joern
     # - each discovery rule tells which method to use
     # - on the other hand you do not want to compute the CPG multiple times
 
-    # if a CPG name is specified, expect it in TARGET_DIR. Else, generate new CPG from source
-    if cpg is not None:
-        cpg: Path = src_dir / cpg
-    else:
-        cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
+    cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     if not ignore:
         return discovery_under_measurement(cpg, l_tp_id, tp_lib_path, itools, language, build_name, disc_output_dir,
                                            timeout_sec=timeout_sec)
@@ -413,10 +405,6 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
     if not measurement_stop and tpi_instance.discovery_rule:
         # prepare and execute the discovery rule (if not done yet)
         dr = (tpi_json_path.parent / tpi_instance.discovery_rule).resolve()
-        if not dr.exists():
-            d_tpi_discovery["rule_path"] = str(dr)
-            logger.exception("Scala rule for {} does not exist".format(dr))
-            return d_tpi_discovery
 
         logger.info(
             f"{msgpre}prepare discovery rule {dr}...")
@@ -429,7 +417,6 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 f"{msgpre}running discovery rule...")
             # related to #42
             pdr = patch_PHP_discovery_rule(dr, tpi_instance.language, output_dir=disc_output_dir)
-            findings = []
             try:
                 findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
                 d_tpi_discovery["results"] = findings
@@ -463,7 +450,6 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
               "method", "queryFile", "queryHash", "queryName", "queryAccuracy",
               "queryAlreadyExecuted", "discovery", "filename", "lineNumber", "methodFullName"]
     rows = []
-    findings = []
     for tp_id in d_res:
         if d_res[tp_id]["measurement_found"] is False:
             rows.append(
@@ -533,7 +519,6 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
                             row["discovery"] = f["discovery"]
                             row["queryName"] = f["queryName"]
                             if f["discovery"]:
-                                findings.append(f)
                                 row["filename"] = f["filename"]
                                 row["lineNumber"] = f["lineNumber"]
                                 row["methodFullName"] = f["methodFullName"]
@@ -543,9 +528,6 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
                             pass
     ofile = disc_output_dir / f"discovery_{build_name}.csv"
     utils.write_csv_file(ofile, fields, rows)
-    findings_file = disc_output_dir / f"findings_{build_name}.json"
-    with open(findings_file, 'w+') as f:
-        json.dump(findings, f, sort_keys=True, indent=4)
     d_results = {
         "discovery_result_file": str(ofile),
         "results": d_res
