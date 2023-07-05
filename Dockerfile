@@ -29,18 +29,15 @@ COPY pytest.ini ${TPF_HOME}/pytest.ini
 COPY SAST/requirements.txt ${SAST_DIR}/requirements.txt
 COPY SAST/sast-config.yaml ${SAST_DIR}/sast-config.yaml
 
-ARG TESTS_DIR="qualitytests"
-COPY ${TESTS_DIR}/requirements.txt ${TPF_HOME}/${TESTS_DIR}/requirements.txt
-
 ARG REQUIREMENTS_FILE
 COPY ${REQUIREMENTS_FILE} ${TPF_HOME}/${REQUIREMENTS_FILE}
 RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 
-ARG JOERN_VERSION="v1.2.1"
+ARG JOERN_VERSION="v1.1.1709"
 RUN echo ${JOERN_VERSION}
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern-install.sh
-RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/ && ./joern-install.sh --version=v1.2.1 --install-dir=/opt/joern'
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/ && ./joern-install.sh --version=${JOERN_VERSION} --install-dir=/opt/joern --reinstall --without-plugins'
 
 # ADD HERE COMMANDS USEFUL FOR OTHER DOCKER-COMPOSE SERVICES
 
