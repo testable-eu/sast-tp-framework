@@ -57,8 +57,8 @@ class TestInstanceRepair:
             repair_tool = InstanceRepair(test_instance, test_pattern)
 
         global_mock.assert_called_once()
-        read_json_mock.assert_called_once()
-        is_file_mock.assert_called_once()
+        read_json_mock.assert_called()
+        is_file_mock.assert_called()
         return repair_tool            
 
     def test_init_instance_repair_with_wrong_language(self):
@@ -72,8 +72,8 @@ class TestInstanceRepair:
 
             is_file_mock.return_value = True
             InstanceRepair(test_instance, test_pattern)
-        is_file_mock.assert_called_once()
-        read_json_mock.assert_called_once()
+        is_file_mock.assert_called()
+        read_json_mock.assert_called()
         logger_error.assert_called_once_with("InstanceRepairTEST could not be found, maybe it is not imported?")
         assert "Could not instantiate language specific instance repair" in str(e_info)
 

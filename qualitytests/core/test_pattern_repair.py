@@ -24,8 +24,8 @@ class TestPatternRepair:
 
             repair_tool = PatternRepair(test_pattern)
 
-        read_json_mock.assert_called_once()
-        is_file_mock.assert_called_once()
+        read_json_mock.assert_called()
+        is_file_mock.assert_called()
         return repair_tool            
 
     def test_complete_instances_no_new_instance0(self):

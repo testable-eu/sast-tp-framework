@@ -22,15 +22,25 @@ class TestRepairTool:
             "version": "v0.draft"
         }
 
-    def test_init_pattern_repair1(self):
+    def test_init_pattern_repair0(self):
         with patch("pathlib.Path.is_file") as is_file_mock, \
             pytest.raises(PatternRepairError) as e_info:
             is_file_mock.return_value = False
 
-            RepairTool(TestRepairTool.pattern, Path("."))
+            RepairTool(TestRepairTool.pattern, Path("."), Path("."))
         is_file_mock.assert_called_once()
         # logger.assert_called_once()
-        assert "PatternRepair (JS - p1)  No template JSON found in" in str(e_info)
+        assert "PatternRepair (JS - p1) No template JSON found in " in str(e_info)
+
+    def test_init_pattern_repair1(self):
+        with patch("pathlib.Path.is_file") as is_file_mock, \
+            pytest.raises(PatternRepairError) as e_info:
+            is_file_mock.side_effect = [True, False]
+
+            RepairTool(TestRepairTool.pattern, Path("."), Path("."))
+        is_file_mock.assert_called()
+        # logger.assert_called_once()
+        assert "PatternRepair (JS - p1) No schema JSON found in " in str(e_info)
     
     def test_init_pattern_repair2(self):
         with patch("pathlib.Path.is_file") as is_file_mock, \
@@ -39,10 +49,10 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = {}
 
-            RepairTool(TestRepairTool.pattern,  Path("."))
-        is_file_mock.assert_called_once()
+            RepairTool(TestRepairTool.pattern,  Path("."), Path("."))
+        is_file_mock.assert_called()
         read_json_mock.assert_called_once()
-        assert "PatternRepair (JS - p1)  The template JSON" in str(e_info) and " is empty" in str(e_info)
+        assert "PatternRepair (JS - p1) The template JSON" in str(e_info) and " is empty" in str(e_info)
 
     def test_copy_template(self):
         with patch("pathlib.Path.is_file") as is_file_mock, \
@@ -53,7 +63,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            RepairTool(TestRepairTool.pattern,  Path("."))._copy_template()
+            RepairTool(TestRepairTool.pattern,  Path("."), Path("."))._copy_template()
         
         logger.assert_called_once_with("PatternRepair (JS - p1) Copying template JSON.")
         copy_file_mock.assert_called_once()
@@ -83,7 +93,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."))
+            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."), Path("."))
             json_path = get_pattern_json_ret if get_pattern_json_ret else repair_tool.to_repair.json_path 
             is_file_mock.reset_mock()
             is_file_mock.return_value = is_file_mock_ret
@@ -117,7 +127,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."))
+            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."), Path("."))
 
             read_json_mock.reset_mock()
             read_json_mock.return_value = {}
@@ -136,7 +146,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."))
+            repair_tool = RepairTool(TestRepairTool.pattern,  Path("."), Path("."))
 
             read_json_mock.reset_mock()
             read_json_mock.return_value = {"name": "test"}
@@ -154,7 +164,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            repair_tool_pattern = RepairTool(TestRepairTool.pattern,  Path("."))
+            repair_tool_pattern = RepairTool(TestRepairTool.pattern,  Path("."), Path("."))
 
             repair_tool_pattern._check_paths_exists()
         warn_logger_mock.assert_not_called()
@@ -168,7 +178,7 @@ class TestRepairTool:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
 
-            repair_tool_instance = RepairTool(test_instance,  Path("."))
+            repair_tool_instance = RepairTool(test_instance,  Path("."), Path("."))
 
             repair_tool_instance._check_paths_exists()
         warn_logger_mock.assert_not_called()
@@ -184,7 +194,7 @@ class TestRepairTool:
             read_json_mock.return_value = TestRepairTool.template_json_dict
             exist_mock.return_value = False
 
-            repair_tool_instance = RepairTool(test_instance,  Path("."))
+            repair_tool_instance = RepairTool(test_instance,  Path("."), Path("."))
 
             repair_tool_instance._check_paths_exists()
         warn_logger_mock.assert_called()
