@@ -500,7 +500,7 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
             continue
         for tpi_id in d_res[tp_id]["instances"]:
             tpi_data = d_res[tp_id]["instances"][tpi_id]
-            if not tpi_data:
+            if not tpi_data or tpi_data["instance"] is None:
                 rows.append(
                     {
                         "patternId": tp_id,
@@ -610,7 +610,8 @@ def get_unsuccessful_discovery_tpi_from_results(d_res):
             for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
             for tpi_id in d_res["results"][tp_id]['instances']
             if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
-            d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is None]
+            (d_res["results"][tp_id]['instances'][tpi_id]["instance"] is None
+            or d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is None)]
 
 
 def get_successful_discovery_tpi_from_results(d_res):
@@ -618,6 +619,7 @@ def get_successful_discovery_tpi_from_results(d_res):
             for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
             for tpi_id in d_res["results"][tp_id]['instances']
             if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
+            d_res["results"][tp_id]['instances'][tpi_id]["instance"] is not None and
             d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is not None]
 
 
@@ -628,7 +630,9 @@ def get_num_discovery_findings_from_results(d_res):
             continue
         for tpi_id in d_res["results"][tp_id]['instances']:
             tpi_data = d_res["results"][tp_id]['instances'][tpi_id]
-            if tpi_data["measurement"] in ["not_supported", "ignored"]  and tpi_data["discovery"]["results"] is not None:
+            if (tpi_data["measurement"] in ["not_supported", "ignored"] 
+                and d_res["results"][tp_id]['instances'][tpi_id]["instance"] is not None
+                and tpi_data["discovery"]["results"] is not None):
                 for r in tpi_data["discovery"]["results"]:
                     if r["discovery"] == True:
                         n += 1
