@@ -62,7 +62,7 @@ def get_next_free_pattern_id_for_language(language: str, tp_lib_dir: Path, propo
 def get_instance_dir_from_list(instance_id: int, l_pattern_dir: list[Path]):
     instance_with_id = list(filter(lambda tpi_dir: get_id_from_name(tpi_dir.name) == instance_id, l_pattern_dir))
     if not instance_with_id:
-        raise InstanceDoesNotExists()
+        raise InstanceDoesNotExists(instance_id=instance_id)
     return instance_with_id[0]
 
 

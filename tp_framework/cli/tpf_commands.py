@@ -215,6 +215,12 @@ class DiscoveryPatterns(Command):
             help="Path to discovery target folder"
         )
         discovery_parser.add_argument(
+            "-c", "--cpg",
+            dest="cpg_existing",
+            type=str,
+            help="Specify an already existing CPG in TARGET_DIR instead of letting the framework generate a new one."
+        )
+        discovery_parser.add_argument(
             "-i", "--ignore-measurements",
             action="store_true",
             default=False,
@@ -255,6 +261,7 @@ class DiscoveryPatterns(Command):
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         target_dir = Path(args.target_discovery)
         utils.check_target_dir(target_dir)
+        cpg_name: str = args.cpg_existing
         output_dir: str = parse_output_dir(args.output_dir)
         tool_parsed: list[Dict] = parse_tool_list(args.tools)
         l_pattern_id = parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
@@ -262,7 +269,7 @@ class DiscoveryPatterns(Command):
                                       language)
         try:
             interface.run_discovery_for_pattern_list(target_dir, l_pattern_id, language, tool_parsed, tp_lib_path,
-                                                     output_dir=output_dir, ignore=args.ignore)
+                                                     output_dir=output_dir, ignore=args.ignore, cpg=cpg_name)
         except InvalidSastTools:
             print(invalidSastTools())
             exit(1)

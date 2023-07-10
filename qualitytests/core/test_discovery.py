@@ -56,21 +56,13 @@ class TestDiscovery:
     def test_discovery_1_ignore_measurement(self, mocker: MockerFixture, capsys, tmp_path):
         samples_src_dir: Path = join_resources_path("sample_tarpit") # not a problem that it does not exist
         sample_tp_lib: Path = join_resources_path("sample_patlib")
-        output_dir = join_resources_path("../temp").resolve()
+        output_dir = tmp_path
         output_dir.mkdir(parents=True, exist_ok=True)
-        tools: list[Dict] = [{
-            "name": "dummyTool",
-            "version": "1"
-        }]
+        tools = None
         language = "PHP"
         with open(join_resources_path("sample_discovery/findings1.json"), "r") as ffile:
             findings = json.load(ffile)
 
-        mocked_tool_interface: Dict = {
-            "supported_languages": ["PHP"],
-            "tool_interface": "qualitytests.core.sast_test.SastTest"
-        }
-        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
         mocker.patch("core.discovery.generate_cpg", return_value=None)
         mocker.patch("core.discovery.run_and_process_discovery_rule", return_value=findings)
         mocker.patch.object(config, "RESULT_DIR", tmp_path)
@@ -91,7 +83,7 @@ class TestDiscovery:
         # Test JS patterns for which some have no discovery method specified and sometime no measurement
         samples_src_dir: Path = join_resources_path("sample_tarpit")
         sample_tp_lib: Path = join_resources_path("sample_patlib")
-        output_dir = join_resources_path("../temp").resolve()
+        output_dir = tmp_path
         output_dir.mkdir(parents=True, exist_ok=True)
         tools: list[Dict] = [{
             "name": "dummyTool",
@@ -133,6 +125,35 @@ class TestDiscovery:
         assert nfindings == 4
         assert any(Path(d_res["discovery_result_file"]).name == e.name for e in disc_output_dir.iterdir())
         assert any(f"No discovery method has been specified. Likely you need to modify the discovery->method property" in record.message for record in caplog.records)
+
+
+    def test_discovery_3_ignore_only_cpg(self, mocker: MockerFixture, capsys, tmp_path):
+        samples_src_dir: Path = join_resources_path("sample_tarpit") # not a problem that it does not exist
+        sample_tp_lib: Path = join_resources_path("sample_patlib")
+        output_dir = tmp_path
+        output_dir.mkdir(parents=True, exist_ok=True)
+        tools = None
+        language = "PHP"
+        with open(join_resources_path("sample_discovery/findings1.json"), "r") as ffile:
+            findings = json.load(ffile)
+
+        cpg = join_resources_path("sample_joern/cpg_binary.bin")
+        mocker.patch("core.discovery.run_and_process_discovery_rule", return_value=findings)
+        mocker.patch.object(config, "RESULT_DIR", tmp_path)
+        build_name, disc_output_dir = utils.get_operation_build_name_and_dir("discovery", samples_src_dir, language, output_dir)
+        d_res = discovery.discovery(samples_src_dir, [1, 2], sample_tp_lib, tools, language, build_name, disc_output_dir,
+                                    ignore=True,
+                                    cpg=cpg)
+        l_ign_tp = discovery.get_ignored_tp_from_results(d_res)
+        l_tpi_unsucc_dr = discovery.get_unsuccessful_discovery_tpi_from_results(d_res)
+        l_tpi_succ_dr = discovery.get_successful_discovery_tpi_from_results(d_res)
+        nfindings = discovery.get_num_discovery_findings_from_results(d_res)
+        assert l_ign_tp == []
+        assert l_tpi_unsucc_dr == []
+        assert l_tpi_succ_dr == ['p1_i1', 'p2_i1']
+        assert nfindings == 4
+        assert any(Path(d_res["discovery_result_file"]).name == e.name for e in disc_output_dir.iterdir())
+
 
 
     def test_manualdiscovery_1(self, mocker: MockerFixture, capsys, tmp_path, caplog):

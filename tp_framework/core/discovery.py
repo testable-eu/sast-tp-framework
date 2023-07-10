@@ -246,19 +246,27 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               build_name: str,
               disc_output_dir: Path,
               timeout_sec: int = 0,
-              ignore=False) -> Dict:
+              ignore=False,
+              cpg: str = None) -> Dict:
     logger.info("Discovery for patterns started...")
     # TODO: to support multiple discovery methods the following would need major refactoring.
     # - CPG is specific to Joern
     # - each discovery rule tells which method to use
     # - on the other hand you do not want to compute the CPG multiple times
 
-    cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
+    # if a CPG name is specified, expect it in TARGET_DIR. Else, generate new CPG from source
+    if cpg is not None:
+        cpg_path: Path = src_dir / cpg
+        if not cpg_path.exists():
+            logger.error(f"The specified CPG file {cpg_path} does not exist...")
+            raise FileNotFoundError
+    else:
+        cpg_path: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     if not ignore:
-        return discovery_under_measurement(cpg, l_tp_id, tp_lib_path, itools, language, build_name, disc_output_dir,
+        return discovery_under_measurement(cpg_path, l_tp_id, tp_lib_path, itools, language, build_name, disc_output_dir,
                                            timeout_sec=timeout_sec)
     else:
-        return discovery_ignore_measurement(cpg, l_tp_id, tp_lib_path, language, build_name, disc_output_dir,
+        return discovery_ignore_measurement(cpg_path, l_tp_id, tp_lib_path, language, build_name, disc_output_dir,
                                             timeout_sec=timeout_sec)
 
 
@@ -382,9 +390,8 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         d_res_tpi = {}
         d_dr_executed = {}
         for instance in target_pattern.instances:
-            tpi_json_path = instance.json_path
-            d_tpi = {"instance": instance, "measurement": "ignored", "jsonpath": tpi_json_path,
-                     "discovery": discovery_for_tpi(instance, tpi_json_path, cpg, disc_output_dir,
+            d_tpi = {"instance": instance, "measurement": "ignored", "jsonpath": instance.json_path,
+                     "discovery": discovery_for_tpi(instance, cpg, disc_output_dir,
                                                     measurement_stop=False, already_executed=d_dr_executed)}
             d_res_tpi[instance.instance_id] = d_tpi
         d_res[tp_id]["instances"] = d_res_tpi
@@ -396,7 +403,7 @@ def discovery_ignore_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path,
     return d_results
 
 
-def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, disc_output_dir: Path,
+def discovery_for_tpi(tpi_instance: Instance, cpg: Path, disc_output_dir: Path,
                       measurement_stop: bool = False, already_executed: dict = {}) -> Dict:
     msgpre = f"pattern {tpi_instance.pattern_id} instance {tpi_instance.instance_id} - "
     d_tpi_discovery = dict.fromkeys(["rule_path", "method", "rule_name", "rule_accuracy", "rule_hash", \
@@ -404,7 +411,11 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
     # execute the discovery rule
     if not measurement_stop and tpi_instance.discovery_rule:
         # prepare and execute the discovery rule (if not done yet)
-        dr = (tpi_json_path.parent / tpi_instance.discovery_rule).resolve()
+        dr = tpi_instance.discovery_rule
+        if not dr.exists():
+            d_tpi_discovery["rule_path"] = str(dr)
+            logger.error(f"{msgpre}Discovery rule is specified in the instance, but corresponding file {dr} does not exists...")
+            return d_tpi_discovery
 
         logger.info(
             f"{msgpre}prepare discovery rule {dr}...")
@@ -421,14 +432,13 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
                 findings = run_and_process_discovery_rule(cpg, pdr, discovery_method=d_tpi_discovery["method"])
                 d_tpi_discovery["results"] = findings
                 d_tpi_discovery["rule_already_executed"] = False
-            except DiscoveryMethodNotSupported as e:
+                already_executed[d_tpi_discovery["rule_hash"]] = findings
+            except Exception as e:
                 d_tpi_discovery["results"] = None
                 already_executed[d_tpi_discovery["rule_hash"]] = None
                 logger.error(
                     f"{msgpre}Discovery rule failure for this instance: {e}")
-                # JoernQueryError(e)
-                # JoernQueryParsingResultError(e)
-            already_executed[d_tpi_discovery["rule_hash"]] = findings
+            # except DiscoveryMethodNotSupported, JoernQueryError(e), JoernQueryParsingResultError(e):
             logger.info(
                 f"{msgpre} discovery rule executed.")
 
@@ -440,7 +450,7 @@ def discovery_for_tpi(tpi_instance: Instance, tpi_json_path: Path, cpg: Path, di
     else:
         # no rule to execute
         logger.warning(
-            f"{msgpre}No discovery rule for this pattern instance...")
+            f"{msgpre}No discovery rule specified for this pattern instance...")
     return d_tpi_discovery
 
 
@@ -450,6 +460,7 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
               "method", "queryFile", "queryHash", "queryName", "queryAccuracy",
               "queryAlreadyExecuted", "discovery", "filename", "lineNumber", "methodFullName"]
     rows = []
+    findings = []
     for tp_id in d_res:
         if d_res[tp_id]["measurement_found"] is False:
             rows.append(
@@ -472,7 +483,26 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
             continue
         for tpi_id in d_res[tp_id]["instances"]:
             tpi_data = d_res[tp_id]["instances"][tpi_id]
-            if tpi_data["measurement"] not in ["not_supported", "ignored"]:
+            if not tpi_data or tpi_data["instance"] is None:
+                rows.append(
+                    {
+                        "patternId": tp_id,
+                        "instanceId": tpi_id,
+                        "instanceName": None,
+                        "sast_measurement": None,
+                        "method": None,
+                        "queryFile": None,
+                        "queryHash": None,
+                        "queryName": None,
+                        "queryAccuracy": None,
+                        "queryAlreadyExecuted": None,
+                        "discovery": None,
+                        "filename": None,
+                        "lineNumber": None,
+                        "methodFullName": None
+                    })
+                continue
+            elif tpi_data["measurement"] not in ["not_supported", "ignored"]:
                 rows.append(
                     {
                         "patternId": tp_id,
@@ -519,6 +549,7 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
                             row["discovery"] = f["discovery"]
                             row["queryName"] = f["queryName"]
                             if f["discovery"]:
+                                findings.append(f)
                                 row["filename"] = f["filename"]
                                 row["lineNumber"] = f["lineNumber"]
                                 row["methodFullName"] = f["methodFullName"]
@@ -528,6 +559,9 @@ def post_process_and_export_results(d_res: dict, build_name: str, disc_output_di
                             pass
     ofile = disc_output_dir / f"discovery_{build_name}.csv"
     utils.write_csv_file(ofile, fields, rows)
+    findings_file = disc_output_dir / f"findings_{build_name}.json"
+    with open(findings_file, 'w+') as f:
+        json.dump(findings, f, sort_keys=True, indent=4)
     d_results = {
         "discovery_result_file": str(ofile),
         "results": d_res
@@ -559,7 +593,8 @@ def get_unsuccessful_discovery_tpi_from_results(d_res):
             for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
             for tpi_id in d_res["results"][tp_id]['instances']
             if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
-            d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is None]
+            (d_res["results"][tp_id]['instances'][tpi_id]["instance"] is None
+            or d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is None)]
 
 
 def get_successful_discovery_tpi_from_results(d_res):
@@ -567,6 +602,7 @@ def get_successful_discovery_tpi_from_results(d_res):
             for tp_id in [tp_id for tp_id in d_res["results"] if d_res["results"][tp_id]['measurement_found'] is not False]
             for tpi_id in d_res["results"][tp_id]['instances']
             if d_res["results"][tp_id]['instances'][tpi_id]["measurement"] in ["not_supported", "ignored"] and
+            d_res["results"][tp_id]['instances'][tpi_id]["instance"] is not None and
             d_res["results"][tp_id]['instances'][tpi_id]["discovery"]["results"] is not None]
 
 
@@ -577,7 +613,9 @@ def get_num_discovery_findings_from_results(d_res):
             continue
         for tpi_id in d_res["results"][tp_id]['instances']:
             tpi_data = d_res["results"][tp_id]['instances'][tpi_id]
-            if tpi_data["measurement"] in ["not_supported", "ignored"]  and tpi_data["discovery"]["results"] is not None:
+            if (tpi_data["measurement"] in ["not_supported", "ignored"] 
+                and d_res["results"][tp_id]['instances'][tpi_id]["instance"] is not None
+                and tpi_data["discovery"]["results"] is not None):
                 for r in tpi_data["discovery"]["results"]:
                     if r["discovery"] == True:
                         n += 1

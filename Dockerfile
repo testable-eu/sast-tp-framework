@@ -36,18 +36,13 @@ ARG REQUIREMENTS_FILE
 COPY ${REQUIREMENTS_FILE} ${TPF_HOME}/${REQUIREMENTS_FILE}
 RUN pip install -r ${TPF_HOME}/${REQUIREMENTS_FILE}
 
-ARG JOERN_VERSION="v1.1.1538"
+ARG JOERN_VERSION="v1.1.1709"
 RUN echo ${JOERN_VERSION}
 COPY discovery ${DISCOVERY_HOME}
 RUN chmod +x ${DISCOVERY_HOME}/joern/joern-install.sh
-RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/ && ./joern-install.sh --version=v1.1.1538 --install-dir=/opt/joern'
-
-# install js2cpg
-# RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/js2cpg/; sbt stage'
-
+RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/ && ./joern-install.sh --version=${JOERN_VERSION} --install-dir=/opt/joern --reinstall --without-plugins'
 
 # ADD HERE COMMANDS USEFUL FOR OTHER DOCKER-COMPOSE SERVICES
-#
 
 ENV PYTHONPATH "${PYTHONPATH}:${TPF_HOME}/tp_framework"
 
