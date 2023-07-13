@@ -65,6 +65,7 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     utils.check_tp_lib(tp_lib_path)
     d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
                                 disc_output_dir, ignore=ignore, cpg=cpg)
+    print(d_res)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")
@@ -78,11 +79,12 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
         print(f"  - measurement not found for {len(l_ign_tp)} patterns: {l_ign_tp}")
         print(f"  - measurement not found for {len(l_ign_tpi)} pattern instances: {l_ign_tpi}")
         print(f"  - discovery skipped for {len(l_ign_tpi_as_supported)} pattern instances as supported by SAST tools: {l_ign_tpi_as_supported}")
+    
     l_tpi_unsucc_dr = discovery.get_unsuccessful_discovery_tpi_from_results(d_res)
     l_tpi_succ_dr = discovery.get_successful_discovery_tpi_from_results(d_res)
     nfindings = discovery.get_num_discovery_findings_from_results(d_res)
     print(f"- discovery rules:")
-    print(f"  - not found for {len(l_tpi_unsucc_dr)} pattern instances: {l_tpi_unsucc_dr}")
+    print(f"  - not working for {len(l_tpi_unsucc_dr)} pattern instances: {l_tpi_unsucc_dr}")
     print(f"  - successful for {len(l_tpi_succ_dr)} pattern instances")
     print(f"  - {nfindings} occurrences of pattern instances discovered")
 

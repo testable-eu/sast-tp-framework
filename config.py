@@ -37,7 +37,8 @@ JOERN_CPG_GEN_CONFIG_FILE: Path = _ROOT_JOERN_CPG_GEN_DIR / "cpg-gen-config.yaml
 
 DEFAULT_DISCOVERY_METHOD = "joern"
 DISCOVERY_RULE_MAPPING = {
-    "joern": ".sc"
+    "joern": ".sc",
+    "python": ".py"
 }
 
 PATCHED_PREFIX = "__P@TCHED__"

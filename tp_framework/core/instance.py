@@ -1,4 +1,5 @@
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Tuple
 
@@ -34,7 +35,6 @@ class Instance:
         self.pattern_id = None
         self.language = None
         self.name = None
-        self.pattern = None
         self.tp_lib_path = None
 
         # JSON fields
@@ -113,7 +113,13 @@ class Instance:
         self.remediation_modeling_rule = utils.get_from_dict(instance_properties, "remediation", "modeling_rule")
         self._assert_instance()
         return self
-    
+
+    def __deepcopy__(self, memo):
+        copied_instance = Instance()
+        for key, value in vars(self).items():
+            copied_instance.__setattr__(key, value)
+        return copied_instance
+
     def __getattribute__(self, name):
         base_path = super().__getattribute__("path")
         attr = super().__getattribute__(name)
@@ -123,6 +129,9 @@ class Instance:
     
     def __str__(self) -> str:
         return f"{self.language} - p{self.pattern_id}:{self.instance_id}"
+    
+    def __repr__(self) -> str:
+        return f"{self.pattern_id}_i{self.instance_id}"
 
     def _log_prefix(self):
         return f"Pattern {self.pattern_id} - Instance {self.instance_id} - "
@@ -189,3 +198,26 @@ class Instance:
                     "modeling_rule": self.remediation_modeling_rule
                 }
             }
+
+    def validate_for_discovery(self):
+        if not self.discovery_rule or not self.discovery_method:
+            return False
+        if self.discovery_method and self.discovery_rule.suffix != utils.get_discovery_rule_ext(self.discovery_method):
+            return False
+        test_bin = Path(__file__).parent  / "cpg_Test.bin"
+        try:
+            cmd = f"joern --script {self.discovery_rule} --params name={test_bin.resolve()} 2>&1"
+            output = subprocess.check_output(cmd, shell=True).decode('utf-8-sig')
+        except subprocess.CalledProcessError:
+            return False
+        except:
+            return False
+        return True
+
+
+if __name__ == "__main__":
+    instance = Instance()
+    instance.pattern_id = 6
+    instance.instance_id = 6
+    print(instance)
+    print(repr(instance))

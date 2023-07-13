@@ -190,7 +190,8 @@ if [ $INSTALL_DEFAULT_PLUGINS = true ]; then
   echo "Installing default plugins"
   CURDIR=$(pwd)
   cd $JOERN_INSTALL_DIR/joern-cli
-  ./joern-scan --updatedb
+  echo "${JOERN_VERSION/"v"/""}"
+  ./joern-scan --updatedb --dbversion "${JOERN_VERSION/v/""}"
   cd "$CURDIR"
 fi
 

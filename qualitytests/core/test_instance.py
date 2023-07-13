@@ -2,6 +2,7 @@ import json
 import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open
+from copy import deepcopy
 
 from core.instance import Instance
 from core.exceptions import InstanceInvalid
@@ -155,3 +156,13 @@ class TestInstance:
         assert Path(new_path / "awesome_js_code.js").resolve() == test_instance.expectation_source_file
         assert test_instance.compile_binary is None
         assert Path(new_path / "../test_scala.sc").resolve() == test_instance.discovery_rule
+    
+    def test_instance_deepcopy(self):
+        test_instance = create_instance()
+        test_instance.code_path = Path("./a.php")
+        copied_instance = deepcopy(test_instance)
+        copied_instance.path = Path("/tmp")
+        copied_instance.language = "new_language"
+        assert copied_instance.path != test_instance.path
+        assert copied_instance.code_path.relative_to(copied_instance.path) == test_instance.code_path.relative_to(test_instance.path)
+        assert copied_instance.language != test_instance.language
