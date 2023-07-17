@@ -1,4 +1,5 @@
 import json
+import re
 from copy import deepcopy
 from typing import Dict, Tuple
 from pathlib import Path
@@ -102,11 +103,9 @@ def evaluate_discovery_rule_results(raw_findings: str,
     # add measurement
     all_res = positive_res + negative_res
     all_res = _add_measurement(all_res, sast_measurement)
-
     # export results
     _export_csv_file(sorted(all_res, key=lambda x: x.rule_name), output_dir, build_name)
     _export_findings_file(positive_res, output_dir, build_name)
-    print("\033[91m", [res.result for res in all_res], "\033[0m")
     return all_res
 
 
@@ -126,6 +125,7 @@ def _parse_finding_line(raw_finding_line: str, rule_id_instance_mapping: dict, q
     # load it as json
     result_list = json.loads(result)
     instances = rule_id_instance_mapping[rule_id.strip()]
+
     # return a discovery_result
     return DiscoveryResult(rule_name, instances, cpg_path, result_list, rule_id, query_file=query_file)
 
@@ -136,6 +136,8 @@ def _process_raw_findings(raw_findings: str, rule_id_instance_mapping: dict, que
     all_findings = raw_findings.strip().split("\n")
     d_results = []
     for finding in all_findings:
+        if not re.match(r"^[^:]+: \(.*\)$", finding):
+            logger.info(f"\033[92mSkipping line {finding} in output, does not meet the required format.\033[0m")
         try:
             d_results += [_parse_finding_line(finding, rule_id_instance_mapping, query_file)]
         except json.JSONDecodeError:
@@ -217,7 +219,6 @@ def _export_findings_file(list_of_results: list, disc_output_dir: Path, build_na
         if d_res.status == "DISCOVERY":
             findings += [d_res.to_json()]
     ofile_csv = disc_output_dir / f"findings_{build_name}.json"
-    print("\033[92m", findings, "\033[0m")
     with open(ofile_csv, "w") as json_file:
         json.dump(findings, json_file, sort_keys=True, indent=4)
 

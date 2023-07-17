@@ -65,7 +65,6 @@ def run_discovery_for_pattern_list(src_dir: Path, pattern_id_list: list[int], la
     utils.check_tp_lib(tp_lib_path)
     d_res = discovery.discovery(Path(src_dir), pattern_id_list, tp_lib_path, itools, language, build_name,
                                 disc_output_dir, ignore=ignore, cpg=cpg)
-    print(d_res)
     print("Discovery for patterns completed.")
     print(f"- results available here: {disc_output_dir}")
     print(f"- log file available here: {disc_output_dir / config.logfile}")

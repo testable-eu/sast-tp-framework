@@ -200,6 +200,24 @@ class Instance:
             }
 
     def validate_for_discovery(self):
+        ############## TMP ##############
+        # if self.pattern_id == 4 and self.instance_id == 1:
+        #     return False
+        # if self.pattern_id == 5 and self.instance_id < 3:
+        #     return False
+        # if self.pattern_id == 47 and self.instance_id == 1:
+        #     return False
+        # if self.pattern_id == 48 and self.instance_id == 1:
+        #     return False
+        # if self.pattern_id == 55 and self.instance_id == 1:
+        #     return False
+        # if self.pattern_id == 80 and self.instance_id == 2:
+        #     return False
+        # if self.pattern_id == 83 and self.instance_id == 3:
+        #     return False
+        # return True
+        #################################
+
         if not self.discovery_rule or not self.discovery_method:
             return False
         if self.discovery_method and self.discovery_rule.suffix != utils.get_discovery_rule_ext(self.discovery_method):
@@ -213,11 +231,3 @@ class Instance:
         except:
             return False
         return True
-
-
-if __name__ == "__main__":
-    instance = Instance()
-    instance.pattern_id = 6
-    instance.instance_id = 6
-    print(instance)
-    print(repr(instance))

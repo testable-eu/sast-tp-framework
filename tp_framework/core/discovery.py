@@ -190,11 +190,9 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
     no_meas_result = []
     sast_measurements = None
     if not ignored:
-        # TODO: the sast dict, where there is written for each instance what the measurement status is
         output = _preprocess_for_discovery_under_measurement(valid_instances, itools, tp_lib, language)
         valid_instances, no_meas_result, supported_by_sast = output
         sast_measurements = _get_sast_measurements(invalid_instances, valid_instances, no_meas_result, supported_by_sast)
-        print(sast_measurements)
     grouped_instances = _group_by_discovery_method(valid_instances)
 
     # discovery
@@ -416,15 +414,18 @@ def _sanitize_rule(raw_lines: list, suffix: str, sub_rule_id: str):
 
 def get_ignored_tp_from_results(d_res: list[DiscoveryResult]):
     results_to_consider = filter(lambda res: any(map(lambda v: v in res.sast_measurement, ["not_found"])), d_res)
-    return sorted(list(set([f"{i.pattern_id}" for res in results_to_consider for i in res.instances])))
+    return sorted(list(set([f"{i.pattern_id}" for res in results_to_consider for i in res.instances])),
+                  key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
 def get_ignored_tpi_from_results(d_res, ignored_as):
-    return sorted(list(set([repr(i) for res in filter(lambda r: ignored_as in r.sast_measurement, d_res) for i in res.instances])))
+    return sorted(list(set([repr(i) for res in filter(lambda r: ignored_as in r.sast_measurement, d_res) for i in res.instances])),
+                  key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
 def get_error_tpi_from_results(d_res):
-    return sorted(list(set([repr(i) for res in filter(lambda r: r.status == "ERROR_DISCOVERY", d_res) for i in res.instances])))
+    return sorted(list(set([repr(i) for res in filter(lambda r: r.status == "ERROR_DISCOVERY", d_res) for i in res.instances])),
+                  key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
 def get_unsuccessful_discovery_tpi_from_results(d_res):
@@ -434,7 +435,8 @@ def get_unsuccessful_discovery_tpi_from_results(d_res):
 def get_successful_discovery_tpi_from_results(d_res):
     return sorted(list(set([
         repr(i) for res in filter(lambda r: r.status == "DISCOVERY" or r.status == "NO_DISCOVERY", d_res) 
-        for i in res.instances])))
+        for i in res.instances])),
+        key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
 def get_num_discovery_findings_from_results(d_res):
