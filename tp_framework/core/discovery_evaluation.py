@@ -1,10 +1,9 @@
 import json
 import re
-from copy import deepcopy
-from typing import Dict, Tuple
+from typing import Dict
 from pathlib import Path
+from tqdm import tqdm
 
-import config
 from core import utils
 import logging
 from core import loggermgr
@@ -104,6 +103,7 @@ def evaluate_discovery_rule_results(raw_findings: str,
     all_res = positive_res + negative_res
     all_res = _add_measurement(all_res, sast_measurement)
     # export results
+    logger.info("Discovery - Exporting results")
     _export_csv_file(sorted(all_res, key=lambda x: x.rule_name), output_dir, build_name)
     _export_findings_file(positive_res, output_dir, build_name)
     return all_res
@@ -154,7 +154,7 @@ def _process_joern_results(list_of_discovery_results: list):
     error_instances = []
     all_findings = []
     d_result: DiscoveryResult
-    for d_result in list_of_discovery_results:
+    for d_result in tqdm(list_of_discovery_results):
         json_result = d_result.result
         if not json_result:
             d_result.result = None
@@ -167,8 +167,8 @@ def _process_joern_results(list_of_discovery_results: list):
                 logger.error(error)
                 error_instances += d_result.instances
                 continue
-            finding_result = deepcopy(d_result)
-            finding_result.result = finding
+            finding_result = DiscoveryResult(d_result.rule_name, d_result.instances, d_result.cpg_path, 
+                                             finding, d_result.rule_id, d_result.queryFile)
             finding_result.status = discovery_result_strings["discovery"]
             all_findings += [finding_result]
     return all_findings, error_instances
