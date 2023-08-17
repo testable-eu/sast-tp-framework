@@ -2,7 +2,6 @@ import json
 import re
 from typing import Dict
 from pathlib import Path
-from tqdm import tqdm
 
 from core import utils
 import logging
@@ -19,45 +18,82 @@ discovery_result_strings = {
     "supported": "SUPPORTED_BY_SAST"
 }
 
+# Could be outsourced into its own file
+# Container for a Discovery result, that can be converted to CSV or to JSON
 class DiscoveryResult:
     def __init__(self, rule_name: str, 
                  instances: list, 
                  cpg_path: str, 
                  result: list[Dict],
                  rule_id: str, 
-                 query_file: str = None) -> None:
+                 query_file: str = None,
+                 error: str = None) -> None:
         self.cpg_path = cpg_path.strip()
         self.instances = instances
+        # raw result dict
         self.result = result
         self.rule_name = rule_name.strip()
         self.rule_id = rule_id.strip()
         self.queryFile = query_file
+        self.discovery_method = None
 
-        self.error = None
+        # stores information about what was wrong with this discovery result
+        self.error = error
+        # one of the values of `discovery_result_strings`
         self.status = None
+
+    @staticmethod
+    def csv_headers():
+        return ["patternId","instanceId", "instanceName", "sast_measurement", "method", "queryFile", "queryHash", 
+                "queryName", "queryAccuracy", "queryAlreadyExecuted", "discovery", "filename", "lineNumber", "methodFullName"]
+
+    @staticmethod
+    def checkdiscoveryrules_headers():
+        return ["pattern_id","instance_id", "instance_path", "pattern_name", "language", "discovery_rule", "successful"]
 
     def to_csv(self) -> list:
         # patternId,instanceId,instanceName,sast_measurement,method,queryFile,queryHash,queryName,queryAccuracy,queryAlreadyExecuted,discovery,filename,lineNumber,methodFullName
         res = []
         assert isinstance(self.result, dict) or self.result is None
+        base_dict = {
+            "method": self.discovery_method,
+            "queryFile": str(self.queryFile), 
+            "queryHash": utils.get_file_hash(self.queryFile) if self.queryFile else "",
+            "queryName": self.rule_name,
+            "queryAlreadyExecuted": not bool(self.error), 
+            "discovery": bool(self.result) if not self.error else "failure", 
+            "filename": self.result["filename"] if self.result else None, 
+            "lineNumber": self.result["lineNumber"] if self.result else None,
+            "methodFullName": self.result["methodFullName"] if self.result and "methodFullName" in self.result else None
+        }
+
+        # special case, as manual discovery does not have instances
+        if not self.instances:
+            return [base_dict]
+        
         for idx, instance in enumerate(self.instances):
             res += [{
                 "patternId": instance.pattern_id,
                 "instanceId": instance.instance_id, 
                 "instanceName": instance.name, 
-                "sast_measurement": self.sast_measurement[idx],
-                "method": instance.discovery_method,
-                "queryFile": str(self.queryFile), 
-                "queryHash": utils.get_file_hash(self.queryFile) if self.queryFile else "",
-                "queryName": self.rule_name, 
+                "sast_measurement": self.sast_measurement[idx], 
+                **base_dict,
                 "queryAccuracy": instance.discovery_rule_accuracy,
-                "queryAlreadyExecuted": not bool(self.error) and idx != 0, 
-                "discovery": bool(self.result) if not self.error else "failure", 
-                "filename": self.result["filename"] if self.result else None, 
-                "lineNumber": self.result["lineNumber"] if self.result else None,
-                "methodFullName": self.result["methodFullName"] if self.result and "methodFullName" in self.result else None
+                "method": instance.discovery_method,
+                "queryAlreadyExecuted": not bool(self.error) and idx != 0,
             }]
         return res
+
+    def to_checkdiscoveryresults_csv(self) -> list:
+        return [{
+            "pattern_id": instance.pattern_id, 
+            "instance_id": instance.instance_id,
+            "instance_path": instance.path,
+            "pattern_name": "",
+            "language": instance.language,
+            "discovery_rule": instance.discovery_rule,
+            "successful": utils.translate_bool(bool(self.result)) if not self.error else "failure"
+            } for instance in self.instances]
 
     def to_json(self) -> dict:
         # discovery, filename, lineNumber, methodFullName, queryFile, queryName
@@ -72,6 +108,10 @@ class DiscoveryResult:
 
     def __str__(self) -> str:
         return f"{self.instances}_{len(self.result)}"
+    
+    # def __hash__(self) -> int:
+    #     # we define two Discovery results as the same iff they output the same json, t
+    #     return hash((self.to_json(), self.to_checkdiscoveryresults_csv(), self.to_csv()))
 
 
 def evaluate_discovery_rule_results(raw_findings: str, 
@@ -81,7 +121,8 @@ def evaluate_discovery_rule_results(raw_findings: str,
                                     output_dir: Path,
                                     build_name: str,
                                     query_file: Path,
-                                    sast_measurement: dict = None) -> list[DiscoveryResult]:
+                                    sast_measurement: dict = None,
+                                    export_results: bool = True) -> list[DiscoveryResult]:
     # parse raw findings into DiscoveryResults
     findings = _process_raw_findings(raw_findings, rule_id_instance_mapping, query_file)
 
@@ -102,10 +143,12 @@ def evaluate_discovery_rule_results(raw_findings: str,
     # add measurement
     all_res = positive_res + negative_res
     all_res = _add_measurement(all_res, sast_measurement)
-    # export results
-    logger.info("Discovery - Exporting results")
-    _export_csv_file(sorted(all_res, key=lambda x: x.rule_name), output_dir, build_name)
-    _export_findings_file(positive_res, output_dir, build_name)
+
+    if export_results:
+        # export results
+        logger.info("Discovery - Exporting results")
+        _export_findings_file(positive_res, output_dir, build_name)
+        _export_csv_file(sorted(all_res, key=lambda x: x.rule_name), output_dir, build_name)
     return all_res
 
 
@@ -154,8 +197,9 @@ def _process_joern_results(list_of_discovery_results: list):
     error_instances = []
     all_findings = []
     d_result: DiscoveryResult
-    for d_result in tqdm(list_of_discovery_results):
+    for d_result in list_of_discovery_results:
         json_result = d_result.result
+        d_result.discovery_method = "joern"
         if not json_result:
             d_result.result = None
             d_result.status = discovery_result_strings["no_discovery"]
@@ -228,6 +272,11 @@ def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: s
     d_res: DiscoveryResult
     for d_res in list_of_results:
         rows += d_res.to_csv()
-    rows = sorted(rows, key=lambda d: (d["patternId"], d["instanceId"]))
+    if not rows:
+        logger.warning('Could not find results to write a csv file.')
+        return
+    if "patternId" in rows[0].keys() and "instanceId" in rows[0].keys():
+        rows = sorted(rows, key=lambda d: (d["patternId"], d["instanceId"]))
+    headers = list(set(DiscoveryResult.csv_headers()).intersection(set(rows[0].keys())))
     ofile_csv = disc_output_dir / f"discovery_{build_name}.csv"
-    utils.write_csv_file(ofile_csv, rows[0].keys(), rows)
+    utils.write_csv_file(ofile_csv, headers, rows)

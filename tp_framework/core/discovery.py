@@ -183,7 +183,8 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
                     disc_output_dir: Path,
                     itools: list[Dict] = [],
                     ignored: bool = False,
-                    timeout_sec: int = 0) -> Dict:
+                    timeout_sec: int = 0,
+                    export_results: bool = True) -> Dict:
     # preprocessing
     valid_instances, invalid_instances = _get_discovery_valid_instances(l_tp_id, language, tp_lib)
     supported_by_sast = []
@@ -204,6 +205,7 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
             # execute joern discovery
             pdr = patch_PHP_discovery_rule(dr_path, language, output_dir=disc_output_dir)
             findings = run_joern_discovery_rule(cpg, pdr)
+            print('\033[91m', findings, '\033[0m')
         else:
             discovery_method_not_supported_instances += instances
     
@@ -217,7 +219,7 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         }
     # At the moment, this only works for joern
     return evaluate_discovery_rule_results(findings, rule_id_instance_mapping, invalid_instances, 
-                                    "joern", disc_output_dir, build_name, pdr, sast_measurements)
+                                    "joern", disc_output_dir, build_name, pdr, sast_measurements, export_results)
 
 
 def _get_discovery_valid_instances(list_of_tp_ids: list, language: str, tp_lib: Path):
@@ -444,75 +446,38 @@ def get_num_discovery_findings_from_results(d_res):
 
 
 ############################################################################
-# TODO: make manual discovert and checkdiscovery work again
-
-############################################################################
 # Manual discovery: driven by mere discovery rules whether they are associated with patterns or not
 ############################################################################
 
 def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list[Path], language: str,
-                     build_name: str, disc_output_dir: Path,
-                     timeout_sec: int = 0) -> Dict:
+                     build_name: str, disc_output_dir: Path, timeout_sec: int = 0, export_results: bool = True) -> Dict:
     # TODO: only support Joern as discovery method, discovery method param is thus irrelevant
     # - refactor to support additional discovery method.
     # - maybe the discovery_method can be simply decided from the discovery rule extension?
     logger.info("Execution of specific discovery rules started...")
+    if not discovery_method == "joern":
+        raise DiscoveryMethodNotSupported(f"The discovery method you provided '{discovery_method}' is not yet supported.")
     cpg: Path = generate_cpg(src_dir, language, build_name, disc_output_dir, timeout_sec=timeout_sec)
     findings: list[dict] = []
-    failed = []
+    fake_rule_id = '42'
+    invalid_discovery_rules = []
+    d_results = []
     for discovery_rule in discovery_rules:
         try:
-            # related to #42
-            patched_discovery_rule = patch_PHP_discovery_rule(discovery_rule, language, output_dir=disc_output_dir)
-            #
-            all_findings = run_joern_discovery_rule(cpg, patched_discovery_rule)
-            logger.info("Parsing the results of specific discovery rules started...")
-            for query_name, findings_for_rule in all_findings.items():
-                if len(findings_for_rule) == 0:
-                    findings.append({
-                        "filename": None,
-                        "methodFullName": None,
-                        "lineNumber": None,
-                        "queryName": query_name,
-                        "queryFile": str(discovery_rule),
-                        "result": discovery_result_strings["no_discovery"]
-                    })
-                for f in findings_for_rule:
-                    if any(k not in f for k in mand_finding_joern_keys):
-                        error = f"Discovery - finding {f} does not include some mandatory keys ({mand_finding_joern_keys}). Please fix the rule and re-run. Often this amount to use `location.toJson`"
-                        logger.error(error)
-                        continue
-                    findings.append({
-                        "filename": f["filename"],
-                        "methodFullName": f["methodFullName"] if "methodFullName" in f else None,
-                        "lineNumber": f["lineNumber"],
-                        "queryName": query_name,
-                        "queryFile": str(discovery_rule),
-                        "result": discovery_result_strings["discovery"]
-                    })
+            # execute joern discovery
+            pdr = patch_PHP_discovery_rule(discovery_rule, language, output_dir=disc_output_dir)
+            findings: str = run_joern_discovery_rule(cpg, pdr)
+            # prepend a fake rule id in order to use the `evaluate_discovery_rule_results`
+            findings = '\n'.join([f'{fake_rule_id}: {f}' for f in findings.strip().split('\n')])
         except Exception as e:
-            findings.append({
-                "filename": None,
-                "methodFullName": None,
-                "lineNumber": None,
-                "queryName": None,
-                "queryFile": str(discovery_rule),
-                "result": discovery_result_strings["error"] + ". " + utils.get_exception_message(e)
-            })
-            failed.append(discovery_rule)
-            continue
+            invalid_discovery_rules += [(discovery_rule, str(e))]
+        
+        d_results += evaluate_discovery_rule_results(findings, {fake_rule_id: []}, {'invalid_discovery_rules': invalid_discovery_rules}, 
+                                        discovery_method, disc_output_dir, build_name, discovery_rule, export_results=export_results)
 
-    ofile = disc_output_dir / f"manual_discovery_{build_name}.csv"
-    fields = ["filename", "lineNumber", "methodFullName", "queryName", "queryFile", "result"]
-    utils.write_csv_file(ofile, fields, findings)
-    d_results = {
-        "manual_discovery_result_file": str(ofile),
-        "cpg_file:": str(cpg),
-        "failed_discovery_rules": failed,
-        "findings": findings
-    }
+    
     logger.info("Execution of specific discovery rules completed.")
-    return d_results
+    return {"results": d_results, "failed_discovery_rules": invalid_discovery_rules}
 
 
 ############################################################################
@@ -532,16 +497,16 @@ def get_check_discovery_rule_result_header():
     ]
 
 
-def get_check_discovery_rule_result(pattern: Pattern, instance: Instance | None= None, successful="error") -> Dict:
-    return {
-        "pattern_id": pattern.pattern_id,
-        "instance_id": instance.instance_id if instance else None,
-        "instance_path": instance.path if instance else None,
-        "pattern_name": pattern.name,
-        "language": pattern.language,
-        "discovery_rule": instance.discovery_rule if instance else None,
-        "successful": successful
-    }
+def _update_counters(row_dict: dict, counters: dict):
+    if row_dict["successful"] == "yes":
+        counters["successful"] += 1
+    elif row_dict["successful"] == "no":
+        counters["unsuccessful"] += 1
+    elif row_dict["successful"] == "failure":
+        counters["error"] += 1
+    else:
+        assert False, f"Expected one of ['yes', 'no', 'failure'] in 'successful' field but got '{row_dict['successful']}'"
+    return counters
 
 
 def check_discovery_rules(language: str, l_tp_id: list[int],
@@ -550,91 +515,45 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                           output_dir: Path
                           ) -> Dict:
     logger.info(f"Check/Test discovery rules for {len(l_tp_id)} patterns: started...")
-    results = []
-    success = 0
-    unsuccess = 0
-    missing = 0
-    err = 0
+    d_res = []
     num_patterns = len(l_tp_id)
+    all_results = []
+    missing = 0
     for i, tp_id in enumerate(l_tp_id):
-        logger.info(utils.get_tp_op_status_string(
-            (i + 1, num_patterns, tp_id)  # tp_info
-        ))
-        try:
-            target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
-            num_instances = len(target_pattern.instances)
-        except Exception as e:
-            # should not happen at all! And should be removed and a list of patterns should be parsed to that function
-            logger.warning(
-                f"Either pattern id {tp_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
-            res = get_check_discovery_rule_result(pattern=target_pattern)
-            results.append(res)
-            err += 1
-            continue
-        instance: Instance
+        target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+        num_instances = len(target_pattern.instances)
         for j, instance in enumerate(target_pattern.instances):
-            try:
-                tpi_id = instance.instance_id
-                logger.info(utils.get_tpi_op_status_string(
-                    (i + 1, num_patterns, tp_id),
-                    t_tpi_info=(j + 1, num_instances, tpi_id)
-                ))
-
-                if instance.discovery_rule:
-                    dr_path = instance.discovery_rule
-                    if not dr_path.is_file():
-                        logger.warning(
-                            f"Instance {tpi_id} of pattern {tp_id}: the discovery rule {dr_path} does not exist")
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
-                        results.append(res)
-                        err += 1
-                        continue
-
-                    target_src = instance.path
-
-                    build_name, disc_output_dir = utils.get_operation_build_name_and_dir(
-                        "check_discovery_rules", target_src, language, output_dir)
-                    d_results = manual_discovery(target_src, instance.discovery_method, [dr_path], language,
-                                                 build_name, disc_output_dir, timeout_sec=timeout_sec)
-                    # Inspect the d_results
-                    if d_results["findings"] and any(
-                            f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="yes")
-                        success += 1
-                    else:
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="no")
-                        unsuccess += 1
-                    results.append(res)
-                else:
-                    logger.info(
-                        f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
-                    res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="missing")
-                    results.append(res)
-                    missing += 1
-                logger.info(utils.get_tpi_op_status_string(
-                    (i + 1, num_patterns, tp_id),
-                    t_tpi_info=(j + 1, num_instances, tpi_id),
-                    status="done."
-                ))
-            except Exception as e:
-                logger.warning(
-                    f"Something went wrong for the instance at {instance.path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
-                res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
-                results.append(res)
-                err += 1
+            logger.info(utils.get_tpi_op_status_string(
+                     (i + 1, num_patterns, tp_id),
+                     t_tpi_info=(j + 1, num_instances, instance.instance_id)
+                 ))
+            if not instance.discovery_rule:
+                all_results += [DiscoveryResult("", [instance], "", None, "", error="missing_discovery_rule")]
+                missing += 1
                 continue
-        logger.info(utils.get_tp_op_status_string(
-            (i + 1, num_patterns, tp_id),  # tp_info
-            status="done."
-        ))
-    logger.info(f"Check/Test discovery rules for {num_patterns} patterns: done")
-    d_res = {
-        "results": results,
-        "counters": {
-            "successful": success,
-            "unsuccessful": unsuccess,
-            "missing": missing,
-            "errors": err
-        }
+            build_name, disc_output_dir = utils.get_operation_build_name_and_dir("check_discovery_rules", instance.path, language, output_dir)
+            manual_discovery_results = manual_discovery(instance.path, instance.discovery_method, [instance.discovery_rule], 
+                                                        language, build_name, disc_output_dir, export_results = False)
+            m_results = manual_discovery_results["results"]
+            for d_res in m_results:
+                d_res.instances = [instance]
+            all_results += m_results
+            all_results += [DiscoveryResult("", [instance], "", None, "", error="manual_discovery_failed") 
+                            for _ in manual_discovery_results["failed_discovery_rules"]]
+    rows = []
+    counters = {
+        "successful": 0,
+        "unsuccessful": 0,
+        "missing": missing,
+        "errors": 0
     }
-    return d_res
+    d_res: DiscoveryResult
+    for d_res in all_results:
+        rows += d_res.to_checkdiscoveryresults_csv()
+        counters = _update_counters(rows[-1], counters)
+    rows = sorted(rows, key=lambda d: (d["pattern_id"], d["instance_id"]))
+    return {
+        "results": rows,
+        "counters": counters
+    }
+
