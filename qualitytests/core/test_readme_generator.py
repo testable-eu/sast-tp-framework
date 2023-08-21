@@ -2,8 +2,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.readme_generator import READMEGenerator
-from core.readme_markdown_elements import *
+from core.repair.readme_generator import READMEGenerator
+from core.repair.readme_markdown_elements import *
 from qualitytests.qualitytests_utils import create_pattern, join_resources_path
 
 class TestREADMEGenerator:
@@ -40,7 +40,7 @@ class TestREADMEGenerator:
     def test_init_readme_generator_discovery_results(self, dr_file, dr_res, is_dir, mask_file, warn):
         test_pattern = create_pattern()
         with patch("pathlib.Path.is_dir") as is_dir_mock, \
-            patch("core.readme_generator.logger.warning") as warn_logger, \
+            patch("core.repair.readme_generator.logger.warning") as warn_logger, \
             patch("core.utils.read_json") as read_json_mock, \
             patch("core.utils.read_csv_to_dict") as csv_to_dict_mock:
             is_dir_mock.return_value = is_dir
@@ -127,7 +127,7 @@ class TestREADMEGenerator:
     
     def test_instances(self):
         test_readme_gen = self._get_readme_generator()
-        with patch("core.readme_generator.InstanceREADMEGenerator.generate_md") as generate_md_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator.generate_md") as generate_md_mock:
             actual = test_readme_gen._instances()
         generate_md_mock.assert_called_once()
         assert generate_md_mock.return_value == actual

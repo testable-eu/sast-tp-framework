@@ -1,4 +1,4 @@
-from core.readme_markdown_elements import *
+from core.repair.readme_markdown_elements import *
 
 
 class TestMarkdownElements:

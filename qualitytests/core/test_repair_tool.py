@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.pattern import Pattern
-from core.repair_tool import RepairTool
+from core.repair.repair_tool import RepairTool
 from core.exceptions import PatternRepairError
 from qualitytests.qualitytests_utils import join_resources_path, create_pattern, create_instance
 
@@ -57,7 +57,7 @@ class TestRepairTool:
     def test_copy_template(self):
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.repair_tool.logger.info") as logger, \
+            patch("core.repair.repair_tool.logger.info") as logger, \
             patch("shutil.copy") as copy_file_mock:
 
             is_file_mock.return_value = True
@@ -83,7 +83,7 @@ class TestRepairTool:
                                              should_rename_json: bool):
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.repair_tool.logger.info"), \
+            patch("core.repair.repair_tool.logger.info"), \
             patch("core.utils.get_json_file") as get_pattern_json_mock, \
             patch("core.utils.read_json") as read_json_mock, \
             patch("core.utils.write_json") as write_json_mock, \
@@ -159,7 +159,7 @@ class TestRepairTool:
     def test_check_paths_pattern_exist_all_correct(self):
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.repair_tool.logger.warning") as warn_logger_mock:
+            patch("core.repair.repair_tool.logger.warning") as warn_logger_mock:
 
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
@@ -173,7 +173,7 @@ class TestRepairTool:
         test_instance = create_instance()
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.repair_tool.logger.warning") as warn_logger_mock:
+            patch("core.repair.repair_tool.logger.warning") as warn_logger_mock:
 
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict
@@ -188,7 +188,7 @@ class TestRepairTool:
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("pathlib.Path.exists") as exist_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.repair_tool.logger.warning") as warn_logger_mock:
+            patch("core.repair.repair_tool.logger.warning") as warn_logger_mock:
 
             is_file_mock.return_value = True
             read_json_mock.return_value = TestRepairTool.template_json_dict

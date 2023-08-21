@@ -6,7 +6,7 @@ from pathlib import Path
 
 from core.exceptions import MeasurementInvalid
 from core.measurement import Measurement
-from core.readme_markdown_elements import *
+from core.repair.readme_markdown_elements import *
 
 from core import utils
 from core import loggermgr

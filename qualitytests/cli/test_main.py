@@ -7,6 +7,8 @@ import pytest
 from qualitytests.qualitytests_utils import pyexe, join_resources_path
 from cli import main
 
+from pathlib import Path
+
 
 class TestMain:
     testdir = Path(__file__).parent.parent.resolve()
@@ -17,7 +19,7 @@ class TestMain:
     def test_cli_help_1(self):
         # process call
         cmd = pyexe + " {0} -h".format(self.tpf)
-        pr = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pr = subprocess.Popen(cmd.split(" "), shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (output, errdata) = pr.communicate()
         output = output.decode("utf-8")
         print(output)

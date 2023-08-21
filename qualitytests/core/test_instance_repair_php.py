@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open
 
-from core.instance_repair import InstanceRepairPHP
+from core.repair.instance_repair import InstanceRepairPHP
 from qualitytests.qualitytests_utils import create_instance_php, join_resources_path
 
 class TestInstanceRepairPHP:       
@@ -58,7 +58,7 @@ class TestInstanceRepairPHP:
         with patch("os.utime") as utime_mock, \
             patch("os.system") as system_mock, \
             patch("builtins.open", mock_open(read_data="some data"), create=True), \
-            patch("core.instance_repair.InstanceRepairPHP._mask_line") as mask_line_mock:
+            patch("core.repair.instance_repair.InstanceRepairPHP._mask_line") as mask_line_mock:
             actual = test_instance_php_repair._make_opcode_from_php_file(test_instance_php_repair.instance.code_path)
         
         assert expected == actual
@@ -68,8 +68,8 @@ class TestInstanceRepairPHP:
     
     def test_repair_opcode(self):
         test_instance_php_repair = self._get_instance_repair()
-        with patch("core.instance_repair.InstanceRepairPHP._remove_bash_files") as bash_file_remove_mock, \
-            patch("core.instance_repair.InstanceRepairPHP._make_opcode_from_php_file") as make_opcode_mock, \
+        with patch("core.repair.instance_repair.InstanceRepairPHP._remove_bash_files") as bash_file_remove_mock, \
+            patch("core.repair.instance_repair.InstanceRepairPHP._make_opcode_from_php_file") as make_opcode_mock, \
             patch("core.utils.list_files") as list_files_mock:
             
             list_files_mock.return_value = ["file1"]
@@ -92,8 +92,8 @@ class TestInstanceRepairPHP:
         expected_file = test_instance_php_repair.instance.expectation_sink_file
         test_instance_php_repair.instance.expectation_sink_line = 99
         test_instance_php_repair.instance.expectation_source_line = 99
-        with patch("core.instance_repair.InstanceRepairPHP._get_source_and_sink_for_file") as source_sink_mock, \
-            patch("core.instance_repair.logger.warning") as warn_logger:
+        with patch("core.repair.instance_repair.InstanceRepairPHP._get_source_and_sink_for_file") as source_sink_mock, \
+            patch("core.repair.instance_repair.logger.warning") as warn_logger:
 
             source_sink_mock.return_value = source_sink_ret
             test_instance_php_repair._repair_source_line_sink_line()

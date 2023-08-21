@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 
-from core.pattern_repair import PatternRepair
+from core.repair.pattern_repair import PatternRepair
 from qualitytests.qualitytests_utils import join_resources_path, create_pattern, create_instance2
 
 class TestPatternRepair:
@@ -104,8 +104,8 @@ class TestPatternRepair:
 
         with patch("core.pattern.Pattern.get_description") as get_pattern_description_mock, \
             patch("core.instance.Instance.get_description") as get_instance_description_mock, \
-            patch("core.pattern_repair.logger.warn") as warn_logger, \
-            patch("core.pattern_repair.logger.info") as info_logger, \
+            patch("core.repair.pattern_repair.logger.warn") as warn_logger, \
+            patch("core.repair.pattern_repair.logger.info") as info_logger, \
             patch("pathlib.Path.mkdir") as mkdir_mock, \
             patch("builtins.open") as open_mock:
 

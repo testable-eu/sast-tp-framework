@@ -5,7 +5,7 @@ from core.exceptions import PatternInvalid, AddPatternError, InstanceDoesNotExis
 from core.instance import Instance
 
 from core import utils
-from core.pattern_repair import PatternRepair
+from core.repair.pattern_repair import PatternRepair
 import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
@@ -151,7 +151,7 @@ class Pattern:
                masking_file: Path = None,):
         PatternRepair(self).repair(self)
         if should_include_readme:
-            from core.readme_generator import READMEGenerator
+            from core.repair.readme_generator import READMEGenerator
             readme = READMEGenerator(pattern=self, discovery_rule_results=discovery_rule_results, 
                             measurement_results=measurement_results,
                             masking_file=masking_file).generate_README()

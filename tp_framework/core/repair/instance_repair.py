@@ -10,7 +10,7 @@ import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
-from core.repair_tool import RepairTool
+from core.repair.repair_tool import RepairTool
 
 class InstanceRepair(RepairTool):
     def __init__(self, instance, pattern: Path) -> None:

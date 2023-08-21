@@ -4,7 +4,7 @@ from typing import Tuple
 
 from core import utils
 from core.exceptions import InstanceInvalid
-from core.instance_repair import InstanceRepair
+from core.repair.instance_repair import InstanceRepair
 
 
 # class PatternCategory(str, Enum):

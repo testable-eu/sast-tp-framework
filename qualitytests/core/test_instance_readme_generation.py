@@ -3,8 +3,8 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch, mock_open
 
-from core.readme_generator import InstanceREADMEGenerator
-from core.readme_markdown_elements import *
+from core.repair.readme_generator import InstanceREADMEGenerator
+from core.repair.readme_markdown_elements import *
 from qualitytests.qualitytests_utils import create_pattern
 
 class TestInstanceREADMEGenerator:
@@ -40,7 +40,7 @@ class TestInstanceREADMEGenerator:
         expected_code = instance_readme_gen.current_instance.code_path
         instance_readme_gen.current_instance.expectation_source_file = "code_file"
         instance_readme_gen.current_instance.expectation_sink_file = "code_file"
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.return_value = "x = 1"
 
             actual1 = instance_readme_gen._instance_code()
@@ -52,7 +52,7 @@ class TestInstanceREADMEGenerator:
         assert "Code" == actual1[0].content
         assert isinstance(actual1[1], MarkdownCode)
 
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.return_value = None
 
             actual2 = instance_readme_gen._instance_code()
@@ -63,7 +63,7 @@ class TestInstanceREADMEGenerator:
         expected_code = instance_readme_gen.current_instance.code_path
         instance_readme_gen.current_instance.expectation_source_file = "code_file_source"
         instance_readme_gen.current_instance.expectation_sink_file = "code_file_sink"
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.return_value = "x = 1"
 
             actual1 = instance_readme_gen._instance_code()
@@ -82,7 +82,7 @@ class TestInstanceREADMEGenerator:
         assert "Sink File" == actual1[3].content
         assert isinstance(actual1[4], MarkdownCode)
 
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.reset_mock()
             file_content_mock.return_value = None
 
@@ -110,7 +110,7 @@ class TestInstanceREADMEGenerator:
     
     def test_compile(self):
         instance_readme_gen = self._get_instance_readme_generator()
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.return_value = "binary"
             actual1 = instance_readme_gen._compile()
 
@@ -119,7 +119,7 @@ class TestInstanceREADMEGenerator:
         assert 1 == len(actual1)
         assert isinstance(actual1[0], MarkdownCollapsible)
 
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.return_value = ""
             actual2 = instance_readme_gen._compile()
 
@@ -157,7 +157,7 @@ class TestInstanceREADMEGenerator:
         instance_readme_gen = self._get_instance_readme_generator()
         instance_readme_gen.current_instance.discovery_rule = rule_path
         instance_readme_gen.current_instance.discovery_notes = desc
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.side_effect = [desc, dr_return]
             actual = instance_readme_gen._discovery()
         file_content_mock.assert_called()
@@ -257,7 +257,7 @@ class TestInstanceREADMEGenerator:
     @pytest.mark.parametrize("get_file_content_ret, expected_classes, expected_content", remediation_testcases)
     def test_remediation(self, get_file_content_ret: list, expected_classes: list, expected_content: list):
         instance_readme_gen = self._get_instance_readme_generator()
-        with patch("core.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
+        with patch("core.repair.readme_generator.InstanceREADMEGenerator._get_file_content_if_exists") as file_content_mock:
             file_content_mock.side_effect = get_file_content_ret
 
             actual = instance_readme_gen._remediation()

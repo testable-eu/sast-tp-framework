@@ -4,7 +4,7 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 
 from core.instance import Instance
-from core.repair_tool import RepairTool
+from core.repair.repair_tool import RepairTool
 from core import utils
 
 class PatternRepair(RepairTool):

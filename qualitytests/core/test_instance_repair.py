@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open
 
-from core.instance_repair import InstanceRepair
+from core.repair.instance_repair import InstanceRepair
 from core.exceptions import PatternRepairError
 from qualitytests.qualitytests_utils import create_instance, create_pattern
 
@@ -50,7 +50,7 @@ class TestInstanceRepair:
         test_pattern = create_pattern()
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.instance_repair.globals") as global_mock:
+            patch("core.repair.instance_repair.globals") as global_mock:
             is_file_mock.return_value = True
             read_json_mock.return_value = TestInstanceRepair.template_json_dict
 
@@ -67,7 +67,7 @@ class TestInstanceRepair:
         test_pattern = create_pattern()
         with patch("pathlib.Path.is_file") as is_file_mock, \
             patch("core.utils.read_json") as read_json_mock, \
-            patch("core.instance_repair.logger.error") as logger_error, \
+            patch("core.repair.instance_repair.logger.error") as logger_error, \
             pytest.raises(PatternRepairError) as e_info:
 
             is_file_mock.return_value = True
@@ -110,8 +110,8 @@ class TestInstanceRepair:
             test_instance_repair.to_repair.discovery_rule = dr_rule_path
         dr_rule = TestInstanceRepair.example_rule.replace(dr_rule_replace, "")
         with patch("builtins.open", mock_open(read_data=dr_rule), create=True), \
-            patch("core.instance_repair.logger.info") as info_logger, \
-            patch("core.instance_repair.logger.warning") as warn_logger:
+            patch("core.repair.instance_repair.logger.info") as info_logger, \
+            patch("core.repair.instance_repair.logger.warning") as warn_logger:
             test_instance_repair._adjust_variable_number_in_discovery_rule()
         
         if dr_rule_replace:
@@ -124,12 +124,12 @@ class TestInstanceRepair:
         test_instance_repair = self._get_instance_repair()
 
         test_instance_repair.to_repair.discovery_rule_accuracy = "FP"
-        with patch("core.instance_repair.logger.warning") as warn_logger:
+        with patch("core.repair.instance_repair.logger.warning") as warn_logger:
             test_instance_repair._check_rule_accuracy()
         warn_logger.assert_not_called()
     
         test_instance_repair.to_repair.discovery_rule_accuracy = ""
-        with patch("core.instance_repair.logger.warning") as warn_logger:
+        with patch("core.repair.instance_repair.logger.warning") as warn_logger:
             test_instance_repair._check_rule_accuracy()
         warn_logger.assert_called_once_with("PatternRepair (JS - p1:1) Discovery rule given, but no rule accuracy.")
     
@@ -149,10 +149,10 @@ class TestInstanceRepair:
         test_instance_repair = self._get_instance_repair()
         test_instance_repair.to_repair.discovery_rule = dr_rule
         with patch("pathlib.Path.is_file") as is_file_mock, \
-            patch("core.instance_repair.InstanceRepair._adjust_variable_number_in_discovery_rule") as adjust_mock, \
-            patch("core.instance_repair.InstanceRepair._check_rule_accuracy") as check_rule_mock, \
-            patch("core.instance_repair.logger.warning") as logger_warn_mock, \
-            patch("core.instance_repair.logger.info") as logger_info_mock:
+            patch("core.repair.instance_repair.InstanceRepair._adjust_variable_number_in_discovery_rule") as adjust_mock, \
+            patch("core.repair.instance_repair.InstanceRepair._check_rule_accuracy") as check_rule_mock, \
+            patch("core.repair.instance_repair.logger.warning") as logger_warn_mock, \
+            patch("core.repair.instance_repair.logger.info") as logger_info_mock:
             is_file_mock.return_value = is_file_return
 
             test_instance_repair._repair_scala_rule()
@@ -172,9 +172,9 @@ class TestInstanceRepair:
     
     def test_repair(self):
         test_instance_repair = self._get_instance_repair()
-        with patch("core.instance_repair.InstanceRepair._ensure_json_file_exists") as func1_mock, \
-            patch("core.instance_repair.InstanceRepair._repair_scala_rule") as func2_mock, \
-            patch("core.instance_repair.RepairTool.to_json") as func3_mock:
+        with patch("core.repair.instance_repair.InstanceRepair._ensure_json_file_exists") as func1_mock, \
+            patch("core.repair.instance_repair.InstanceRepair._repair_scala_rule") as func2_mock, \
+            patch("core.repair.instance_repair.RepairTool.to_json") as func3_mock:
             test_instance_repair.repair()
         func1_mock.assert_called_once()
         func2_mock.assert_called_once()
