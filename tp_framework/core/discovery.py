@@ -1,11 +1,9 @@
-import json
 import os
 import re
 import subprocess
 from pathlib import Path
 from typing import Dict, Tuple
 from uuid import uuid1
-from copy import copy, deepcopy
 
 import logging
 from core import loggermgr
@@ -14,18 +12,14 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, measurement
-from core.pattern import Pattern
-from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
-    CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
+from core.exceptions import DiscoveryMethodNotSupported, CPGGenerationError, \
+    CPGLanguageNotSupported, DiscoveryRuleError, InvalidSastTools
 from core.measurement import Measurement
 from core.discovery_evaluation import evaluate_discovery_rule_results, DiscoveryResult
-
 from core.instance import Instance
 from core.pattern import Pattern
 
-# mand_finding_joern_keys = ["filename", "methodFullNa
 mand_finding_joern_keys = ["filename", "lineNumber"]
-
 
 
 def generate_cpg(rel_src_dir_path: Path, language: str, build_name: str, output_dir: Path,
@@ -108,7 +102,7 @@ def run_joern_discovery_rule_cmd(run_joern_scala_query: str):
     return output
 
 
-def run_joern_discovery_rule(cpg: Path, discovery_rule: Path) -> Dict:
+def run_joern_discovery_rule(cpg: Path, discovery_rule: Path) -> str:
     logger.debug(f"Discovery - joern rule execution to be executed: {cpg}, {discovery_rule}")
     run_joern_scala_query = f"joern --script {discovery_rule} --params name={cpg}"
     try:
@@ -159,7 +153,7 @@ def discovery(src_dir: Path, l_tp_id: list[int], tp_lib_path: Path, itools: list
               disc_output_dir: Path,
               timeout_sec: int = 0,
               ignore=False,
-              cpg: str = None) -> Dict:
+              cpg: str = None) -> list[DiscoveryResult]:
     logger.info("Discovery for patterns started...")
     # TODO: to support multiple discovery methods the following would need major refactoring.
     # - CPG is specific to Joern
@@ -184,32 +178,38 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
                     itools: list[Dict] = [],
                     ignored: bool = False,
                     timeout_sec: int = 0,
-                    export_results: bool = True) -> Dict:
-    # preprocessing
+                    export_results: bool = True) -> list[DiscoveryResult]:
+    # Preprocessing
+    # Filter all instances and find those which can/should be used for discovery
+    # It is important, that all instances, that should be included have a discovery rule, that compiles, 
+    # otherwise the large combined rule will not compile.
     valid_instances, invalid_instances = _get_discovery_valid_instances(l_tp_id, language, tp_lib)
     supported_by_sast = []
     no_meas_result = []
     sast_measurements = None
     if not ignored:
+        # Filter out instances, that are already supported by SAST or have no measurement result
         output = _preprocess_for_discovery_under_measurement(valid_instances, itools, tp_lib, language)
         valid_instances, no_meas_result, supported_by_sast = output
         sast_measurements = _get_sast_measurements(invalid_instances, valid_instances, no_meas_result, supported_by_sast)
     grouped_instances = _group_by_discovery_method(valid_instances)
 
-    # discovery
+    # Discovery
     discovery_method_not_supported_instances = []
+    parsing_error_instances = []
+    rule_id_instance_mapping = {}
+    findings = pdr = None
     for discovery_method, instances in grouped_instances.items():
         if discovery_method == "joern":
-            # generate one rule in order to save loading the cpg for each rule
+            # Generate one large rule in order to save loading the cpg for each rule.
             dr_path, parsing_error_instances, rule_id_instance_mapping = _get_large_discovery_rule(instances, disc_output_dir, build_name)
-            # execute joern discovery
+            # Execute joern discovery
             pdr = patch_PHP_discovery_rule(dr_path, language, output_dir=disc_output_dir)
             findings = run_joern_discovery_rule(cpg, pdr)
-            print('\033[91m', findings, '\033[0m')
         else:
             discovery_method_not_supported_instances += instances
     
-    # evaluate
+    # Collect all instances, that got filtered out during the process
     invalid_instances = {
         "invalid discovery rule": invalid_instances, 
         "error while parsing discovery rule": parsing_error_instances,
@@ -218,11 +218,13 @@ def _run_discovery(cpg: Path, l_tp_id: list[int], tp_lib: Path,
         "no meas result": no_meas_result
         }
     # At the moment, this only works for joern
-    return evaluate_discovery_rule_results(findings, rule_id_instance_mapping, invalid_instances, 
-                                    "joern", disc_output_dir, build_name, pdr, sast_measurements, export_results)
+    joern_used = "joern" in grouped_instances.keys()
+    return evaluate_discovery_rule_results(findings, rule_id_instance_mapping, invalid_instances, "joern" if joern_used else "", 
+                                           disc_output_dir, build_name, pdr, sast_measurements, export_results)
 
 
-def _get_discovery_valid_instances(list_of_tp_ids: list, language: str, tp_lib: Path):
+def _get_discovery_valid_instances(list_of_tp_ids: list, language: str, tp_lib: Path) -> Tuple[list, list]:
+    # Validates all instances, if they are suitable for discovery.
     logger.info("Validating discovery rules for instances started.")
     valid_instances = []
     invalid_instances = []
@@ -239,9 +241,9 @@ def _get_discovery_valid_instances(list_of_tp_ids: list, language: str, tp_lib: 
     return valid_instances, invalid_instances
 
 
-def _get_instance_measurement_mapping(meas_lang_dir):
-    # WARNING: This code heavily relies on the structure of `measurements`
-    # collect the paths of the measurement results for every instance in a dict of form {<pattern_id>_i<instance_id>}
+def _get_instance_measurement_mapping(meas_lang_dir) -> Dict:
+    # WARNING: This code heavily relies on the structure of `measurements`.
+    # Collect the paths of the measurement results for every instance in a dict of form {<pattern_id>_i<instance_id>: <path_to_meas_file>}
     all_meas_res_for_pat = utils.list_directories(meas_lang_dir)
     instance_meas_res_mapping = {}
     for meas_dir_pat in all_meas_res_for_pat:
@@ -255,16 +257,16 @@ def _get_instance_measurement_mapping(meas_lang_dir):
     return instance_meas_res_mapping
 
 
-def _get_large_discovery_rule(instances_to_include: list[Instance], out_dir: Path, build_name: str):
-    # this function puts all rules of all instances into one single rule
-    # each of the discovery rules will be assigned a sub_rule_id, that can be used to identify the results afterwards
+def _get_large_discovery_rule(instances_to_include: list[Instance], out_dir: Path, build_name: str) -> Tuple[Path, list, Dict]:
+    # This function puts all rules of all instances into one single rule for joern only.
+    # Each of the discovery rules will be assigned a sub_rule_id, that can be used to identify the results afterwards
     logger.info("Preparing discovery rule.")
     # prefix for the new rule
     all_lines = ['@main def main(name : String): Unit = {', '\timportCpg(name)']
     # init constants
     cannot_parse_rules = [] # all the instances, where there is an error, when trying to parse their rule into a large rule
-    sub_rule_id_path_mapping = {} # mapping between the rule path and the assigned sub_rule_id
-    sub_rule_id_instance_mapping = {} # mapping between the id, and the instances (could also use a mapping between rule path and all instances, that refere to the rule, ids, are a bit easier to handle in post processing)
+    sub_rule_id_path_mapping = {} # mapping between the rule path and the assigned sub_rule_id: {<rule_path>: <sub_rule_id>}
+    sub_rule_id_instance_mapping = {} # mapping between the id, and the instances: {<sub_rule_id>: [instances]}
     for instance in instances_to_include:
         dr = instance.discovery_rule
         if dr in sub_rule_id_path_mapping:
@@ -321,8 +323,8 @@ def _group_by_discovery_method(list_of_discovery_valid_instances: list[Instance]
 def _preprocess_for_discovery_under_measurement(list_of_instances: list,
                                                 itools: list[Dict], 
                                                 tp_lib: Path,
-                                                language: str):
-    # filter over tools
+                                                language: str) -> Tuple[list, list, list]:
+    # Filter over tools
     tools = utils.filter_sast_tools(itools, language)
     if not tools:
         e = InvalidSastTools()
@@ -342,7 +344,7 @@ def _preprocess_for_discovery_under_measurement(list_of_instances: list,
     # Get all measurement results for all instances
     instance_meas_res_mapping = _get_instance_measurement_mapping(meas_lang_dir)
 
-    # filter instances
+    # Filter instances
     instances_without_measurement_results = []
     instances_for_discovery = []
     instances_supported_by_sast = []
@@ -385,7 +387,8 @@ def _preprocess_for_discovery_under_measurement(list_of_instances: list,
     return instances_for_discovery, instances_without_measurement_results, instances_supported_by_sast
 
 
-def _read_rule(rule_path: Path):
+def _read_rule(rule_path: Path) -> list[str]:
+    # Joern specific, reads a joern discovery rule and returns only the part between `importCpg(name)` and `delete;`
     with open(rule_path, 'r') as infile:
         res = infile.readlines()
     start = -1
@@ -398,7 +401,7 @@ def _read_rule(rule_path: Path):
     return res[start+1:end]
 
 
-def _sanitize_rule(raw_lines: list, suffix: str, sub_rule_id: str):
+def _sanitize_rule(raw_lines: list, suffix: str, sub_rule_id: str) -> list[str]:
     # get all variable_names, that need replacing, as in one big rule, variable names could be double
     # we add a certain unique suffix to each variable
     variables_to_replace  = []
@@ -414,34 +417,34 @@ def _sanitize_rule(raw_lines: list, suffix: str, sub_rule_id: str):
     return new_lines
 
 
-def get_ignored_tp_from_results(d_res: list[DiscoveryResult]):
+def get_ignored_tp_from_results(d_res: list[DiscoveryResult]) -> list[str]:
     results_to_consider = filter(lambda res: any(map(lambda v: v in res.sast_measurement, ["not_found"])), d_res)
-    return sorted(list(set([f"{i.pattern_id}" for res in results_to_consider for i in res.instances])),
+    return sorted(list(set([repr(i) for res in results_to_consider for i in res.instances])),
                   key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
-def get_ignored_tpi_from_results(d_res, ignored_as):
+def get_ignored_tpi_from_results(d_res, ignored_as) -> list[str]:
     return sorted(list(set([repr(i) for res in filter(lambda r: ignored_as in r.sast_measurement, d_res) for i in res.instances])),
                   key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
-def get_error_tpi_from_results(d_res):
+def get_error_tpi_from_results(d_res) -> list[str]:
     return sorted(list(set([repr(i) for res in filter(lambda r: r.status == "ERROR_DISCOVERY", d_res) for i in res.instances])),
                   key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
-def get_unsuccessful_discovery_tpi_from_results(d_res):
+def get_unsuccessful_discovery_tpi_from_results(d_res) -> list[str]:
     return sorted(list(set([repr(i) for res in filter(lambda r: r.status == "ERROR_DISCOVERY", d_res) for i in res.instances])))
 
 
-def get_successful_discovery_tpi_from_results(d_res):
+def get_successful_discovery_tpi_from_results(d_res) -> list[str]:
     return sorted(list(set([
         repr(i) for res in filter(lambda r: r.status == "DISCOVERY" or r.status == "NO_DISCOVERY", d_res) 
         for i in res.instances])),
         key=lambda s: (s.split('_')[0], s.split('_')[1]))
 
 
-def get_num_discovery_findings_from_results(d_res):
+def get_num_discovery_findings_from_results(d_res) -> int:
     return len(list([repr(i) for res in filter(lambda r: r.status == "DISCOVERY", d_res) for i in res.instances]))
 
 
@@ -484,20 +487,8 @@ def manual_discovery(src_dir: Path, discovery_method: str, discovery_rules: list
 # Check discovery rules: manual discovery of pattern instances' discovery rules over the instances themselves
 ############################################################################
 
-# check discovery rules
-def get_check_discovery_rule_result_header():
-    return [
-        "pattern_id",
-        "instance_id",
-        "instance_path",
-        "pattern_name",
-        "language",
-        "discovery_rule",
-        "successful"
-    ]
 
-
-def _update_counters(row_dict: dict, counters: dict):
+def _update_counters(row_dict: dict, counters: dict) -> Dict:
     if row_dict["successful"] == "yes":
         counters["successful"] += 1
     elif row_dict["successful"] == "no":
@@ -556,4 +547,3 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
         "results": rows,
         "counters": counters
     }
-

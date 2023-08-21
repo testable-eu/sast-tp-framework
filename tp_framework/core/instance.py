@@ -201,21 +201,17 @@ class Instance:
 
     def validate_for_discovery(self):
         ############## TMP ##############
-        # if self.pattern_id == 4 and self.instance_id == 1:
-        #     return False
-        # if self.pattern_id == 5 and self.instance_id < 3:
-        #     return False
-        # if self.pattern_id == 47 and self.instance_id == 1:
-        #     return False
-        # if self.pattern_id == 48 and self.instance_id == 1:
-        #     return False
-        # if self.pattern_id == 55 and self.instance_id == 1:
-        #     return False
-        # if self.pattern_id == 80 and self.instance_id == 2:
-        #     return False
-        # if self.pattern_id == 83 and self.instance_id == 3:
-        #     return False
-        # return True
+        if self.pattern_id == 47 and self.instance_id == 1:
+            return False
+        if self.pattern_id == 48 and self.instance_id == 1:
+            return False
+        if self.pattern_id == 55 and self.instance_id == 1:
+            return False
+        if self.pattern_id == 80 and self.instance_id == 2:
+            return False
+        if self.pattern_id == 83 and self.instance_id == 3:
+            return False
+        return True
         #################################
 
         if not self.discovery_rule or not self.discovery_method:

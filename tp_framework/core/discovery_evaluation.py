@@ -20,6 +20,7 @@ discovery_result_strings = {
 
 # Could be outsourced into its own file
 # Container for a Discovery result, that can be converted to CSV or to JSON
+# Equality comparison is implemented so that the set operation can be performed on a list of DiscoveryResults
 class DiscoveryResult:
     def __init__(self, rule_name: str, 
                  instances: list, 
@@ -99,8 +100,8 @@ class DiscoveryResult:
         # discovery, filename, lineNumber, methodFullName, queryFile, queryName
         return {
             "discovery": bool(self.result),
-            "filename": self.result["filename"],
-            "lineNumber": self.result["lineNumber"],
+            "filename": self.result["filename"] if self.result else None,
+            "lineNumber": self.result["lineNumber"] if self.result else None,
             "methodFullName": self.result["methodFullName"] if "methodFullName" in self.result else None,
             "queryFile": str(self.queryFile),
             "queryName": self.rule_name
@@ -109,9 +110,22 @@ class DiscoveryResult:
     def __str__(self) -> str:
         return f"{self.instances}_{len(self.result)}"
     
-    # def __hash__(self) -> int:
-    #     # we define two Discovery results as the same iff they output the same json, t
-    #     return hash((self.to_json(), self.to_checkdiscoveryresults_csv(), self.to_csv()))
+    def _hashable(self, unhashable_list: list[Dict]):
+        return tuple(t for d in unhashable_list for t in d.items())
+
+    def __hash__(self) -> int:
+        # if we want to remove duplicates in a list of DiscoveryResults, we need to implement some comparison
+        # nevertheless, this code smells, is there a better solution?
+        return hash((self._hashable(self.to_csv()), 
+                     tuple(self.to_json().items()), 
+                     self._hashable(self.to_checkdiscoveryresults_csv())))
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, DiscoveryResult):
+            return False
+        return self.to_csv() == __value.to_csv() and \
+                self.to_json() == __value.to_json() and \
+                self.to_checkdiscoveryresults_csv() == __value.to_checkdiscoveryresults_csv()
 
 
 def evaluate_discovery_rule_results(raw_findings: str, 
@@ -127,13 +141,14 @@ def evaluate_discovery_rule_results(raw_findings: str,
     findings = _process_raw_findings(raw_findings, rule_id_instance_mapping, query_file)
 
     # process raw results according to discovery method
+    positive_res = []
     if discovery_method == "joern":
         positive_res, error_instances = _process_joern_results(findings)
         invalid_instances["joern output error"] = error_instances
     else:
         logger.error("Discovery method not yet supported")
 
-    # figure out, which results are missing
+    # figure out, which results are missing 
     misssing_instances = _process_missing_instances(positive_res, rule_id_instance_mapping)
     invalid_instances["parsing error"] = misssing_instances
 
@@ -143,6 +158,9 @@ def evaluate_discovery_rule_results(raw_findings: str,
     # add measurement
     all_res = positive_res + negative_res
     all_res = _add_measurement(all_res, sast_measurement)
+
+    # remove duplicates
+    all_res = list(set(all_res))
 
     if export_results:
         # export results
@@ -168,7 +186,6 @@ def _parse_finding_line(raw_finding_line: str, rule_id_instance_mapping: dict, q
     # load it as json
     result_list = json.loads(result)
     instances = rule_id_instance_mapping[rule_id.strip()]
-
     # return a discovery_result
     return DiscoveryResult(rule_name, instances, cpg_path, result_list, rule_id, query_file=query_file)
 
@@ -176,6 +193,8 @@ def _parse_finding_line(raw_finding_line: str, rule_id_instance_mapping: dict, q
 def _process_raw_findings(raw_findings: str, rule_id_instance_mapping: dict, query_file: Path) -> list[DiscoveryResult]:
     # raw findings are exepcted to be in the following format
     # <rule_id>: (<path_to_cpg_used>, <rule_name>, <results_as_list_of_JSON>)\n
+    if not raw_findings:
+        return []
     all_findings = raw_findings.strip().split("\n")
     d_results = []
     for finding in all_findings:
@@ -201,7 +220,7 @@ def _process_joern_results(list_of_discovery_results: list):
         json_result = d_result.result
         d_result.discovery_method = "joern"
         if not json_result:
-            d_result.result = None
+            d_result.result = {}
             d_result.status = discovery_result_strings["no_discovery"]
             all_findings += [d_result]
             continue
@@ -245,11 +264,17 @@ def _process_missing_instances(all_positive_results: list, rule_id_instance_mapp
 
 
 def _process_negative_instances(dict_error_instances: dict):
+    # There are different types of errors, that can occur during the discovery and the evaluation.
+    # The instances, that are affected by this error have to be included in the results as well.
+    # Possible error messages are: `invalid discovery rule`, `error while parsing discovery rule`, `discovery method not supported`, 
+    # `supported by SAST`, `no meas result`, `joern output error`, `parsing error`
+    # At the moment this results in either `ERROR_DISCOVERY` or (for `supported by SAST`) `SUPPORTED_BY_SAST`
+    # Maybe we can think of an option that provides a better feedback to the user about the different error categories? 
     d_res = []
     for error, instances in dict_error_instances.items():
         if not instances:
             continue
-        result = DiscoveryResult("", instances, "", None, "")
+        result = DiscoveryResult("", instances, "", {}, "")
         result.status = discovery_result_strings["supported"] if "supported" in error else discovery_result_strings["error"]
         result.error = error
         d_res += [result]
@@ -257,6 +282,7 @@ def _process_negative_instances(dict_error_instances: dict):
 
 
 def _export_findings_file(list_of_results: list, disc_output_dir: Path, build_name: str):
+    # Exports all discoveries (positive results) as a JSON file.
     findings = []
     d_res: DiscoveryResult
     for d_res in list_of_results:
@@ -268,6 +294,7 @@ def _export_findings_file(list_of_results: list, disc_output_dir: Path, build_na
 
 
 def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: str):
+    # Exports all results to a csv file
     rows = []
     d_res: DiscoveryResult
     for d_res in list_of_results:
@@ -277,6 +304,6 @@ def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: s
         return
     if "patternId" in rows[0].keys() and "instanceId" in rows[0].keys():
         rows = sorted(rows, key=lambda d: (d["patternId"], d["instanceId"]))
-    headers = list(set(DiscoveryResult.csv_headers()).intersection(set(rows[0].keys())))
+    headers = list(filter(lambda h: h in set(rows[0].keys()), DiscoveryResult.csv_headers()))
     ofile_csv = disc_output_dir / f"discovery_{build_name}.csv"
     utils.write_csv_file(ofile_csv, headers, rows)

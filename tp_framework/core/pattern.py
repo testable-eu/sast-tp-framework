@@ -25,7 +25,6 @@ class Pattern:
         self.pattern_id = None
         self.language = None
         self.tp_lib_path = None
-        self.language = None
         self.path = None
         self.json_path = None
 
