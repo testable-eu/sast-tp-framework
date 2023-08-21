@@ -5,12 +5,12 @@ from unittest.mock import patch, mock_open
 
 from core.pattern import Pattern
 from core.exceptions import PatternDoesNotExists, PatternInvalid, InstanceDoesNotExists
-from qualitytests.qualitytests_utils import join_resources_path, create_pattern, example_pattern_dict
+from qualitytests.qualitytests_utils import join_resources_path, create_pattern, example_tp_dict
 
 class TestPattern:
     sample_tp_lib: Path = join_resources_path("sample_patlib")
 
-    example_pattern_dict = {
+    example_tp_dict = {
         "name": "Test Pattern",
         "description": "./docs/description.md",
         "family": "test_pattern",
@@ -27,8 +27,8 @@ class TestPattern:
                         (3, "php", {"instances": ["test_instances_invalid_relative_path"]}, "Pattern 3 (PHP) - The instance path 'test_instances_invalid_relative_path' is not valid.")
     ]
     valid_patterns = [
-        (1, "php", example_pattern_dict),
-        (1, "js", example_pattern_dict)
+        (1, "php", example_tp_dict),
+        (1, "js", example_tp_dict)
     ]
 
     valid_patterns_without_id = [
@@ -67,7 +67,7 @@ class TestPattern:
             is_dir_mock.return_value = True
             is_file_mock.return_value = True
             isinstance_mock.return_value = True
-            read_json_mock.return_value = TestPattern.example_pattern_dict
+            read_json_mock.return_value = TestPattern.example_tp_dict
             pattern = Pattern.init_from_json_file_without_pattern_id(path_to_json, language, pattern_path, TestPattern.sample_tp_lib)
         read_json_mock.assert_called_once()
         is_file_mock.assert_called()
@@ -128,7 +128,7 @@ class TestPattern:
             rel_path_mock.return_value = None
 
             actual = test_pattern.to_dict()
-        expected = deepcopy(example_pattern_dict)
+        expected = deepcopy(example_tp_dict)
         expected["instances"] = [None]
         assert expected == actual
     

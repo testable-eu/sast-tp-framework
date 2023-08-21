@@ -16,26 +16,26 @@ from core.pattern import Pattern
 # CRUD patterns
 # TODO - add_pattern: develop UPDATE, DELETE, READ (maybe this one we do not need)...
 ## CREATE/ADD
-def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict], pattern_json: str = None,
+def add_pattern(tp_dir: str, language: str, measure: bool, tools: list[Dict], tp_json: str = None,
                 tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve()):
     # TODO - add_pattern: add some printing message for the user
-    pattern_dir_path: Path = Path(pattern_dir).resolve()
-    if not pattern_dir_path.is_dir():
-        print(errors.patternFolderNotFound(pattern_dir_path))
+    tp_dir_path: Path = Path(tp_dir).resolve()
+    if not tp_dir_path.is_dir():
+        print(errors.patternFolderNotFound(tp_dir_path))
         return
 
-    pattern_json_path = Path(pattern_json) if pattern_json else utils.get_json_file(pattern_dir_path)
-    if not pattern_json_path:
-        print(errors.patternDefaultJSONNotFound(pattern_dir))
+    tp_json_path = Path(tp_json) if tp_json else utils.get_json_file(tp_dir_path)
+    if not tp_json_path:
+        print(errors.patternDefaultJSONNotFound(tp_dir))
         return
     
     tp_lib_path.mkdir(exist_ok=True, parents=True)
 
     try:
-        created_pattern: Pattern = pattern_operations.add_testability_pattern_to_lib_from_json(
+        created_tp: Pattern = pattern_operations.add_testability_pattern_to_lib_from_json(
             language,
-            pattern_json_path,
-            pattern_dir_path,
+            tp_json_path,
+            tp_dir_path,
             tp_lib_path
         )
     except (PatternInvalid, AddPatternError) as e:
@@ -47,7 +47,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
         raise
 
     if measure:
-        asyncio.run(measure_list_patterns([created_pattern.pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
+        asyncio.run(measure_list_patterns([created_tp.pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
 
 
 # Discovery

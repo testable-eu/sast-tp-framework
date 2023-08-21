@@ -237,7 +237,6 @@ def get_language_by_file_ending(filename: str) -> str:
 
 
 # Useful for some SAST tools that accepts a zip file of the source code to scan
-# Where is it used in the code?
 def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
         for file in files:

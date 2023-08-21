@@ -592,11 +592,11 @@ class PatternRepair(Command):
         tp_lib_path: str = parse_tp_lib(args.tp_lib)
         l_pattern_id = sorted(parse_patterns(args.all_patterns, args.pattern_range, args.patterns,
                                       tp_lib_path, language, init_patterns=False))
-        output_dir: Path = parse_dir_or_file(args.output_dir)
+        output_dir: Path = parse_dir_or_file(args.output_dir, config.RESULT_DIR, "Output directory")
         measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
         print('\033[92m', measurement_results, '\033[0m')
         checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
-        masking_file: Path or None = parse_dir_or_file(args.masking_file) if args.masking_file else None
+        masking_file: Path or None = parse_dir_or_file(args.masking_file, "mask.json","Masking file") if args.masking_file else None
         interface.repair_patterns(language=language, pattern_ids=l_pattern_id,
                                      masking_file=masking_file, include_README=args.skip_readme,
                                      measurement_results=measurement_results, checkdiscoveryrule_results=checkdiscoveryrules_results,
@@ -679,19 +679,19 @@ def parse_patterns(all_patterns: bool, pattern_range: str, patterns, tp_lib_path
         id_list = patterns
     # init a Pattern to make sure, all the patterns that should be used for the task are valid.
     # return only the pattern_id, to be compatible with current implementation
-    # TODO: refactor to use the Pattern instances instead of the ids
+    # Could refactor this to just use pattern and instance objects, main purpose is validation
     return sorted([Pattern.init_from_id_and_language(idx, language, tp_lib_path).pattern_id \
                         for idx in id_list]) if init_patterns else id_list
 
 
 def parse_dir_or_file(path_to_file_or_dir: str, 
-                      default_path: str = config.RESULT_DIR, 
-                      name: str = "Output directory") -> Path:
+                      default_path: str, 
+                      exception_prefix: str = "") -> Path:
     if not path_to_file_or_dir:
         path_to_file_or_dir: str = str(default_path)
     try:
         path_to_file_or_dir_as_path: Path = Path(path_to_file_or_dir).resolve()
         return path_to_file_or_dir_as_path
     except Exception as e:
-        print(f"{name} is wrong: {path_to_file_or_dir}")
+        print(f"{exception_prefix} does not exist: {path_to_file_or_dir}")
         exit(1)

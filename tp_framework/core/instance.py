@@ -34,7 +34,6 @@ class Instance:
         self.pattern_id = None
         self.language = None
         self.name = None
-        self.pattern = None
         self.tp_lib_path = None
 
         # JSON fields

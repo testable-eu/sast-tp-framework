@@ -13,7 +13,6 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, measurement
-from core.pattern import Pattern
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
     CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
 from core.measurement import Measurement
@@ -155,7 +154,7 @@ def patch_PHP_discovery_rule(discovery_rule: Path, language: str, output_dir: Pa
         newlines = []
         changed = False
         for l in lines:
-            newl = l.replace(t_str, p_str) if re.match('\s*val x\d+ = \(name, "[^"]+", cpg\.call.*(\.location\.toJson)\);\s*', l) else l
+            newl = l.replace(t_str, p_str) if re.match(r'\s*val x\d+ = \(name, "[^"]+", cpg\.call.*(\.location\.toJson)\);\s*', l) else l
             newlines.append(newl)
             if newl != l:
                 changed = True
@@ -342,9 +341,9 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     "jsonpath": tpi.json_path
                 }
                 continue
-            tpi_instance = meas_tpi_by_tools[0].instance
+            tpi = meas_tpi_by_tools[0].instance
             d_tpi = {
-                "instance": tpi_instance,
+                "instance": tpi,
                 "measurement": "supported",
                 "jsonpath": tpi.json_path,
                 "discovery": {}
@@ -363,7 +362,7 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                     d_tpi["measurement"] = "not_supported"
             # discovery per tpi
             measurement_stop: bool = d_tpi["measurement"] not in ["ignore", "not_supported"]
-            d_tpi["discovery"] = discovery_for_tpi(tpi_instance, tpi.json_path, cpg, disc_output_dir,
+            d_tpi["discovery"] = discovery_for_tpi(tpi, cpg, disc_output_dir,
                                                    measurement_stop=measurement_stop, already_executed=d_dr_executed)
             d_res_tpi[tpi.instance_id] = d_tpi
         d_res[tp_id]["instances"] = d_res_tpi
@@ -745,18 +744,18 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
             (i + 1, num_patterns, tp_id)  # tp_info
         ))
         try:
-            target_pattern = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
-            num_instances = len(target_pattern.instances)
+            target_tp = Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+            num_instances = len(target_tp.instances)
         except Exception as e:
             # should not happen at all! And should be removed and a list of patterns should be parsed to that function
             logger.warning(
                 f"Either pattern id {tp_id} does not exist, or its file system structure is not valid, or its instances cannot be fetched. Exception raised: {utils.get_exception_message(e)}")
-            res = get_check_discovery_rule_result(pattern=target_pattern)
+            res = get_check_discovery_rule_result(pattern=target_tp)
             results.append(res)
             err += 1
             continue
         instance: Instance
-        for j, instance in enumerate(target_pattern.instances):
+        for j, instance in enumerate(target_tp.instances):
             try:
                 tpi_id = instance.instance_id
                 logger.info(utils.get_tpi_op_status_string(
@@ -769,7 +768,7 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                     if not dr_path.is_file():
                         logger.warning(
                             f"Instance {tpi_id} of pattern {tp_id}: the discovery rule {dr_path} does not exist")
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
+                        res = get_check_discovery_rule_result(pattern=target_tp, instance=instance)
                         results.append(res)
                         err += 1
                         continue
@@ -783,16 +782,16 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
                     # Inspect the d_results
                     if d_results["findings"] and any(
                             f["result"] == discovery_result_strings["discovery"] for f in d_results["findings"]):
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="yes")
+                        res = get_check_discovery_rule_result(pattern=target_tp, instance=instance, successful="yes")
                         success += 1
                     else:
-                        res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="no")
+                        res = get_check_discovery_rule_result(pattern=target_tp, instance=instance, successful="no")
                         unsuccess += 1
                     results.append(res)
                 else:
                     logger.info(
                         f"Instance {tpi_id} of pattern {tp_id}: the discovery rule is not provided for the pattern")
-                    res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance, successful="missing")
+                    res = get_check_discovery_rule_result(pattern=target_tp, instance=instance, successful="missing")
                     results.append(res)
                     missing += 1
                 logger.info(utils.get_tpi_op_status_string(
@@ -803,7 +802,7 @@ def check_discovery_rules(language: str, l_tp_id: list[int],
             except Exception as e:
                 logger.warning(
                     f"Something went wrong for the instance at {instance.path} of the pattern id {tp_id}. Exception raised: {utils.get_exception_message(e)}")
-                res = get_check_discovery_rule_result(pattern=target_pattern, instance=instance)
+                res = get_check_discovery_rule_result(pattern=target_tp, instance=instance)
                 results.append(res)
                 err += 1
                 continue
