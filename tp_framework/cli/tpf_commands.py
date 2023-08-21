@@ -594,7 +594,6 @@ class PatternRepair(Command):
                                       tp_lib_path, language, init_patterns=False))
         output_dir: Path = parse_dir_or_file(args.output_dir, config.RESULT_DIR, "Output directory")
         measurement_results: Path = parse_dir_or_file(args.measurement_dir, config.MEASUREMENT_REL_DIR, "Measurement directory")
-        print('\033[92m', measurement_results, '\033[0m')
         checkdiscoveryrules_results: Path = parse_dir_or_file(args.checkdiscoveryrules_file, "checkdiscoveryrules.csv", "Checkdiscoveryrules csv file")
         masking_file: Path or None = parse_dir_or_file(args.masking_file, "mask.json","Masking file") if args.masking_file else None
         interface.repair_patterns(language=language, pattern_ids=l_pattern_id,
