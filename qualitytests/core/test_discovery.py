@@ -7,9 +7,9 @@ import pytest
 from pytest_mock import MockerFixture
 
 import config
-from core import utils, discovery, instance, pattern
-from core.exceptions import MeasurementNotFound, CPGGenerationError
-from qualitytests.qualitytests_utils import join_resources_path, get_result_output_dir
+from core import utils, discovery
+from core.exceptions import CPGGenerationError
+from qualitytests.qualitytests_utils import join_resources_path, create_instance
 
 
 class TestDiscovery:
@@ -253,12 +253,8 @@ class TestDiscovery:
         assert str(tmp_path) in str(pdr)
 
     def test_dicovery_with_empty_rule(self):
-        with open(join_resources_path("sample_patlib/PHP/4_empty_pattern/4_empty_pattern.json"), "r") as json_file:
-            pattern_dict = json.load(json_file)
-        test_pattern = pattern.pattern_from_dict(pattern_dict, "PHP", 4)
-        with open(join_resources_path("sample_patlib/PHP/4_empty_pattern/1_instance_4_empty_pattern/1_instance_4_empty_pattern.json"), "r") as json_file:
-            instance_dict = json.load(json_file)
-        tpi_instance = instance.instance_from_dict(instance_dict, test_pattern, "PHP", 1)
+        tpi_instance = create_instance()
+        tpi_instance.discovery_rule = None
         assert not tpi_instance.discovery_rule, "The test case is broken, instance 1 of PHP pattern 4 is not supposed to have a discovery rule"
         expected = dict.fromkeys(["rule_path", "method", "rule_name", "rule_accuracy", "rule_hash", "rule_name", "results", "rule_already_executed"], None)
         actual = discovery.discovery_for_tpi(tpi_instance, None, None, None)

@@ -7,16 +7,19 @@ import pytest
 from qualitytests.qualitytests_utils import pyexe, join_resources_path
 from cli import main
 
+from pathlib import Path
+
 
 class TestMain:
     testdir = Path(__file__).parent.parent.resolve()
     tpf = testdir.parent / "tp_framework/cli/main.py"
+    sample_tp_lib = str(join_resources_path("sample_patlib"))
 
 
     def test_cli_help_1(self):
         # process call
         cmd = pyexe + " {0} -h".format(self.tpf)
-        pr = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pr = subprocess.Popen(cmd.split(" "), shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (output, errdata) = pr.communicate()
         output = output.decode("utf-8")
         print(output)
@@ -122,7 +125,7 @@ class TestMain:
             main.main(['measure',
                        '-p', self.tp1, self.tp2,
                        '--tools', self.tool1, 'whatever', '-l', self.test_lang,
-                       '--tp-lib', str(tmp_path)])
+                       '--tp-lib', TestMain.sample_tp_lib])
 
 
     def test_cli_measure_5(self, tmp_path, mocker):
@@ -131,7 +134,7 @@ class TestMain:
         main.main(['measure',
                    '-p', self.tp1, self.tp2,
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path)])
+                   '--tp-lib', TestMain.sample_tp_lib])
 
 
     def _init_cli_report(self, mocker):
@@ -156,7 +159,7 @@ class TestMain:
                    '--print',
                    '-p', self.tp1, self.tp2,
                    '--tools', self.tool1, self.tool2, '-l', self.test_lang,
-                   '--tp-lib', str(tmp_path)])
+                   '--tp-lib', TestMain.sample_tp_lib])
 
 
     def test_cli_report_3(self, tmp_path, mocker):
@@ -188,11 +191,13 @@ class TestMain:
     def test_cli_report_5(self, tmp_path, mocker):
         self._init_cli_report(mocker)
         # Test: valid params, no tools i.e., get all measurements
+        test_tp_lib_path = join_resources_path("sample_patlib")
         main.main(['sastreport',
                    '--export', 'whatever.csv',
                    '-a',
                    '-l', self.test_lang,
-                   '--output-dir', str(tmp_path)
+                   '--output-dir', str(tmp_path),
+                   '--tp-lib', str(test_tp_lib_path)
                    # '--output-dir', str(tmp_path),
                    # '--only-last-measurement'
                    ])
@@ -206,9 +211,11 @@ class TestMain:
     def test_cli_check_discovery_rules_1(self, tmp_path, mocker):
         self._init_cli_check_discovery_rules_1(mocker)
         # Test: valid params
+        test_tp_lib_path = join_resources_path("sample_patlib")
         main.main(['checkdiscoveryrules',
                    '--export', 'whatever.csv',
                    '-a',
                    '-l', self.test_lang,
-                   '--output-dir', str(tmp_path)
+                   '--output-dir', str(tmp_path),
+                   '--tp-lib', str(test_tp_lib_path)
                    ])

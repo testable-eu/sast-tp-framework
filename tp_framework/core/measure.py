@@ -120,5 +120,3 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
     }
     logger.info(f"SAST measurement - done")
     return d_results
-
-

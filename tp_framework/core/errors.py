@@ -2,9 +2,8 @@ def patternDoesNotExists(pattern_id):
     return f"Specified Pattern `{pattern_id}` does not exists."
 
 
-def patternValueError():
-    return f"Error during Pattern initialization."
-
+def patternInvalidError(e):
+    return f"{e} Pattern is invalid."
 
 def patternKeyError(e):
     return f"Key {e} was not found in pattern metadata."
@@ -23,8 +22,8 @@ def instanceDoesNotExists(instance_id=None, ref_metadata=None):
     return message
 
 
-def patternFolderNotFound(pattern_dir_path):
-    return f"`Pattern source folder {pattern_dir_path}` not found or is not a folder."
+def instanceInvalidError(e):
+    return f"{e} Instance is invalid."
 
 
 def patternDefaultJSONNotFound(default_pattern_json):
@@ -85,3 +84,15 @@ def discoveryRuleParsingResultError():
 
 def unexpectedException(e):
     return f"Unexpected exception triggered: {e}."
+
+
+def measurementResultsDirDoesNotExist():
+    return "The directory with the measurements does not exist."
+
+
+def templateDirDoesNotExist(not_exisitng_dir_or_file):
+    return f"Your tplib does not have {not_exisitng_dir_or_file}."
+
+
+def addPatternFailed(exception: str):
+    return f"Adding the pattern to the tplib failed {exception}"

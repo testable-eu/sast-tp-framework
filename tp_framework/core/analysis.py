@@ -7,7 +7,6 @@ import logging
 from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
-import core.utils
 from core import utils
 from core.instance import Instance
 from core.measurement import Measurement
@@ -15,7 +14,7 @@ from core.sast import SAST
 from core.sast_job_runner import InQueue, OutQueue, SASTjob
 
 
-async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
+async def analyze_pattern_instance(instance: Instance,
                                    tools: list[Dict], language: str,
                                    date: datetime, output_dir: Path) -> list[SASTjob]:
     logger.debug(f"SAST measurement - prepare SAST jobs for pattern {instance.pattern_id} instance {instance.instance_id} with {len(tools)} tools: started...")
@@ -34,7 +33,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
             tool_name: str = tool["name"]
             tool_version: str = tool["version"]
 
-            sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
+            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
             sast_interface_class: str = sast_config["tool_interface"]
             sast_class = utils.get_class_from_str(sast_interface_class)
 
@@ -45,7 +44,7 @@ async def analyze_pattern_instance(instance: Instance, instance_dir: Path,
 
             # TODO: what about using the sast_job object in the queue?
             InQueue().put_nowait((job_id, tool_name, tool_version, instance, date,
-                                  sast.launcher(instance_dir, language, output_dir, lib_dir=lib_dir, measurement=True)))
+                                  sast.launcher(instance.path, language, output_dir, lib_dir=lib_dir, measurement=True)))
             l_status_tpi.append(sast_job)
         except Exception as e:
             logger.warning(f"SAST measurement - failed for pattern {instance.pattern_id} instance {instance.instance_id} with tool {tool}. Instance will be ignored. Exception raised: {utils.get_exception_message(e)}")
@@ -73,7 +72,7 @@ async def inspect_analysis_results(d_job: Dict, language) -> list[Measurement]:
 
         # if not csv_res, then the SAST job would have failed and no measurement in that case
         if csv_res:
-            sast_config: Dict = core.utils.load_sast_specific_config(tool_name, tool_version)
+            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
             sast_interface_class: str = sast_config["tool_interface"]
             sast_class = utils.get_class_from_str(sast_interface_class)
 

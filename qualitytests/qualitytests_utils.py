@@ -2,6 +2,7 @@ import sys
 import subprocess
 from pathlib import Path
 from typing import Dict
+from unittest.mock import patch
 import shutil
 
 pyexe = sys.executable
@@ -13,6 +14,55 @@ print("-- Python version: {}".format(output.decode("utf-8").strip()))
 resource_path = "resources"
 cpg_binary_rel_path = "sample_joern/cpg_binary.bin"
 
+example_tpi_dict = {
+        "description": "Some description",
+        "code": {
+            "path": "<code_path>",
+            "injection_skeleton_broken": True
+        },
+        "discovery": {
+            "rule": "<rule_path>",
+            "method": "joern",
+            "rule_accuracy": "Perfect",
+            "notes": "Some notes"
+        },
+        "remediation": {
+            "notes": "./docs/remediation_notes.md",
+            "transformation": None,
+            "modeling_rule": None
+        },
+        "compile": {
+            "binary": "",
+            "dependencies": None,
+            "instruction": None
+        },
+        "expectation": {
+            "type": "xss",
+            "sink_file": "<sink_path>",
+            "sink_line": 5,
+            "source_file": "<source_path>",
+            "source_line": 9,
+            "expectation": True
+        },
+        "properties": {
+            "category": "S0",
+            "feature_vs_internal_api": "FEATURE",
+            "input_sanitizer": False,
+            "source_and_sink": False,
+            "negative_test_case": False
+        }
+    }
+
+example_tp_dict = {
+        "name": "Test Pattern",
+        "description": "./docs/description.md",
+        "family": "test_pattern",
+        "tags": ["sast", "language"],
+        "instances": [
+            "./1_instance_1_test_pattern/1_instance_1_test_pattern.json"
+        ],
+        "version": "v0.draft"
+    }
 
 def join_resources_path(relativepath):
     dirname = Path(__file__).parent.resolve()
@@ -63,8 +113,9 @@ def init_test(init, language="PHP"):
     init["tp_lib_path"] = join_resources_path(temp_meas).resolve()
     try:
         shutil.copytree(join_resources_path("sample_patlib"), init["tp_lib_path"])
-    except:
+    except Exception as e:
         pass
+        # assert False, f"stop your tests will fail {e}"
     init["patterns"] = [1,2,3]
 
 
@@ -100,3 +151,77 @@ def init_sastreport_test(init, mocker):
     #     "tool_interface": "qualitytests.core.sast_test.SastTest"
     # }
     # mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+
+def create_instance():
+    from core.instance import Instance
+    sample_tp_lib = join_resources_path("sample_patlib")
+    with patch('pathlib.Path.is_file') as is_file_mock, \
+        patch("pathlib.Path.is_dir") as is_dir_mock:
+                
+        is_file_mock.return_value = True
+        # read_json_mock.return_value = example_tpi_dict
+        json_path = sample_tp_lib / "JS" / "1_unset_element_array" / "1_instance_1_unset_element_array" / "1_instance_1_unset_element_array.json"
+        test_instance = Instance.init_from_json_path(json_path, 1, "js", sample_tp_lib)
+
+    # read_json_mock.assert_called_once()
+    is_file_mock.assert_called()
+    is_dir_mock.assert_called()
+    return test_instance
+
+
+def create_instance2():
+    from core.instance import Instance
+    sample_tp_lib = join_resources_path("sample_patlib")
+    with patch('pathlib.Path.is_file') as is_file_mock, \
+        patch("pathlib.Path.is_dir") as is_dir_mock:
+                
+        is_file_mock.return_value = True
+        # read_json_mock.return_value = example_tpi_dict
+        json_path = sample_tp_lib / "JS" / "2_uri" / "1_instance_2_uri" / "1_instance_2_uri.json"
+        test_instance = Instance.init_from_json_path(json_path, 1, "js", sample_tp_lib)
+
+    # read_json_mock.assert_called_once()
+    is_file_mock.assert_called()
+    is_dir_mock.assert_called()
+    return test_instance
+
+
+def create_instance_php():
+    from core.instance import Instance
+    sample_tp_lib = join_resources_path("sample_patlib")
+    with patch('pathlib.Path.is_file') as is_file_mock, \
+        patch("pathlib.Path.is_dir") as is_dir_mock:
+                
+        is_file_mock.return_value = True
+        # read_json_mock.return_value = example_tpi_dict
+        json_path = sample_tp_lib / "PHP" / "1_static_variables" / "1_instance_1_static_variables" / "1_instance_1_static_variables.json"
+        test_instance = Instance.init_from_json_path(json_path, 1, "php", sample_tp_lib)
+
+    # read_json_mock.assert_called_once()
+    is_file_mock.assert_called()
+    is_dir_mock.assert_called()
+    return test_instance
+
+def create_pattern():
+    from core.pattern import Pattern
+    sample_tp_lib = join_resources_path("sample_patlib")
+    test_instance = create_instance()
+    with patch('core.utils.read_json') as read_json_mock, \
+        patch('pathlib.Path.is_file') as is_file_mock, \
+        patch("pathlib.Path.is_dir") as is_dir_mock, \
+        patch("core.pattern.isinstance") as isinstance_mock, \
+        patch('core.instance.Instance.init_from_json_path') as instance_init_mock:
+
+        is_dir_mock.return_value = True
+        is_file_mock.return_value = True
+        isinstance_mock.return_value = True
+        read_json_mock.return_value = example_tp_dict
+        instance_init_mock.return_value = test_instance
+        test_tpi = Pattern.init_from_id_and_language(1, "JS", sample_tp_lib)
+    
+    read_json_mock.assert_called_once()
+    is_file_mock.assert_called()
+    is_dir_mock.assert_called()
+    isinstance_mock.assert_called()
+    instance_init_mock.assert_called_once()
+    return test_tpi

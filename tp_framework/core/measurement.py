@@ -11,8 +11,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils
-from core.exceptions import InstanceDoesNotExists, MeasurementNotFound
-from core.instance import Instance, load_instance_from_json
+from core.exceptions import MeasurementNotFound, MeasurementInvalid
+from core.instance import Instance
 
 
 class Measurement:
@@ -30,7 +30,21 @@ class Measurement:
         self.tool = tool
         self.version = version
         self.instance = instance
+    
+    #TODO: TESTING
+    @classmethod
+    def init_from_measurement_dict(cls, meas_dict):
+        return cls()._init_from_dict(meas_dict)
 
+    def _init_from_dict(self, dict_to_init_from: dict):
+        try:
+            self.date = dict_to_init_from["date"]
+            self.result = dict_to_init_from["result"]
+            self.tool = dict_to_init_from["tool"]
+            self.version = dict_to_init_from["version"]
+        except KeyError as e:
+            raise MeasurementInvalid(e)
+        return self
 
     def define_verdict(self, date: datetime, instance: Instance, findings: list[Dict], tool: str, version: str,
                        sink_line_strict : bool = False,
@@ -61,8 +75,8 @@ class Measurement:
             #     found = instance.expectation_sink_file.name == finding["file"]
             if found:
                 break # we found a matching finding
-        self.result = (found == instance.expectation)
-        self.expected_result = instance.expectation
+        self.result = (found == instance.expectation_expectation)
+        self.expected_result = instance.expectation_expectation
         self.tool = tool
         self.version = version
         self.instance = instance
@@ -90,9 +104,10 @@ def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Meas
         return []
     parsed_meas: list[Measurement] = []
     for m in meas:
-        instance = load_instance_from_json(m["instance"], tp_lib, language)
+        instance_json_path = tp_lib / Path(m["instance"])
+        instance = Instance.init_from_json_path(instance_json_path, None, language, tp_lib)
         # NOTE 06/2023: if not expectation in measurement, then we take it from instance (backword compatibility though it could introduce mistakes if the instance expectation was changed after the measurement)
-        expected_result = m["expected_result"] if "expected_result" in m.keys() else instance.expectation
+        expected_result = m["expected_result"] if "expected_result" in m.keys() else instance.expectation_expectation
         parsed_meas.append(Measurement(
             m["date"],
             m["result"],
@@ -104,23 +119,17 @@ def load_measurements(meas_file: Path, tp_lib: Path, language: str) -> list[Meas
     return parsed_meas
 
 
-def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, p_id: int,
-                                   pi_id: int) -> Measurement:
+def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, pattern, 
+                                   instance: Instance) -> Measurement:
     # TODO - load last measurement: the code hereafter strongly depends on the folder notation in place for
     #       patterns and pattern instances. Make sure to factorize in function what needs to
     #       and to generalize the approach as much as we can to rely the least possible on
     #       the strict notation
-    pattern_dir: Path = utils.get_pattern_dir_from_id(p_id, language, tp_lib)
-    pattern_dir_name: str = pattern_dir.name
-    instance_dir_name: str = f"{pi_id}_instance_{pattern_dir_name}"
-    instance_dir: Path = pattern_dir / instance_dir_name
-    if not instance_dir.is_dir():
-        ee = InstanceDoesNotExists(instance_id=pi_id)
-        logger.exception(ee)
-        raise ee
+    pattern_dir_name: str = pattern.path.name
+    instance_dir_name: str = instance.path.name
     measurement_dir_for_pattern_instance: Path = utils.get_measurement_dir_for_language(tp_lib, language) / pattern_dir_name / instance_dir_name
     if not measurement_dir_for_pattern_instance.is_dir():
-        ee = MeasurementNotFound(p_id)
+        ee = MeasurementNotFound(pattern.pattern_id)
         logger.exception(ee)
         raise ee
     meas_file_list = list(
@@ -137,7 +146,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, p_id
                measurements)
     )
     if not measurements_for_tool:
-        logger.warning(f'No measurement has been found for tool {tool["name"]}:{tool["version"]} on pattern {p_id} instance {pi_id}')
+        logger.warning(f'No measurement has been found for tool {tool["name"]}:{tool["version"]} on pattern {pattern.pattern_id} instance {instance.instance_id}')
         return None
     return sorted(measurements_for_tool, reverse=True)[0]
 

@@ -9,46 +9,37 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
 from core import utils, pattern_operations, discovery, measure, errors, report_for_sast
-from core.exceptions import PatternValueError
+from core.exceptions import PatternInvalid, AddPatternError
+from core.pattern import Pattern
 
 
 # CRUD patterns
 # TODO - add_pattern: develop UPDATE, DELETE, READ (maybe this one we do not need)...
 ## CREATE/ADD
-def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict], pattern_json: str = None,
+def add_pattern(tp_dir: str, language: str, measure: bool, tools: list[Dict], tp_json: str = None,
                 tp_lib_path: Path = Path(config.DEFAULT_TP_LIBRARY_ROOT_DIR).resolve()):
     # TODO - add_pattern: add some printing message for the user
-    pattern_dir_path: Path = Path(pattern_dir).resolve()
-    if not pattern_dir_path.is_dir():
-        print(errors.patternFolderNotFound(pattern_dir_path))
+    tp_dir_path: Path = Path(tp_dir).resolve()
+    if not tp_dir_path.is_dir():
+        print(errors.patternFolderNotFound(tp_dir_path))
         return
 
-    if not pattern_json:
-        # TODO - add_pattern: we could automatically find the json file
-        default_pattern_json = f"{pattern_dir_path.name}.json"
-        pattern_json_path: Path = pattern_dir_path / default_pattern_json
-        if not pattern_json_path.exists():
-            print(errors.patternDefaultJSONNotFound(default_pattern_json))
-            return
-    else:
-        # TODO - add_pattern: handle for both branches the case in which the json file does not exist?
-        pattern_json_path: Path = Path(pattern_json).resolve()
-
+    tp_json_path = Path(tp_json) if tp_json else utils.get_json_file(tp_dir_path)
+    if not tp_json_path:
+        print(errors.patternDefaultJSONNotFound(tp_dir))
+        return
+    
     tp_lib_path.mkdir(exist_ok=True, parents=True)
 
     try:
-        created_pattern_path: Path = pattern_operations.add_testability_pattern_to_lib_from_json(
+        created_tp: Pattern = pattern_operations.add_testability_pattern_to_lib_from_json(
             language,
-            pattern_json_path,
-            pattern_dir_path,
+            tp_json_path,
+            tp_dir_path,
             tp_lib_path
         )
-        created_pattern_id: int = utils.get_id_from_name(created_pattern_path.name)
-    except PatternValueError as e:
+    except (PatternInvalid, AddPatternError) as e:
         print(e)
-        raise
-    except json.JSONDecodeError as e:
-        print(errors.patternJSONDecodeError())
         raise
     except Exception as e:
         logger.exception(e)
@@ -56,7 +47,7 @@ def add_pattern(pattern_dir: str, language: str, measure: bool, tools: list[Dict
         raise
 
     if measure:
-        asyncio.run(measure_list_patterns([created_pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
+        asyncio.run(measure_list_patterns([created_tp.pattern_id], language, tools=tools, tp_lib_path=tp_lib_path))
 
 
 # Discovery
@@ -184,3 +175,29 @@ def check_discovery_rules(language: str, pattern_ids: list[int],
     if export_file:
         print(f"- csv file available here: {output_dir / export_file}")
     print(f"- log file available here: {output_dir / config.logfile}")
+
+
+def repair_patterns(language: str, pattern_ids: list,
+                    masking_file: Path, include_README: bool,
+                    measurement_results: Path, checkdiscoveryrule_results: Path,
+                    output_dir: Path, tp_lib_path: Path):
+    print("Pattern Repair started...")
+    should_include_readme = not include_README
+    utils.check_tp_lib(tp_lib_path)
+    if should_include_readme:
+        utils.check_file_exist(checkdiscoveryrule_results)
+        utils.check_file_exist(masking_file, ".json") if masking_file else None
+        utils.check_measurement_results_exist(measurement_results)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    utils.add_loggers(output_dir)
+
+    for tp_id in pattern_ids:
+        try:
+            pattern =  Pattern.init_from_id_and_language(tp_id, language, tp_lib_path)
+        except PatternInvalid as e:
+            print(f"Failed to init pattern: {tp_id} due to {e}")
+            continue
+        pattern.repair(should_include_readme, 
+                       discovery_rule_results=checkdiscoveryrule_results,
+                       measurement_results=measurement_results,
+                       masking_file=masking_file)
