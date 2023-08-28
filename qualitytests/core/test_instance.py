@@ -6,7 +6,7 @@ from copy import deepcopy
 
 from core.instance import Instance
 from core.exceptions import InstanceInvalid
-from qualitytests.qualitytests_utils import join_resources_path, create_instance, example_instance_dict
+from qualitytests.qualitytests_utils import join_resources_path, create_instance, example_tpi_dict
 
 
 class TestInstance:
@@ -39,7 +39,7 @@ class TestInstance:
             patch("pathlib.Path.is_dir") as is_dir_mock:
                     
             is_file_mock.return_value = True
-            read_json_mock.return_value = example_instance_dict
+            read_json_mock.return_value = example_tpi_dict
             test_instance = Instance.init_from_json_path(Path("/1_instance_test_pattern/1_instance_test_pattern.json"), 1, "js", TestInstance.sample_tp_lib)
 
         read_json_mock.assert_called_once()

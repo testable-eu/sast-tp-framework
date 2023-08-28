@@ -189,11 +189,13 @@ class TestMain:
     def test_cli_report_5(self, tmp_path, mocker):
         self._init_cli_report(mocker)
         # Test: valid params, no tools i.e., get all measurements
+        test_tp_lib_path = join_resources_path("sample_patlib")
         main.main(['sastreport',
                    '--export', 'whatever.csv',
                    '-a',
                    '-l', self.test_lang,
-                   '--output-dir', str(tmp_path)
+                   '--output-dir', str(tmp_path),
+                   '--tp-lib', str(test_tp_lib_path)
                    # '--output-dir', str(tmp_path),
                    # '--only-last-measurement'
                    ])
@@ -207,9 +209,11 @@ class TestMain:
     def test_cli_check_discovery_rules_1(self, tmp_path, mocker):
         self._init_cli_check_discovery_rules_1(mocker)
         # Test: valid params
+        test_tp_lib_path = join_resources_path("sample_patlib")
         main.main(['checkdiscoveryrules',
                    '--export', 'whatever.csv',
                    '-a',
                    '-l', self.test_lang,
-                   '--output-dir', str(tmp_path)
+                   '--output-dir', str(tmp_path),
+                   '--tp-lib', str(test_tp_lib_path)
                    ])

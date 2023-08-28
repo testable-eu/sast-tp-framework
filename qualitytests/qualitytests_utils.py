@@ -14,7 +14,7 @@ print("-- Python version: {}".format(output.decode("utf-8").strip()))
 resource_path = "resources"
 cpg_binary_rel_path = "sample_joern/cpg_binary.bin"
 
-example_instance_dict = {
+example_tpi_dict = {
         "description": "Some description",
         "code": {
             "path": "<code_path>",
@@ -53,7 +53,7 @@ example_instance_dict = {
         }
     }
 
-example_pattern_dict = {
+example_tp_dict = {
         "name": "Test Pattern",
         "description": "./docs/description.md",
         "family": "test_pattern",
@@ -159,7 +159,7 @@ def create_instance():
         patch("pathlib.Path.is_dir") as is_dir_mock:
                 
         is_file_mock.return_value = True
-        # read_json_mock.return_value = example_instance_dict
+        # read_json_mock.return_value = example_tpi_dict
         json_path = sample_tp_lib / "JS" / "1_unset_element_array" / "1_instance_1_unset_element_array" / "1_instance_1_unset_element_array.json"
         test_instance = Instance.init_from_json_path(json_path, 1, "js", sample_tp_lib)
 
@@ -176,7 +176,7 @@ def create_instance2():
         patch("pathlib.Path.is_dir") as is_dir_mock:
                 
         is_file_mock.return_value = True
-        # read_json_mock.return_value = example_instance_dict
+        # read_json_mock.return_value = example_tpi_dict
         json_path = sample_tp_lib / "JS" / "2_uri" / "1_instance_2_uri" / "1_instance_2_uri.json"
         test_instance = Instance.init_from_json_path(json_path, 1, "js", sample_tp_lib)
 
@@ -193,7 +193,7 @@ def create_instance_php():
         patch("pathlib.Path.is_dir") as is_dir_mock:
                 
         is_file_mock.return_value = True
-        # read_json_mock.return_value = example_instance_dict
+        # read_json_mock.return_value = example_tpi_dict
         json_path = sample_tp_lib / "PHP" / "1_static_variables" / "1_instance_1_static_variables" / "1_instance_1_static_variables.json"
         test_instance = Instance.init_from_json_path(json_path, 1, "php", sample_tp_lib)
 
@@ -215,13 +215,13 @@ def create_pattern():
         is_dir_mock.return_value = True
         is_file_mock.return_value = True
         isinstance_mock.return_value = True
-        read_json_mock.return_value = example_pattern_dict
+        read_json_mock.return_value = example_tp_dict
         instance_init_mock.return_value = test_instance
-        test_pattern = Pattern.init_from_id_and_language(1, "JS", sample_tp_lib)
+        test_tpi = Pattern.init_from_id_and_language(1, "JS", sample_tp_lib)
     
     read_json_mock.assert_called_once()
     is_file_mock.assert_called()
     is_dir_mock.assert_called()
     isinstance_mock.assert_called()
     instance_init_mock.assert_called_once()
-    return test_pattern
+    return test_tpi

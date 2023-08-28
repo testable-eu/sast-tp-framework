@@ -5,10 +5,23 @@ import config
 Module that manage logging
 """
 
+class ColoredFormatter(logging.Formatter):
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
+    def format(self, record):
+        if record.levelno == logging.WARNING:
+            record.msg = f"{self.YELLOW}{record.msg}{self.RESET}"
+        elif record.levelno == logging.ERROR:
+            record.msg = f"{self.RED}{record.msg}{self.RESET}"
+        return super().format(record)
+
+
 mainLogger = logging.getLogger(config.rootLoggerName)
 
 # Log file formatter and handler
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
+formatter = ColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
                               datefmt='%Y-%m-%d %H:%M:%S')
 mainLogger.setLevel(getattr(logging, config.loggingLevelFile))
 main_logfile_path = config.RESULT_DIR / config.logfile

@@ -137,6 +137,7 @@ def evaluate_discovery_rule_results(raw_findings: str,
                                     query_file: Path,
                                     sast_measurement: dict = None,
                                     export_results: bool = True) -> list[DiscoveryResult]:
+    logger.info(f"\033[92m{rule_id_instance_mapping}\033[0m")
     # parse raw findings into DiscoveryResults
     findings = _process_raw_findings(raw_findings, rule_id_instance_mapping, query_file)
 
@@ -156,18 +157,18 @@ def evaluate_discovery_rule_results(raw_findings: str,
     negative_res = _process_negative_instances(invalid_instances)
 
     # add measurement
-    all_res = positive_res + negative_res
-    all_res = _add_measurement(all_res, sast_measurement)
+    l_d_res = positive_res + negative_res
+    l_d_res = _add_measurement(l_d_res, sast_measurement)
 
     # remove duplicates
-    all_res = list(set(all_res))
+    l_d_res = list(set(l_d_res))
 
     if export_results:
         # export results
         logger.info("Discovery - Exporting results")
         _export_findings_file(positive_res, output_dir, build_name)
-        _export_csv_file(sorted(all_res, key=lambda x: x.rule_name), output_dir, build_name)
-    return all_res
+        csv_file = _export_csv_file(sorted(l_d_res, key=lambda x: x.rule_name), output_dir, build_name)
+    return l_d_res
 
 
 def _parse_finding_line(raw_finding_line: str, rule_id_instance_mapping: dict, query_file: Path):
@@ -185,7 +186,9 @@ def _parse_finding_line(raw_finding_line: str, rule_id_instance_mapping: dict, q
     result = tuple_result[len(cpg_path)+len(rule_name)+2:]
     # load it as json
     result_list = json.loads(result)
+    logger.info(f'#{result_list}')
     instances = rule_id_instance_mapping[rule_id.strip()]
+    logger.info(f'#{result_list}')
     # return a discovery_result
     return DiscoveryResult(rule_name, instances, cpg_path, result_list, rule_id, query_file=query_file)
 
@@ -291,9 +294,10 @@ def _export_findings_file(list_of_results: list, disc_output_dir: Path, build_na
     ofile_csv = disc_output_dir / f"findings_{build_name}.json"
     with open(ofile_csv, "w") as json_file:
         json.dump(findings, json_file, sort_keys=True, indent=4)
+    return ofile_csv
 
 
-def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: str):
+def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: str) -> Path:
     # Exports all results to a csv file
     rows = []
     d_res: DiscoveryResult
@@ -307,3 +311,4 @@ def _export_csv_file(list_of_results: list, disc_output_dir: Path, build_name: s
     headers = list(filter(lambda h: h in set(rows[0].keys()), DiscoveryResult.csv_headers()))
     ofile_csv = disc_output_dir / f"discovery_{build_name}.csv"
     utils.write_csv_file(ofile_csv, headers, rows)
+    return ofile_csv

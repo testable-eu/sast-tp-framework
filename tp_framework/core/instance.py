@@ -131,7 +131,7 @@ class Instance:
         return f"{self.language} - p{self.pattern_id}:{self.instance_id}"
     
     def __repr__(self) -> str:
-        return f"{self.pattern_id}_i{self.instance_id}"
+        return f"p{self.pattern_id}_i{self.instance_id}"
 
     def _log_prefix(self):
         return f"Pattern {self.pattern_id} - Instance {self.instance_id} - "
