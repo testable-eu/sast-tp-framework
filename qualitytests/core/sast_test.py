@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import Dict
 
-from tp_framework.core.sast import SAST
+from SAST.src.sast import SAST
 
 
 class SastTest(SAST):
