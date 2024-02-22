@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict
 from unittest.mock import patch
 import shutil
+from qualitytests.core.sast_test import SastTestException, SastTest
 
 pyexe = sys.executable
 print("-- Python executable: {}".format(pyexe))
@@ -119,29 +120,26 @@ def init_test(init, language="PHP"):
     init["patterns"] = [1,2,3]
 
 
-def mocked_tools_interfaces(tool_name: str, tool_version: str) -> Dict:
+def mocked_tools(tool_name: str, tool_version: str):
     if tool_name == "dummyTool" and tool_version == "2":
-        return {
-            "supported_languages": ["PHP", "JS", "JAVA"],
-            "tool_interface": "qualitytests.core.sast_test.SastTestException"
-        }
+        return SastTestException()
     else:
-        return {
-            "supported_languages": ["PHP", "JS", "JAVA"],
-            "tool_interface": "qualitytests.core.sast_test.SastTest"
-        }
+        return SastTest()
 
 
 def init_measure_test(init, mocker, language="PHP", exception=True):
     init_test(init, language=language)
     if exception:
-        mocker.patch("sast.utils.load_sast_specific_config", side_effect=mocked_tools_interfaces)
+        mocker.patch("sast.sast_tools.get_sast_tool", side_effect=mocked_tools)
+
     else:
-        mocked_tool_interface: Dict = {
-            "supported_languages": [language],
-            "tool_interface": "qualitytests.core.sast_test.SastTest"
-        }
-        mocker.patch("sast.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+        mocked_tool = SastTest()
+
+        mocker.patch("sast.sast_tools.get_sast_tool", return_value=mocked_tool)
+
+    # In the original test before migrating sast to a separate module
+    # it was assumed that all tools (init[tools]) are available after filtration
+    mocker.patch("sast.utils.filter_sast_tools", return_value=init['tools'])
 
 
 def init_sastreport_test(init, mocker):
