@@ -3,8 +3,8 @@ from typing import Dict
 
 import core.utils
 from core import utils
-from core.sast import SAST
 
+from sast.tools import tools as sast_tools
 
 async def scan(src_dir: Path, tools: list[Dict], language: str, modelling_rules: Path = None):
     if not src_dir.is_dir():
@@ -14,12 +14,7 @@ async def scan(src_dir: Path, tools: list[Dict], language: str, modelling_rules:
     
     results = []
     for tool in tools:
-        sast_config: Dict = core.utils.load_sast_specific_config(tool["name"], tool["version"])
-        sast_interface_class: str = sast_config["tool_interface"]
-        sast_class = utils.get_class_from_str(sast_interface_class)
-
-        # noinspection PyCallingNonCallable
-        sast: SAST = sast_class()
+        sast = sast_tools.get((tool["name"], tool["version"]))
         res = await sast.launcher(src_dir, language, output_dir, use_mvn=(src_dir / "pom.xml").exists(),
                                   apply_remediation=True, modelling_rules=modelling_rules)
 

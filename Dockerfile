@@ -26,8 +26,10 @@ COPY testability_patterns ${TPF_HOME}/testability_patterns
 COPY config.py ${TPF_HOME}/config.py
 COPY setup.py ${TPF_HOME}/setup.py
 COPY pytest.ini ${TPF_HOME}/pytest.ini
-COPY SAST/requirements.txt ${SAST_DIR}/requirements.txt
-COPY SAST/sast-config.yaml ${SAST_DIR}/sast-config.yaml
+COPY sast/requirements.txt ${SAST_DIR}/requirements.txt
+COPY sast/sast/sast-config.yaml ${SAST_DIR}/sast-config.yaml
+
+COPY sast ${TPF_HOME}/sast
 
 ARG TESTS_DIR="qualitytests"
 COPY ${TESTS_DIR}/requirements.txt ${TPF_HOME}/${TESTS_DIR}/requirements.txt

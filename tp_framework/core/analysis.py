@@ -10,8 +10,8 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 from core import utils
 from core.instance import Instance
 from core.measurement import Measurement
-from core.sast import SAST
 from core.sast_job_runner import InQueue, OutQueue, SASTjob
+from sast.tools import tools as sast_tools
 
 
 async def analyze_pattern_instance(instance: Instance,
@@ -27,18 +27,14 @@ async def analyze_pattern_instance(instance: Instance,
     else:
         lib_dir = None
         logger.debug(f"No dependencies will be considered")
-
+    print(tools)
     for tool in tools:
         try:
             tool_name: str = tool["name"]
             tool_version: str = tool["version"]
+            print(tool)
 
-            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
-            sast_interface_class: str = sast_config["tool_interface"]
-            sast_class = utils.get_class_from_str(sast_interface_class)
-
-            # noinspection PyCallingNonCallable
-            sast: SAST = sast_class()
+            sast = sast_tools.get((tool_name, tool_version))
             sast_job: SASTjob = SASTjob(tool, tp_id=instance.pattern_id, tpi_id=instance.instance_id)
             job_id = sast_job.job_id
 
@@ -72,12 +68,7 @@ async def inspect_analysis_results(d_job: Dict, language) -> list[Measurement]:
 
         # if not csv_res, then the SAST job would have failed and no measurement in that case
         if csv_res:
-            sast_config: Dict = utils.load_sast_specific_config(tool_name, tool_version)
-            sast_interface_class: str = sast_config["tool_interface"]
-            sast_class = utils.get_class_from_str(sast_interface_class)
-
-            # noinspection PyCallingNonCallable
-            sast: SAST = sast_class()
+            sast = sast_tools.get((tool_name, tool_version))
 
             if tool_version == "saas":
                 tool_version = await sast.get_tool_version()
