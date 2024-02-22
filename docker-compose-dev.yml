@@ -26,7 +26,6 @@ services:
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out
       - ./in:/tp-framework/in
-      - ./SAST:/SAST
       - ./tp_framework:/tp-framework/tp_framework
       - ./discovery:/tp-framework/discovery
       - ./qualitytests:/tp-framework/qualitytests

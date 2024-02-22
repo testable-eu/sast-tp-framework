@@ -17,7 +17,6 @@ RUN apt-get install npm -y
 RUN apt-get install sudo -y
 
 ARG TPF_HOME="/tp-framework"
-ARG SAST_DIR="${TPF_HOME}/SAST"
 ARG DISCOVERY_HOME="${TPF_HOME}/discovery"
 
 COPY tp_framework ${TPF_HOME}/tp_framework
@@ -26,8 +25,6 @@ COPY testability_patterns ${TPF_HOME}/testability_patterns
 COPY config.py ${TPF_HOME}/config.py
 COPY setup.py ${TPF_HOME}/setup.py
 COPY pytest.ini ${TPF_HOME}/pytest.ini
-COPY sast/requirements.txt ${SAST_DIR}/requirements.txt
-COPY sast/sast/sast-config.yaml ${SAST_DIR}/sast-config.yaml
 
 COPY sast ${TPF_HOME}/sast
 
