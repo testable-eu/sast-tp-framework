@@ -16,8 +16,8 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, InstanceDoesNotExists, \
+from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, \
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InstanceDoesNotExists, \
     MeasurementResultsDoNotExist
 
 from core import errors

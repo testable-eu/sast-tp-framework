@@ -45,19 +45,6 @@ def languageTPLibDoesNotExist():
 def targetDirDoesNotExist():
     return "The target directory does not exists."
 
-
-def invalidSastTool(tool):
-    return f"SAST tool not found in the SAST yaml configuration: {tool}"
-
-
-def invalidSastTools():
-    return "Invalid SAST tools or none of them could be selected for the task."
-
-
-def sastScanFailed(tool):
-    return f"SAST Scan failed for: {tool}."
-
-
 def discoveryMethodNotSupported(discovery_method):
     return f"Discovery method `{discovery_method}` is not supported."
 

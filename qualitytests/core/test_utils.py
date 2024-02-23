@@ -7,6 +7,7 @@ from core import utils
 from core.exceptions import PatternDoesNotExists, TPLibDoesNotExist, LanguageTPLibDoesNotExist, DiscoveryMethodNotSupported
 from unittest.mock import patch, mock_open
 import qualitytests.qualitytests_utils as qualitytests_utils
+import sast.utils as sast_utils
 
 def setup_three_pattern(tmp_path: Path):
     language: str = "PHP"
@@ -101,12 +102,12 @@ class TestUtils:
 
 
     def test_sast_tool_version_match(self):
-        assert utils.sast_tool_version_match("1.5.3", "1.5.3")
-        assert not utils.sast_tool_version_match("1.5.3", "1.5.2")
-        assert utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=3)
-        assert not utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=4)
-        assert not utils.sast_tool_version_match("1.5.3.4", "1.5.3", nv_max=4)
-        assert utils.sast_tool_version_match("1.5.3.4.5.6.", "1.5.3", nv_max=3)
+        assert sast_utils.sast_tool_version_match("1.5.3", "1.5.3")
+        assert not sast_utils.sast_tool_version_match("1.5.3", "1.5.2")
+        assert sast_utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=3)
+        assert not sast_utils.sast_tool_version_match("1.5.3", "1.5.3.4", nv_max=4)
+        assert not sast_utils.sast_tool_version_match("1.5.3.4", "1.5.3", nv_max=4)
+        assert sast_utils.sast_tool_version_match("1.5.3.4.5.6.", "1.5.3", nv_max=3)
 
 
     def test_get_pattern_dir_from_id(self):
