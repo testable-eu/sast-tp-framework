@@ -32,7 +32,12 @@ async def sast_task_runner(name: str, in_queue: asyncio.Queue, out_queue: asynci
             try:
                 csv_res = await task
                 out_queue.put_nowait((job_id, tool_name, tool_version, instance, date, csv_res))
-            except Exception as e:
+            # asyncio.CancelledError is a part of BaseException
+            # https://docs.python.org/3/library/asyncio-exceptions.html
+            # Note: if the Exceptions raised in a SAST JOB is not properly handled, it will stop the
+            # sast_task_runner (Worker), thus may end up in a situation where the out_queue is empty which will result
+            # in waiting indefinitely.
+            except (Exception, asyncio.CancelledError) as e:
                 out_queue.put_nowait((job_id, tool_name, tool_version, instance, date, None))
                 logger.exception(f"{name} exception {e!r}")
                 # raise
