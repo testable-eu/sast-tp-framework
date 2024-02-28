@@ -1,8 +1,4 @@
 [submodule "testability_patterns"]
 	path = testability_patterns
 	url = git@github.com:testable-eu/sast-testability-patterns.git
-[submodule "sast"]
-	path = sast
-	url = git@github.com:sacumesh/sast.git
-    branch = feature/sast-extraction
 
