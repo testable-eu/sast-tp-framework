@@ -26,7 +26,7 @@ COPY config.py ${TPF_HOME}/config.py
 COPY setup.py ${TPF_HOME}/setup.py
 COPY pytest.ini ${TPF_HOME}/pytest.ini
 
-COPY sast ${TPF_HOME}/sast
+COPY SAST ${TPF_HOME}/SAST
 
 ARG TESTS_DIR="qualitytests"
 COPY ${TESTS_DIR}/requirements.txt ${TPF_HOME}/${TESTS_DIR}/requirements.txt

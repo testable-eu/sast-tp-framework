@@ -5,7 +5,7 @@ services:
   codeql:
     image: tpf_codeql
     build:
-      context: './sast/sast/codeql'
+      context: './SAST/sast/codeql'
       args:
         HOME: 'tp-framework'
       dockerfile: "./Dockerfile"
