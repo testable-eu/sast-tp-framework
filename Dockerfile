@@ -23,7 +23,6 @@ COPY tp_framework ${TPF_HOME}/tp_framework
 COPY testability_patterns ${TPF_HOME}/testability_patterns
 
 COPY SAST/sast /SAST/sast
-COPY SAST/sast.py ${TPF_HOME}/
 COPY SAST/requirements.txt ${TPF_HOME}/SAST/
 
 COPY config.py ${TPF_HOME}/config.py
