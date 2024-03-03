@@ -7,7 +7,7 @@ services:
     build:
       context: './SAST/sast/codeql'
       args:
-        HOME: 'tp-framework'
+        HOME: '/SAST'
       dockerfile: "./Dockerfile"
     volumes:
       - codeql:/codeql
