@@ -22,8 +22,9 @@ ARG DISCOVERY_HOME="${TPF_HOME}/discovery"
 COPY tp_framework ${TPF_HOME}/tp_framework
 COPY testability_patterns ${TPF_HOME}/testability_patterns
 
-COPY SAST/sast /SAST/sast
-COPY SAST/requirements.txt ${TPF_HOME}/SAST/
+ARG SAST_HOME="/SAST"
+COPY SAST/sast ${SAST_HOME}/sast
+COPY SAST/requirements.txt ${TPF_HOME}/${SAST_HOME}/
 
 COPY config.py ${TPF_HOME}/config.py
 COPY setup.py ${TPF_HOME}/setup.py
@@ -45,7 +46,7 @@ RUN /bin/sh -c 'cd ${DISCOVERY_HOME}/joern/ && ./joern-install.sh --version=${JO
 # ADD HERE COMMANDS USEFUL FOR OTHER DOCKER-COMPOSE SERVICES
 
 ENV PYTHONPATH "${PYTHONPATH}:${TPF_HOME}/tp_framework"
-ENV PYTHONPATH "${PYTHONPATH}:/SAST"
+ENV PYTHONPATH "${PYTHONPATH}:${SAST_HOME}"
 
 RUN python setup.py develop
 
