@@ -4,6 +4,7 @@ import datetime
 import json
 from pathlib import Path
 from typing import Dict
+import sast.utils as sast_utils
 
 import logging
 from core import loggermgr
@@ -142,7 +143,7 @@ def load_last_measurement_for_tool(tool: Dict, language: str, tp_lib: Path, patt
     measurements_for_tool: list[Measurement] = list(
         filter(lambda m:
                m.tool == tool["name"] and
-               utils.sast_tool_version_match(m.version, tool["version"]),
+               sast_utils.sast_tool_version_match(m.version, tool["version"]),
                measurements)
     )
     if not measurements_for_tool:

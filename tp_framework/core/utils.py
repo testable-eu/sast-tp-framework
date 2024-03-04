@@ -16,8 +16,8 @@ from core import loggermgr
 logger = logging.getLogger(loggermgr.logger_name(__name__))
 
 import config
-from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, InvalidSastTools, \
-    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InvalidSastTool, InstanceDoesNotExists, \
+from core.exceptions import PatternDoesNotExists, LanguageTPLibDoesNotExist, TPLibDoesNotExist, \
+    DiscoveryMethodNotSupported, TargetDirDoesNotExist, InstanceDoesNotExists, \
     MeasurementResultsDoNotExist
 
 from core import errors
@@ -152,14 +152,6 @@ def sast_tool_version_match(v1, v2, nv_max=3, ignore_saas=True):
     return True
 
 
-def load_sast_specific_config(tool_name: str, tool_version: str) -> Dict:
-    try:
-        tool_config_path: Path = config.ROOT_SAST_DIR / load_yaml(config.SAST_CONFIG_FILE)["tools"][tool_name]["version"][tool_version]["config"]
-    except KeyError:
-        e = InvalidSastTool(f"{tool_name}:{tool_version}")
-        raise e
-    return load_yaml(tool_config_path)
-
 ################################################################################
 # PATTERN REPAIR
 #
@@ -249,15 +241,6 @@ def get_id_from_name(name: str) -> int:
     return int(name.split("_")[0])
 
 
-def get_class_from_str(class_str: str) -> object:
-    try:
-        module_path, class_name = class_str.rsplit('.', 1)
-        module = import_module(module_path)
-        return getattr(module, class_name)
-    except (ImportError, AttributeError) as e:
-        raise ImportError(class_str)
-
-
 # TODO (LC): are these related to pattern instance ?
 def get_path_or_none(p: str) -> Path | None:
     if p:
@@ -303,17 +286,6 @@ def check_target_dir(target_dir: Path):
         e = TargetDirDoesNotExist()
         logger.error(get_exception_message(e))
         raise e
-
-# TODO: TESTING
-def filter_sast_tools(itools: list[Dict], language: str, exception_raised=True):
-    for t in itools:
-        t["supported_languages"] = load_sast_specific_config(t["name"], t["version"])["supported_languages"]
-    tools = list(filter(lambda x: language in x["supported_languages"], itools))
-    if exception_raised and not tools:
-        e = InvalidSastTools()
-        logger.error(get_exception_message(e))
-        raise e
-    return tools
 
 
 def load_yaml(fpath):

@@ -5,10 +5,11 @@ services:
   codeql:
     image: tpf_codeql
     build:
-      context: './SAST/codeql'
+      context: './SAST/sast/codeql'
+      args:
+        HOME: '/SAST'
       dockerfile: "./Dockerfile"
     volumes:
-      - codeql_interface:/tp-framework/SAST/codeql
       - codeql:/codeql
 
   tp-framework:
@@ -20,7 +21,6 @@ services:
     env_file:
       - ./.env
     volumes:
-      - codeql_interface:/tp-framework/SAST/codeql
       - codeql:/codeql
       - ./testability_patterns:/tp-framework/testability_patterns
       - ./out:/tp-framework/out

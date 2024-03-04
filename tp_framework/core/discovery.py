@@ -14,11 +14,13 @@ logger = logging.getLogger(loggermgr.logger_name(__name__))
 import config
 from core import utils, measurement
 from core.exceptions import DiscoveryMethodNotSupported, MeasurementNotFound, CPGGenerationError, \
-    CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError, InvalidSastTools
+    CPGLanguageNotSupported, DiscoveryRuleError, DiscoveryRuleParsingResultError
 from core.measurement import Measurement
 
 from core.instance import Instance
 from core.pattern import Pattern
+import sast.utils as sast_utils
+from sast.exceptions import InvalidSastTools
 
 # mand_finding_joern_keys = ["filename", "methodFullName", "lineNumber"]
 mand_finding_joern_keys = ["filename", "lineNumber"]
@@ -275,7 +277,7 @@ def discovery_under_measurement(cpg: Path, l_tp_id: list[int], tp_lib: Path, ito
                                 disc_output_dir: Path,
                                 timeout_sec: int = 0) -> Dict:
     # filter over tools
-    tools = utils.filter_sast_tools(itools, language)
+    tools = sast_utils.filter_sast_tools(itools, language)
     if not tools:
         e = InvalidSastTools()
         logger.exception(e)

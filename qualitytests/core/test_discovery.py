@@ -32,7 +32,7 @@ class TestDiscovery:
             "supported_languages": ["PHP"],
             "tool_interface": "qualitytests.core.sast_test.SastTest"
         }
-        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+        mocker.patch("sast.utils.load_sast_specific_config", return_value=mocked_tool_interface)
         mocker.patch("core.discovery.generate_cpg", return_value=None)
         mocker.patch("core.discovery.run_and_process_discovery_rule", return_value=findings)
         mocker.patch.object(config, "RESULT_DIR", tmp_path)
@@ -94,7 +94,7 @@ class TestDiscovery:
             "supported_languages": ["JS"],
             "tool_interface": "qualitytests.core.sast_test.SastTest"
         }
-        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+        mocker.patch("sast.utils.load_sast_specific_config", return_value=mocked_tool_interface)
         mocker.patch("core.discovery.generate_cpg",
                      return_value=tmp_path / "cpg_binary.bin",
                      side_effect=self._create_mock_cpg(tmp_path / "cpg_binary.bin"))

@@ -12,6 +12,8 @@ from core.exceptions import PatternDoesNotExists
 from core.sast_job_runner import sast_task_runner, InQueue, OutQueue, \
     get_valid_job_list_for_patterns, get_invalid_job_list_for_patterns, SASTjob
 
+import sast.utils as sast_utils
+
 async def measure_list_patterns(l_tp_id: list[int], language: str,
                                 tools: list[Dict],
                                 tp_lib_path: Path,
@@ -19,7 +21,7 @@ async def measure_list_patterns(l_tp_id: list[int], language: str,
                                 workers: int) -> Dict:
     logger.info(f"SAST measurement - started...")
     utils.check_tp_lib(tp_lib_path)
-    ftools = utils.filter_sast_tools(tools, language)
+    ftools = sast_utils.filter_sast_tools(tools, language)
     logger.info(f"SAST measurement - tools: {ftools}")
     logger.info(f"SAST measurement - collect jobs to run: started...")
     now = datetime.now()

@@ -7,8 +7,8 @@ import config
 from cli import interface
 from core import utils
 
-from core.exceptions import InvalidSastTools
-from core.errors import invalidSastTools
+from sast.exceptions import InvalidSastTools
+from sast.errors import invalidSastTools
 from core.pattern import Pattern
 
 class Command(ABC):

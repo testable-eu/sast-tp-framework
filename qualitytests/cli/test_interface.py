@@ -32,7 +32,7 @@ class TestInterface:
             "supported_languages": ["PHP"],
             "tool_interface": "qualitytests.core.sast_test.SastTest"
         }
-        mocker.patch("core.utils.load_sast_specific_config", return_value=mocked_tool_interface)
+        mocker.patch("sast.utils.load_sast_specific_config", return_value=mocked_tool_interface)
         mocker.patch("core.discovery.run_generate_cpg_cmd",
                      return_value="Done",
                      side_effect=create_mock_cpg(tmp_path / "cpg_binary.bin"))
@@ -264,17 +264,17 @@ class TestInterface:
             patch("pathlib.Path.mkdir") as mkdir_mock:
             init_pattern_mock.return_value = test_pattern
             interface.repair_patterns("JS", [1,2,3], None, True, Path("measurements"), Path("dr_results.csv"), Path("out"), sample_tp_lib)
-        
-        patternrepair_mock.assert_called_with(False, 
-                                              discovery_rule_results=Path("dr_results.csv"), 
-                                              measurement_results=Path("measurements"), 
+
+        patternrepair_mock.assert_called_with(False,
+                                              discovery_rule_results=Path("dr_results.csv"),
+                                              measurement_results=Path("measurements"),
                                               masking_file=None)
         expected_calls = [call(1, "JS", sample_tp_lib), call(2, "JS", sample_tp_lib), call(3, "JS", sample_tp_lib)]
         init_pattern_mock.assert_has_calls(expected_calls)
         check_file_exists_mock.assert_not_called()
         measurement_result_exist_mock.assert_not_called()
         mkdir_mock.assert_called()
-    
+
     def test_repair_patterns_not_including_readme(self):
         sample_tp_lib = join_resources_path("sample_patlib")
         test_pattern = create_pattern()
@@ -285,10 +285,10 @@ class TestInterface:
             patch("pathlib.Path.mkdir") as mkdir_mock:
             init_pattern_mock.return_value = test_pattern
             interface.repair_patterns("JS", [1,2,3], None, False, Path("measurements"), Path("dr_results.csv"), Path("out"), sample_tp_lib)
-        
-        patternrepair_mock.assert_called_with(True, 
-                                              discovery_rule_results=Path("dr_results.csv"), 
-                                              measurement_results=Path("measurements"), 
+
+        patternrepair_mock.assert_called_with(True,
+                                              discovery_rule_results=Path("dr_results.csv"),
+                                              measurement_results=Path("measurements"),
                                               masking_file=None)
         expected_calls = [call(1, "JS", sample_tp_lib), call(2, "JS", sample_tp_lib), call(3, "JS", sample_tp_lib)]
         init_pattern_mock.assert_has_calls(expected_calls)
