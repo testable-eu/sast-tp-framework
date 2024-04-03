@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict
+import sast.config as sast_config
 
 import yaml
 
@@ -22,14 +23,13 @@ loggingLevelFile = 'DEBUG'
 loggingLevelConsole = 'INFO'
 
 ## SAST
-ROOT_SAST_DIR: Path = ROOT_DIR / "SAST"
-SAST_CONFIG_FILE: Path = ROOT_SAST_DIR / "sast-config.yaml"
 SAST_TOOLS_ENABLED: list[Dict] = [
     {
         "name": "codeql",
         "version": "2.13.1"
     }
 ]
+sast_config.ROOT_LOGGER_NAME = rootLoggerName
 
 ## Discovery
 _ROOT_JOERN_CPG_GEN_DIR: Path = ROOT_DIR / "discovery/joern"
