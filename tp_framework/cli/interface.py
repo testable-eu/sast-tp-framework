@@ -26,6 +26,7 @@ def add_pattern(tp_dir: str, language: str, measure: bool, tools: list[Dict], tp
 
     tp_json_path = Path(tp_json) if tp_json else utils.get_json_file(tp_dir_path)
     if not tp_json_path:
+        print("ADDED TO TEST CODEQL")
         print(errors.patternDefaultJSONNotFound(tp_dir))
         return
     
