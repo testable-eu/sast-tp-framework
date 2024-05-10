@@ -4,5 +4,5 @@
 
 [submodule "SAST"]
 	path = SAST
-	url = git@github.com:sacumesh/SAST.git
-	branch = feature/sast-extraction
+	url = git@github.com:testable-eu/SAST.git
+	branch = tp-framework
